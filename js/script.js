@@ -1350,6 +1350,13 @@
                         pokemon: dados
                     };
                     
+                    console.log('📤 Enviando para Apps Script:', {
+                        url: APPS_SCRIPT_URL,
+                        acao: payload.acao,
+                        nomeOriginal: payload.nomeOriginal,
+                        pokemon: payload.pokemon
+                    });
+                    
                     const resposta = await fetch(APPS_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors', // Necessário para Apps Script
