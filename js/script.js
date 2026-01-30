@@ -957,9 +957,23 @@
                 container.querySelectorAll('.no-results').forEach(m => m.remove());
                 let encontrados = 0;
                 
+                // 🔥 BUSCA MÚLTIPLA: Separar por vírgula
+                const termos = termo.split(',').map(t => t.trim()).filter(t => t !== '');
+                
                 cards.forEach(card => {
-                    const corresponde = card.textContent.toLowerCase().includes(termo);
-                    if (corresponde || termo === '') {
+                    const textoCard = card.textContent.toLowerCase();
+                    
+                    // Se não tem termo de busca, mostra tudo
+                    if (termos.length === 0) {
+                        card.style.display = 'block';
+                        encontrados++;
+                        return;
+                    }
+                    
+                    // Verifica se o card corresponde a ALGUM dos termos
+                    const corresponde = termos.some(t => textoCard.includes(t));
+                    
+                    if (corresponde) {
                         card.style.display = 'block';
                         encontrados++;
                     } else {
@@ -977,6 +991,12 @@
                         <h3 style="color:#ffd700;margin-bottom:10px">Nenhum Pokémon</h3>
                         <p style="color:#a0e7ff">Nenhum resultado: "${termo}"</p>`;
                     container.appendChild(mensagem);
+                } else if (termos.length > 1) {
+                    // Mostrar quantos termos foram pesquisados
+                    const hint = document.createElement('div');
+                    hint.style.cssText = 'text-align:center;padding:15px;background:rgba(255,215,0,0.1);border-radius:10px;margin-bottom:20px;color:#ffd700;font-weight:bold;';
+                    hint.innerHTML = `<i class="fas fa-search-plus"></i> Buscando ${termos.length} Pokémons: ${termos.join(', ')} • ${encontrados} encontrado(s)`;
+                    container.insertBefore(hint, container.firstChild);
                 }
             });
         }
