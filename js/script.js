@@ -2,7 +2,7 @@
         const URL_DADOS = `https://opensheet.elk.sh/${PLANILHA_ID}/1`;
         
         // 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhZWzJQfMmkKywQmuI-XPD3VKVbgY-5M7fabevv0ZmjVE66sVNZMKa5HknbDUsXGtOMg/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFAaBL2Ry838LANazibZnrX0LKMrA9_4zvwt9Bqs4gyZKw0CJzdKSOtf7t5ah9CA0f/exec';
         
         let todosPokemons = [];
         let todosTMs = [];

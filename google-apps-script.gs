@@ -34,10 +34,9 @@ function doPost(e) {
       // Procurar o Pokémon na planilha
       let linhaEncontrada = -1;
       for (let i = 1; i < todosOsDados.length; i++) {
-        const nomePlanilha = (todosOsDados[i][1] || '').toString().toLowerCase().trim(); // Coluna B (POKEMON)
-        const evPlanilha = (todosOsDados[i][2] || '').toString().toLowerCase().trim();    // Coluna C (EV)
+        const nomePlanilha = (todosOsDados[i][2] || '').toString().toLowerCase().trim(); // Coluna C (POKEMON)
         
-        if (nomePlanilha === nomeOriginal || evPlanilha === nomeOriginal) {
+        if (nomePlanilha === nomeOriginal) {
           linhaEncontrada = i + 1; // +1 porque o índice do array começa em 0, mas as linhas da planilha começam em 1
           break;
         }
@@ -45,29 +44,32 @@ function doPost(e) {
       
       if (linhaEncontrada > 0) {
         // Atualizar a linha encontrada
-        // Estrutura da planilha (ajuste conforme sua planilha):
-        // A: PS | B: POKEMON | C: EV | D: Type 1 | E: Type 2 | F: HP | G: Attack | H: Defense
-        // I: Sp.Attack | J: Sp.Defense | K: Speed | L: LOCALIZAÇÃO | M: TM | N: Nome do TM | O: Categoria
+        // Estrutura REAL da planilha:
+        // A: PS | B: GEN | C: POKEMON | D: LOCALIZAÇÃO | E: TM | F: Nome do TM | G: Categoria
+        // H: Type 1 | I: Type 2 | J: HP | K: Attack | L: Defense | M: Sp.Attack | N: Sp.Defense | O: Speed
         
-        aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);     // PS
-        aba.getRange(linhaEncontrada, 2).setValue(dados.pokemon.nome);       // POKEMON
-        aba.getRange(linhaEncontrada, 3).setValue(dados.pokemon.nome);       // EV
-        aba.getRange(linhaEncontrada, 6).setValue(dados.pokemon.hp);         // HP
-        aba.getRange(linhaEncontrada, 7).setValue(dados.pokemon.atk);        // Attack
-        aba.getRange(linhaEncontrada, 8).setValue(dados.pokemon.def);        // Defense
-        aba.getRange(linhaEncontrada, 9).setValue(dados.pokemon.spatk);      // Sp.Attack
-        aba.getRange(linhaEncontrada, 10).setValue(dados.pokemon.spdef);     // Sp.Defense
-        aba.getRange(linhaEncontrada, 11).setValue(dados.pokemon.speed);     // Speed
-        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.localizacao); // LOCALIZAÇÃO
+        aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);     // A: PS
+        // Coluna B (GEN) não mexemos
+        aba.getRange(linhaEncontrada, 3).setValue(dados.pokemon.nome);       // C: POKEMON
+        aba.getRange(linhaEncontrada, 4).setValue(dados.pokemon.localizacao); // D: LOCALIZAÇÃO
         
         // TMs (dividir "TM02 - Dragon Claw" em duas colunas)
         const tmPartes = dados.pokemon.tms.split(' - ');
         if (tmPartes.length > 0) {
-          aba.getRange(linhaEncontrada, 13).setValue(tmPartes[0].trim()); // TM
+          aba.getRange(linhaEncontrada, 5).setValue(tmPartes[0].trim()); // E: TM
           if (tmPartes.length > 1) {
-            aba.getRange(linhaEncontrada, 14).setValue(tmPartes[1].trim()); // Nome do TM
+            aba.getRange(linhaEncontrada, 6).setValue(tmPartes[1].trim()); // F: Nome do TM
           }
         }
+        // Coluna G (Categoria) não mexemos
+        
+        // Stats
+        aba.getRange(linhaEncontrada, 10).setValue(dados.pokemon.hp);        // J: HP
+        aba.getRange(linhaEncontrada, 11).setValue(dados.pokemon.atk);       // K: Attack
+        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.def);       // L: Defense
+        aba.getRange(linhaEncontrada, 13).setValue(dados.pokemon.spatk);     // M: Sp.Attack
+        aba.getRange(linhaEncontrada, 14).setValue(dados.pokemon.spdef);     // N: Sp.Defense
+        aba.getRange(linhaEncontrada, 15).setValue(dados.pokemon.speed);     // O: Speed
         
         return ContentService.createTextOutput(JSON.stringify({
           sucesso: true,
@@ -87,28 +89,31 @@ function doPost(e) {
       const ultimaLinha = aba.getLastRow();
       const novaLinha = ultimaLinha + 1;
       
-      // Estrutura: A: PS | B: POKEMON | C: EV | D: Type 1 | E: Type 2 | F: HP | etc.
+      // Estrutura REAL: A: PS | B: GEN | C: POKEMON | D: LOCALIZAÇÃO | E: TM | F: Nome do TM | G: Categoria
+      // H: Type 1 | I: Type 2 | J: HP | K: Attack | L: Defense | M: Sp.Attack | N: Sp.Defense | O: Speed
       const tmPartes = dados.pokemon.tms.split(' - ');
       
-      aba.getRange(novaLinha, 1).setValue(dados.pokemon.numero);
-      aba.getRange(novaLinha, 2).setValue(dados.pokemon.nome);
-      aba.getRange(novaLinha, 3).setValue(dados.pokemon.nome);
-      aba.getRange(novaLinha, 4).setValue('Normal'); // Type 1 padrão
-      aba.getRange(novaLinha, 5).setValue('');       // Type 2 vazio
-      aba.getRange(novaLinha, 6).setValue(dados.pokemon.hp);
-      aba.getRange(novaLinha, 7).setValue(dados.pokemon.atk);
-      aba.getRange(novaLinha, 8).setValue(dados.pokemon.def);
-      aba.getRange(novaLinha, 9).setValue(dados.pokemon.spatk);
-      aba.getRange(novaLinha, 10).setValue(dados.pokemon.spdef);
-      aba.getRange(novaLinha, 11).setValue(dados.pokemon.speed);
-      aba.getRange(novaLinha, 12).setValue(dados.pokemon.localizacao);
+      aba.getRange(novaLinha, 1).setValue(dados.pokemon.numero);      // A: PS
+      aba.getRange(novaLinha, 2).setValue(1);                         // B: GEN (padrão 1)
+      aba.getRange(novaLinha, 3).setValue(dados.pokemon.nome);        // C: POKEMON
+      aba.getRange(novaLinha, 4).setValue(dados.pokemon.localizacao); // D: LOCALIZAÇÃO
       
       if (tmPartes.length > 0) {
-        aba.getRange(novaLinha, 13).setValue(tmPartes[0].trim());
+        aba.getRange(novaLinha, 5).setValue(tmPartes[0].trim());      // E: TM
         if (tmPartes.length > 1) {
-          aba.getRange(novaLinha, 14).setValue(tmPartes[1].trim());
+          aba.getRange(novaLinha, 6).setValue(tmPartes[1].trim());    // F: Nome do TM
         }
       }
+      
+      aba.getRange(novaLinha, 7).setValue('');                        // G: Categoria (vazio)
+      aba.getRange(novaLinha, 8).setValue('Normal');                  // H: Type 1 padrão
+      aba.getRange(novaLinha, 9).setValue('');                        // I: Type 2 vazio
+      aba.getRange(novaLinha, 10).setValue(dados.pokemon.hp);         // J: HP
+      aba.getRange(novaLinha, 11).setValue(dados.pokemon.atk);        // K: Attack
+      aba.getRange(novaLinha, 12).setValue(dados.pokemon.def);        // L: Defense
+      aba.getRange(novaLinha, 13).setValue(dados.pokemon.spatk);      // M: Sp.Attack
+      aba.getRange(novaLinha, 14).setValue(dados.pokemon.spdef);      // N: Sp.Defense
+      aba.getRange(novaLinha, 15).setValue(dados.pokemon.speed);      // O: Speed
       
       return ContentService.createTextOutput(JSON.stringify({
         sucesso: true,
