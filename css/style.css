@@ -624,15 +624,18 @@ h1 {
 }
 
 .pokemon-evolution-badge {
-    display: inline-block;
-    background: rgba(255, 215, 0, 0.15);
-    padding: 4px 12px;
-    border-radius: 12px;
-    margin-left: 8px;
-    font-size: 0.7em;
-    vertical-align: middle;
-    color: #ffd700;
-    border: 1px solid rgba(255, 215, 0, 0.3);
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(255, 215, 0, 0.9);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75em;
+    font-weight: bold;
+    color: #1a2980;
+    border: 2px solid rgba(255, 215, 0, 1);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    z-index: 10;
 }
 
 .loading {

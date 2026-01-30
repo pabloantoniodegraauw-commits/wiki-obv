@@ -243,13 +243,13 @@
                 card.className = 'pokemon-card';
                 card.setAttribute('data-pokemon-nome', nomeParaBusca);  // Nome para buscar (EV se tiver, senão POKEMON)
                 card.innerHTML = `
+                    ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                     <div class="img-container">
                         <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
                     </div>
                     ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
                     <h3 class="pokemon-name">
                         ${nomePrincipal}
-                        ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                     </h3>
                     ${nomeBase ? `<div class="pokemon-base">Forma base: ${nomeBase}</div>` : ''}
                     <div class="pokemon-stats">
@@ -368,13 +368,13 @@
                     card.className = 'pokemon-card';
                     card.setAttribute('data-pokemon-nome', nomeParaBusca);
                     card.innerHTML = `
+                        ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                         <div class="img-container">
                             <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
                         </div>
                         ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
                         <h3 class="pokemon-name">
                             ${nomePrincipal}
-                            ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                         </h3>
                         ${nomeBase ? `<div class="pokemon-base">Forma base: ${nomeBase}</div>` : ''}
                         <div class="pokemon-stats">
