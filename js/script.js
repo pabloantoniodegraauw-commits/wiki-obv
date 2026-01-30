@@ -1059,26 +1059,13 @@
             });
         }
 
+        // ❌ DEPRECATED: switchTab removido - usar sistema modular de navegação
+        // A navegação agora é gerenciada por js/modules/navigation.js
         function switchTab(tabName) {
-            // Esconder todas as abas
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remover active de todos os botões
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Mostrar aba selecionada
-            document.getElementById(tabName).classList.add('active');
-            
-            // Marcar botão como ativo
-            event.target.classList.add('active');
-
-            // Carregar TMs na primeira vez
-            if (tabName === 'tms' && todosTMs.length === 0) {
-                carregarTMs();
+            console.warn('⚠️ switchTab() deprecated - usando sistema modular');
+            // Compatibilidade temporária
+            if (typeof loadPage !== 'undefined') {
+                loadPage(tabName);
             }
         }
         

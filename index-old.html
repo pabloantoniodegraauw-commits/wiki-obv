@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WIKI OBV</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-dragon"></i> WIKI OBV</h1>
+            <p class="subtitle">CLÃ OBLIVIUM</p>
+            <div class="stats-bar">
+                <span id="pokemonCount">0</span> Pokémons • 
+                <span id="lastUpdate">--:--</span> • 
+                <i class="fas fa-bolt" style="color:#ffd700"></i> Busca Instantânea
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="toggle-images-btn" id="toggleImagesBtn" onclick="alternarTipoImagem()">
+                    <i class="fas fa-image"></i> Stickers
+                </button>
+                <button class="login-btn" id="loginBtn" onclick="iniciarLogin()">
+                    <i class="fas fa-lock"></i> ADM
+                </button>
+            </div>
+            <div class="user-info" id="userInfo" style="display:none;">
+                <img id="userPic" src="" alt="Avatar">
+                <span id="userName"></span>
+                <button class="logout-btn" onclick="fazerLogout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('pokedex')">
+                <i class="fas fa-book"></i> Pokédex
+            </button>
+            <button class="tab-btn" onclick="switchTab('tms')">
+                <i class="fas fa-compact-disc"></i> TMs
+            </button>
+            <button class="tab-btn" onclick="switchTab('tasks')">
+                <i class="fas fa-tasks"></i> Tasks
+            </button>
+            <button class="tab-btn" onclick="switchTab('cla')">
+                <i class="fas fa-users"></i> CLÃ
+            </button>
+        </div>
+
+        <!-- ABA POKÉDEX -->
+        <div id="pokedex" class="tab-content active">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Digite para buscar Pokémon (nome, tipo, localização, EV, TMs)... • Separe com vírgula para buscar vários">
+                <p class="search-hint">
+                    <i class="fas fa-lightbulb"></i> EV como nome principal • Tipos em PT/EN • Imagens do Pokémon Database
+                </p>
+            </div>
+            
+            <div id="pokemonContainer" class="pokemon-grid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Carregando dados da planilha...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA TMs -->
+        <div id="tms" class="tab-content">
+            <div class="search-box">
+                <input type="text" id="searchInputTMs" placeholder="Buscar TM...">
+            </div>
+
+            <div class="tms-filters">
+                <button class="filter-btn active" data-categoria="todos">Todos</button>
+                <button class="filter-btn" data-categoria="boss">Boss</button>
+                <button class="filter-btn" data-categoria="event">Eventos</button>
+                <button class="filter-btn" data-categoria="spawn">Spawns</button>
+                <button class="filter-btn" data-categoria="craft">Craft</button>
+            </div>
+
+            <div id="tmsContainer" class="tms-grid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Carregando TMs...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA TASKS -->
+        <div id="tasks" class="tab-content">
+            <div class="tasks-header" style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: #ffd700; margin-bottom: 10px;"><i class="fas fa-scroll"></i> Tasks do NPC Lem</h2>
+                <p style="color: #a0e7ff; margin-bottom: 15px;">O NPC Lem oferece recompensas exclusivas a cada tarefa concluída no PVP</p>
+            </div>
+
+            <div id="tasksContainer" class="tasks-grid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Carregando Tasks...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA CLÃ -->
+        <div id="cla" class="tab-content">
+            <div class="cla-header" style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: #ffd700; margin-bottom: 10px;"><i class="fas fa-users"></i> CLÃ OBV</h2>
+                <p style="color: #a0e7ff; margin-bottom: 15px;">Memorial dos Integrantes</p>
+            </div>
+
+            <div id="claContainer" style="padding: 20px;">
+                <!-- LÍDERES -->
+                <div style="margin-bottom: 40px; text-align: center;">
+                    <h3 style="color: #ffd700; margin-bottom: 20px; font-size: 1.3em; border-bottom: 2px solid #ffd700; padding-bottom: 10px;">👑 Líder</h3>
+                    <div class="clan-members-grid">
+                        <div class="member-card">
+                            <div class="member-avatar leader">SK</div>
+                            <p class="member-name">Senhor Skant</p>
+                        </div>
+                        <div class="member-card">
+                            <div class="member-avatar leader">LZ</div>
+                            <p class="member-name">Legenzin OBV</p>
+                        </div>
+                        <div class="member-card">
+                            <div class="member-avatar leader">XC</div>
+                            <p class="member-name">Xxcarlosxx</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VICE-LÍDERES -->
+                <div style="margin-bottom: 40px; text-align: center;">
+                    <h3 style="color: #88d3ff; margin-bottom: 20px; font-size: 1.3em; border-bottom: 2px solid #88d3ff; padding-bottom: 10px;">⭐ Vice-Líder</h3>
+                    <div class="clan-members-grid">
+                        <div class="member-card">
+                            <div class="member-avatar vice">JL</div>
+                            <p class="member-name">Jllink OBV</p>
+                        </div>
+                        <div class="member-card">
+                            <div class="member-avatar vice">NG</div>
+                            <p class="member-name">Nagi OBV</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MEMBROS -->
+                <div>
+                    <h3 style="color: #a0e7ff; margin-bottom: 20px; font-size: 1.3em; border-bottom: 2px solid #a0e7ff; padding-bottom: 10px;">👥 Membros</h3>
+                    <div class="clan-members-grid">
+                        <div class="member-card"><div class="member-avatar">AL</div><p class="member-name">Almeidaa OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">CV</div><p class="member-name">CARVAALHO OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">CS</div><p class="member-name">César OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">LC</div><p class="member-name">Loucura ÓBVIA</p></div>
+                        <div class="member-card"><div class="member-avatar">DV</div><p class="member-name">Davon OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">ED</div><p class="member-name">Endividado OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">FR</div><p class="member-name">Freitinhasz OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">IM</div><p class="member-name">IagoMoedas OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">IR</div><p class="member-name">iRusseL OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">IS</div><p class="member-name">ISAGIII OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">LK</div><p class="member-name">lkliff OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">LR</div><p class="member-name">lRamos OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">MC</div><p class="member-name">Mclovinxs OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">MG</div><p class="member-name">Mgzinn OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">NI</div><p class="member-name">Nialk OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">NK</div><p class="member-name">Nikklaus OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">PD</div><p class="member-name">Pedroh OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">RM</div><p class="member-name">Rettmarlley OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">RZ</div><p class="member-name">Rickyziin OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">SN</div><p class="member-name">SannT OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">SL</div><p class="member-name">SensuaLize OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">TK</div><p class="member-name">Tksixx OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">TH</div><p class="member-name">Tonhaozinn</p></div>
+                        <div class="member-card"><div class="member-avatar">MO</div><p class="member-name">MAGO ÓBVIO</p></div>
+                        <div class="member-card"><div class="member-avatar">ZT</div><p class="member-name">Zeta OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">ZM</div><p class="member-name">zMorpheus OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">ZO</div><p class="member-name">zOrpheusZ OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">ZP</div><p class="member-name">zPabloze OBV</p></div>
+                        <div class="member-card"><div class="member-avatar">IJ</div><p class="member-name">[Tutora] Insana Ju</p></div>
+                        <div class="member-card"><div class="member-avatar">RZ</div><p class="member-name">Riczynn</p></div>
+                        <div class="member-card"><div class="member-avatar">MM</div><p class="member-name">manodosmega mega</p></div>
+                        <div class="member-card"><div class="member-avatar">WC</div><p class="member-name">Irmão Do Wc</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>DEX OBV © 2023 - Banco de dados Pokémon</p>
+            <p class="update-info">
+                <i class="fas fa-sync-alt"></i> Dados sincronizados do Google Sheets • 
+                <i class="fas fa-images"></i> Imagens: Pokémon Database • 
+                <i class="fas fa-bolt"></i> Busca Instantânea
+            </p>
+        </footer>
+    </div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>
