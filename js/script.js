@@ -1426,18 +1426,24 @@
                     
                     console.log('✅ Requisição enviada ao Google Sheets (no-cors, sem resposta legível)');
                     console.log('ℹ️ Status da resposta:', resposta.type, resposta.status);
-                    alert('✅ Pokémon atualizado com sucesso!\n\n📡 Dados enviados ao Google Sheets!\n\n⏳ A planilha será atualizada em alguns segundos.\n\n💾 Dados também salvos localmente.');
+                    
+                    // Fechar modal e recarregar página
+                    document.querySelector('[style*=fixed]').remove();
+                    setTimeout(() => location.reload(), 500);
                     
                 } catch (erro) {
                     console.error('❌ Erro ao salvar no Google Sheets:', erro);
                     console.error('Detalhes do erro:', erro.message, erro.stack);
-                    alert('✅ Pokémon atualizado localmente!\n\n⚠️ Não foi possível conectar ao Google Sheets.\n\nErro: ' + erro.message + '\n\n💾 Dados salvos no navegador.\n\n🔄 Tente novamente ou verifique a conexão.');
+                    
+                    // Fechar modal e recarregar página
+                    document.querySelector('[style*=fixed]').remove();
+                    setTimeout(() => location.reload(), 500);
                 }
             } else {
-                alert('✅ Pokémon atualizado!\n\n⚠️ Google Apps Script não configurado.\n\n💾 Dados salvos localmente no navegador.');
+                // Fechar modal e recarregar página
+                document.querySelector('[style*=fixed]').remove();
+                setTimeout(() => location.reload(), 500);
             }
-            
-            document.querySelector('[style*=fixed]').remove();
         }
         
         function abrirModalAddPokemon() {
