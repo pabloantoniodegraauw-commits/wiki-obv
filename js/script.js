@@ -1,7 +1,7 @@
 ﻿const PLANILHA_ID = '1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ';
         
         // 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4z893TKrAFnj2LAypQj-ajnounRGkFRFg8B6UaFdoAWJcHtWHD0C9HaLINCZLXBlaXA/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiy6x8JAl9DMXW-85fbyv7pZG8q3dNCDgmXK8U3eHr9oV7rnFz560ED6RvM-rlHW1Ihw/exec';
         
         // 🚀 Tentar Apps Script primeiro, fallback para OpenSheet
         const URL_DADOS_APPS_SCRIPT = APPS_SCRIPT_URL + '?acao=obter_todos';
