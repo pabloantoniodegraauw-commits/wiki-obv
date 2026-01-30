@@ -26,8 +26,8 @@ function doPost(e) {
     // Parse dos dados recebidos
     const dados = JSON.parse(e.postData.contents);
     
+    // APENAS ATUALIZAR POKÉMON EXISTENTE (não adicionar novos)
     if (dados.acao === 'atualizar') {
-      // ATUALIZAR POKÉMON EXISTENTE
       const nomeOriginal = dados.nomeOriginal.toLowerCase().trim();
       const todosOsDados = aba.getDataRange().getValues();
       
@@ -81,48 +81,16 @@ function doPost(e) {
       } else {
         return ContentService.createTextOutput(JSON.stringify({
           sucesso: false,
-          mensagem: 'Pokémon não encontrado na planilha.'
+          mensagem: 'Pokémon não encontrado na planilha: ' + dados.nomeOriginal
         })).setMimeType(ContentService.MimeType.JSON);
       }
-      
-    } else if (dados.acao === 'adicionar') {
-      // ADICIONAR NOVO POKÉMON
-      const ultimaLinha = aba.getLastRow();
-      const novaLinha = ultimaLinha + 1;
-      
-      // Estrutura REAL: A: PS | B: GEN | C: POKEMON | D: EV | E: LOCALIZAÇÃO | F: TM | G: Nome do TM | H: Categoria
-      // I: Type 1 | J: Type 2 | K: HP | L: Attack | M: Defense | N: Sp.Attack | O: Sp.Defense | P: Speed
-      const tmPartes = dados.pokemon.tms.split(' - ');
-      
-      aba.getRange(novaLinha, 1).setValue(dados.pokemon.numero);      // A: PS
-      aba.getRange(novaLinha, 2).setValue(1);                         // B: GEN (padrão 1)
-      aba.getRange(novaLinha, 3).setValue(dados.pokemon.nome);        // C: POKEMON
-      aba.getRange(novaLinha, 4).setValue('');                        // D: EV (vazio)
-      aba.getRange(novaLinha, 5).setValue(dados.pokemon.localizacao); // E: LOCALIZAÇÃO
-      
-      if (tmPartes.length > 0) {
-        aba.getRange(novaLinha, 6).setValue(tmPartes[0].trim());      // F: TM
-        if (tmPartes.length > 1) {
-          aba.getRange(novaLinha, 7).setValue(tmPartes[1].trim());    // G: Nome do TM
-        }
-      }
-      
-      aba.getRange(novaLinha, 8).setValue('');                        // H: Categoria (vazio)
-      aba.getRange(novaLinha, 9).setValue('Normal');                  // I: Type 1 padrão
-      aba.getRange(novaLinha, 10).setValue('');                       // J: Type 2 vazio
-      aba.getRange(novaLinha, 11).setValue(dados.pokemon.hp);         // K: HP
-      aba.getRange(novaLinha, 12).setValue(dados.pokemon.atk);        // L: Attack
-      aba.getRange(novaLinha, 13).setValue(dados.pokemon.def);        // M: Defense
-      aba.getRange(novaLinha, 14).setValue(dados.pokemon.spatk);      // N: Sp.Attack
-      aba.getRange(novaLinha, 15).setValue(dados.pokemon.spdef);      // O: Sp.Defense
-      aba.getRange(novaLinha, 16).setValue(dados.pokemon.speed);      // P: Speed
-      
-      return ContentService.createTextOutput(JSON.stringify({
-        sucesso: true,
-        mensagem: 'Novo Pokémon adicionado à planilha!',
-        linha: novaLinha
-      })).setMimeType(ContentService.MimeType.JSON);
     }
+    
+    // Retornar erro se não for ação de atualizar
+    return ContentService.createTextOutput(JSON.stringify({
+      sucesso: false,
+      mensagem: 'Ação não reconhecida. Use acao: "atualizar"'
+    })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (erro) {
     return ContentService.createTextOutput(JSON.stringify({

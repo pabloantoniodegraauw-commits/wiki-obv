@@ -1133,7 +1133,8 @@
                     }
                 });
                 
-                // Botão Adicionar - remover existente antes de criar novo
+                // Botão Adicionar - DESABILITADO (apenas editar Pokémons existentes)
+                /*
                 const btnAddExistente = document.getElementById('btnAddPokemon');
                 if (btnAddExistente) {
                     btnAddExistente.remove();
@@ -1153,6 +1154,7 @@
                     this.style.boxShadow = '0 8px 20px rgba(255, 215, 0, 0.4)';
                 });
                 document.body.appendChild(btnAdd);
+                */
                 
                 // Botão Reset - remover existente antes de criar novo
                 const btnResetExistente = document.getElementById('btnResetData');
@@ -1288,52 +1290,33 @@
                 tms: document.getElementById('edit-tms').value
             };
             
-            // Atualizar no array local
+            // Buscar Pokémon no array local pela coluna POKEMON
             const index = todosPokemons.findIndex(p => {
                 const nomePok = (p.POKEMON || '').toLowerCase().trim();
                 return nomePok === nomeOriginal.toLowerCase().trim();
             });
             
-            const ehNovo = index === -1;
-            
-            if (!ehNovo) {
-                // Atualizar Pokémon existente
-                todosPokemons[index] = {
-                    ...todosPokemons[index],
-                    POKEMON: dados.nome,
-                    EV: dados.nome,
-                    PS: dados.numero,
-                    HP: dados.hp,
-                    Attack: dados.atk,
-                    Defense: dados.def,
-                    'Sp.Attack': dados.spatk,
-                    'Sp.Defense': dados.spdef,
-                    Speed: dados.speed,
-                    'LOCALIZAÇÃO': dados.localizacao,
-                    TM: dados.tms.split(' - ')[0] || todosPokemons[index].TM || '',
-                    'Nome do TM': dados.tms.split(' - ')[1] || todosPokemons[index]['Nome do TM'] || ''
-                };
-            } else {
-                // Novo Pokémon
-                const novoPokemon = {
-                    POKEMON: dados.nome,
-                    EV: dados.nome,
-                    PS: dados.numero,
-                    HP: dados.hp,
-                    Attack: dados.atk,
-                    Defense: dados.def,
-                    'Sp.Attack': dados.spatk,
-                    'Sp.Defense': dados.spdef,
-                    Speed: dados.speed,
-                    'LOCALIZAÇÃO': dados.localizacao,
-                    TM: dados.tms.split(' - ')[0] || '',
-                    'Nome do TM': dados.tms.split(' - ')[1] || '',
-                    'Type 1': 'Normal',
-                    'Type 2': ''
-                };
-                
-                todosPokemons.push(novoPokemon);
+            if (index === -1) {
+                alert('❌ Erro: Pokémon não encontrado!\n\nNome buscado: ' + nomeOriginal);
+                return;
             }
+            
+            // Atualizar Pokémon existente (NUNCA adicionar novo)
+            todosPokemons[index] = {
+                ...todosPokemons[index],
+                POKEMON: dados.nome,  // Atualiza coluna C
+                // EV não mexemos (coluna D)
+                PS: dados.numero,
+                HP: dados.hp,
+                Attack: dados.atk,
+                Defense: dados.def,
+                'Sp.Attack': dados.spatk,
+                'Sp.Defense': dados.spdef,
+                Speed: dados.speed,
+                'LOCALIZAÇÃO': dados.localizacao,
+                TM: dados.tms.split(' - ')[0] || todosPokemons[index].TM || '',
+                'Nome do TM': dados.tms.split(' - ')[1] || todosPokemons[index]['Nome do TM'] || ''
+            };
             
             // Salvar no localStorage
             localStorage.setItem('pokemons_editados', JSON.stringify(todosPokemons));
@@ -1345,7 +1328,7 @@
             if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== '') {
                 try {
                     const payload = {
-                        acao: ehNovo ? 'adicionar' : 'atualizar',
+                        acao: 'atualizar',  // SEMPRE atualizar, nunca adicionar
                         nomeOriginal: nomeOriginal,
                         pokemon: dados
                     };
@@ -1359,24 +1342,22 @@
                     
                     const resposta = await fetch(APPS_SCRIPT_URL, {
                         method: 'POST',
-                        mode: 'no-cors', // Necessário para Apps Script
+                        mode: 'no-cors',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(payload)
                     });
                     
-                    // Como usamos no-cors, não podemos ler a resposta
-                    // Mas se chegou aqui, a requisição foi enviada
                     console.log('✅ Requisição enviada ao Google Sheets');
-                    alert(`✅ ${ehNovo ? 'Novo Pokémon adicionado' : 'Pokémon atualizado'} com sucesso!\n\n📡 Dados enviados ao Google Sheets!\n\n⏳ A planilha será atualizada em alguns segundos.\n\n💾 Dados também salvos localmente.`);
+                    alert('✅ Pokémon atualizado com sucesso!\n\n📡 Dados enviados ao Google Sheets!\n\n⏳ A planilha será atualizada em alguns segundos.\n\n💾 Dados também salvos localmente.');
                     
                 } catch (erro) {
                     console.error('Erro ao salvar no Google Sheets:', erro);
-                    alert(`✅ ${ehNovo ? 'Pokémon adicionado' : 'Pokémon atualizado'} localmente!\n\n⚠️ Não foi possível conectar ao Google Sheets.\n\n💾 Dados salvos no navegador.\n\n🔄 Tente novamente ou verifique a conexão.`);
+                    alert('✅ Pokémon atualizado localmente!\n\n⚠️ Não foi possível conectar ao Google Sheets.\n\n💾 Dados salvos no navegador.\n\n🔄 Tente novamente ou verifique a conexão.');
                 }
             } else {
-                alert(`✅ ${ehNovo ? 'Novo Pokémon adicionado' : 'Pokémon atualizado'}!\n\n⚠️ Google Apps Script não configurado.\n\nPara salvar no Google Sheets:\n1. Siga as instruções no arquivo google-apps-script.gs\n2. Cole a URL no script.js\n\nDados salvos localmente no navegador.`);
+                alert('✅ Pokémon atualizado!\n\n⚠️ Google Apps Script não configurado.\n\n💾 Dados salvos localmente no navegador.');
             }
             
             document.querySelector('[style*=fixed]').remove();
