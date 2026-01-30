@@ -32,11 +32,16 @@ function doPost(e) {
       const todosOsDados = aba.getDataRange().getValues();
       
       // Procurar o Pokémon na planilha
+      // LÓGICA: Busca primeiro na coluna D (EV), se não achar, busca na coluna C (POKEMON)
       let linhaEncontrada = -1;
       for (let i = 1; i < todosOsDados.length; i++) {
-        const nomePlanilha = (todosOsDados[i][2] || '').toString().toLowerCase().trim(); // Coluna C (POKEMON)
+        const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim(); // Coluna D (EV)
+        const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim(); // Coluna C (POKEMON)
         
-        if (nomePlanilha === nomeOriginal) {
+        // Se tem EV, compara com EV. Senão, compara com POKEMON
+        const nomeParaComparar = nomeEV || nomePokemon;
+        
+        if (nomeParaComparar === nomeOriginal) {
           linhaEncontrada = i + 1; // +1 porque o índice do array começa em 0, mas as linhas da planilha começam em 1
           break;
         }

@@ -176,13 +176,15 @@
                 const tmCategoria = pokemon['Categoria'] || '';
                 const tmsTexto = tmNumero ? `${tmNumero} - ${tmNome}` : 'Sem TMs registradas';
                 
+                // LÓGICA: Se tem EV, usa EV. Senão, usa POKEMON
                 const nomePrincipal = evolucao || nomePokemon;
                 const nomeBase = evolucao ? nomePokemon : '';
+                const nomeParaBusca = evolucao || nomePokemon;  // Nome usado para buscar/atualizar
                 const imagemUrl = obterImagemPokemon(nomePrincipal, nomeBase);
                 
                 const card = document.createElement('div');
                 card.className = 'pokemon-card';
-                card.setAttribute('data-pokemon-nome', nomePokemon);  // Guardar nome real
+                card.setAttribute('data-pokemon-nome', nomeParaBusca);  // Nome para buscar (EV se tiver, senão POKEMON)
                 card.innerHTML = `
                     <div class="img-container">
                         <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
