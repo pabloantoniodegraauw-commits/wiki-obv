@@ -3,8 +3,10 @@
         // 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4z893TKrAFnj2LAypQj-ajnounRGkFRFg8B6UaFdoAWJcHtWHD0C9HaLINCZLXBlaXA/exec';
         
-        // 🚀 Usar Apps Script para leitura também (mais rápido que OpenSheet)
-        const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
+        // 🚀 Tentar Apps Script primeiro, fallback para OpenSheet
+        const URL_DADOS_APPS_SCRIPT = APPS_SCRIPT_URL + '?acao=obter_todos';
+        const URL_DADOS_OPENSHEET = `https://opensheet.elk.sh/${PLANILHA_ID}/1`;
+        let URL_DADOS = URL_DADOS_APPS_SCRIPT; // Tenta Apps Script primeiro
         
         let todosPokemons = [];
         let todosTMs = [];
@@ -138,9 +140,30 @@
                 console.log('⏳ Iniciando carregamento...');
                 const inicio = Date.now();
                 
-                // ⚠️ SEMPRE carregar da planilha primeiro para ter estrutura atualizada
-                const resposta = await fetch(URL_DADOS);
-                const dados = await resposta.json();
+                let dados;
+                try {
+                    // Tentar Apps Script primeiro
+                    console.log('🚀 Tentando Apps Script...');
+                    const respostaApps = await fetch(URL_DADOS_APPS_SCRIPT);
+                    const textoResposta = await respostaApps.text();
+                    
+                    // Verificar se é JSON válido
+                    try {
+                        dados = JSON.parse(textoResposta);
+                        console.log('✅ Apps Script funcionando!');
+                        URL_DADOS = URL_DADOS_APPS_SCRIPT; // Usar Apps Script daqui pra frente
+                    } catch {
+                        throw new Error('Apps Script retornou HTML ao invés de JSON');
+                    }
+                } catch (erroApps) {
+                    // Fallback para OpenSheet
+                    console.warn('⚠️ Apps Script falhou, usando OpenSheet:', erroApps.message);
+                    const respostaOpen = await fetch(URL_DADOS_OPENSHEET);
+                    dados = await respostaOpen.json();
+                    URL_DADOS = URL_DADOS_OPENSHEET;
+                    console.log('📦 Usando OpenSheet (mais lento)');
+                }
+                
                 todosPokemons = dados;
                 
                 const tempoDecorrido = Date.now() - inicio;
