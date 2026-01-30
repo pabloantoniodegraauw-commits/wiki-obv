@@ -134,8 +134,10 @@ function doGet(e) {
     
     // Pegar parâmetros da URL
     const acao = e.parameter.acao;
+    const page = parseInt(e.parameter.page || '1');
+    const limit = parseInt(e.parameter.limit || '100');
     
-    // Se pedir todos os dados
+    // Se pedir todos os dados (com paginação)
     if (acao === 'obter_todos') {
       const dados = aba.getDataRange().getValues();
       const cabecalho = dados[0];
@@ -150,8 +152,22 @@ function doGet(e) {
         return obj;
       });
       
+      // Calcular paginação
+      const total = pokemons.length;
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginados = pokemons.slice(startIndex, endIndex);
+      const hasMore = endIndex < total;
+      
+      // Retornar com metadados
       return ContentService
-        .createTextOutput(JSON.stringify(pokemons))
+        .createTextOutput(JSON.stringify({
+          data: paginados,
+          page: page,
+          limit: limit,
+          total: total,
+          hasMore: hasMore
+        }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     

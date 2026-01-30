@@ -8,6 +8,9 @@
         let todosTMs = [];
         let todasTasks = [];
         let usuarioLogado = null;
+        let paginaAtual = 1;
+        let carregandoMais = false;
+        let temMaisPaginas = true;
         let usarStickers = false; // false = database, true = stickers
         
         // 🔧 Função para normalizar nomes (remover acentos, espaços extras, etc)
@@ -133,33 +136,29 @@
                 const container = document.getElementById('pokemonContainer');
                 container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando Pokémons...</p></div>';
                 
-                console.log('⏳ Iniciando carregamento...');
+                console.log('⏳ Iniciando carregamento (paginado)...');
                 const inicio = Date.now();
                 
-                // Carregar dados do Apps Script
-                console.log('🚀 Carregando via Apps Script...');
-                const resposta = await fetch(URL_DADOS);
+                // Carregar primeira página
+                paginaAtual = 1;
+                console.log('🚀 Carregando página 1...');
+                const resposta = await fetch(`${URL_DADOS}&page=1&limit=100`);
                 const textoResposta = await resposta.text();
                 
                 // Verificar se é JSON válido
-                let dados;
+                let resultado;
                 try {
-                    dados = JSON.parse(textoResposta);
+                    resultado = JSON.parse(textoResposta);
                     console.log('✅ Apps Script OK!');
                 } catch {
                     throw new Error('Erro ao processar resposta do servidor');
                 }
                 
-                todosPokemons = dados;
+                todosPokemons = resultado.data;
+                temMaisPaginas = resultado.hasMore;
                 
                 const tempoDecorrido = Date.now() - inicio;
-                console.log(`📥 Pokémons carregados em ${tempoDecorrido}ms:`, dados.length);
-                console.log('📝 Primeiros 5 Pokémons:', dados.slice(0, 5).map(p => ({
-                    POKEMON: p.POKEMON,
-                    EV: p.EV,
-                    PS: p.PS,
-                    normalizado: normalizarNome(p.EV || p.POKEMON)
-                })));
+                console.log(`📥 Primeira página carregada em ${tempoDecorrido}ms:`, todosPokemons.length, 'de', resultado.total);
                 
                 // Se tem dados locais editados, aplicar as edições sobre os dados da planilha
                 const dadosLocais = localStorage.getItem('pokemons_editados');
@@ -188,9 +187,14 @@
                     console.log('✓ Dados mesclados com edições locais');
                 }
                 
-                document.getElementById('pokemonCount').textContent = todosPokemons.length;
+                document.getElementById('pokemonCount').textContent = resultado.total;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
                 renderizarPokemons(todosPokemons);
+                
+                // Configurar infinite scroll após primeiro carregamento
+                if (temMaisPaginas) {
+                    configurarInfiniteScroll();
+                }
             } catch (erro) {
                 document.getElementById('pokemonContainer').innerHTML = `
                     <div class="error">
@@ -300,6 +304,149 @@
             if (usuarioLogado) {
                 mostrarOpcoesAdmin();
             }
+        }
+        
+        // Nova função: Infinite Scroll
+        async function carregarMaisPokemos() {
+            if (carregandoMais || !temMaisPaginas) return;
+            
+            carregandoMais = true;
+            paginaAtual++;
+            
+            // Mostrar loading no final da página
+            const container = document.getElementById('pokemonContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingMore';
+            loadingDiv.style.cssText = 'text-align:center;padding:30px;color:#ffd700;grid-column:1/-1;';
+            loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:36px;"></i><p style="margin-top:15px;">Carregando mais...</p>';
+            container.appendChild(loadingDiv);
+            
+            try {
+                console.log(`🔄 Carregando página ${paginaAtual}...`);
+                const inicio = Date.now();
+                
+                const resposta = await fetch(`${URL_DADOS}&page=${paginaAtual}&limit=100`);
+                const resultado = await resposta.json();
+                
+                const tempoDecorrido = Date.now() - inicio;
+                console.log(`📥 Página ${paginaAtual} carregada em ${tempoDecorrido}ms:`, resultado.data.length);
+                
+                // Adicionar novos pokémons ao array existente
+                todosPokemons = todosPokemons.concat(resultado.data);
+                temMaisPaginas = resultado.hasMore;
+                
+                // Remover loading
+                loadingDiv.remove();
+                
+                // Renderizar apenas os novos pokémons
+                resultado.data.forEach((pokemon) => {
+                    const numero = pokemon['PS'] || '';
+                    const nomePokemon = pokemon['POKEMON'] || 'Desconhecido';
+                    const tipo1 = pokemon['Type 1'] || 'Normal';
+                    const tipo2 = pokemon['Type 2'] || '';
+                    const evolucao = pokemon['EV'] || '';
+                    const localizacao = pokemon['LOCALIZAÇÃO'] || 'Não informado';
+                    const hp = pokemon['HP'] || '0';
+                    const ataque = pokemon['Attack'] || '0';
+                    const defesa = pokemon['Defense'] || '0';
+                    const ataqueEsp = pokemon['Sp.Attack'] || '0';
+                    const defesaEsp = pokemon['Sp.Defense'] || '0';
+                    const velocidade = pokemon['Speed'] || '0';
+                    const tmNumero = pokemon['TM'] || '';
+                    const tmNome = pokemon['Nome do TM'] || '';
+                    const tmCategoria = pokemon['Categoria'] || '';
+                    const tmsTexto = tmNumero ? `${tmNumero} - ${tmNome}` : 'Sem TMs registradas';
+                    
+                    const nomePrincipal = evolucao || nomePokemon;
+                    const nomeBase = evolucao ? nomePokemon : '';
+                    const nomeParaBusca = evolucao || nomePokemon;
+                    const imagemUrl = obterImagemPokemon(nomePrincipal, nomeBase);
+                    
+                    const card = document.createElement('div');
+                    card.className = 'pokemon-card';
+                    card.setAttribute('data-pokemon-nome', nomeParaBusca);
+                    card.innerHTML = `
+                        <div class="img-container">
+                            <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                        </div>
+                        ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
+                        <h3 class="pokemon-name">
+                            ${nomePrincipal}
+                            ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
+                        </h3>
+                        ${nomeBase ? `<div class="pokemon-base">Forma base: ${nomeBase}</div>` : ''}
+                        <div class="pokemon-stats">
+                            <div class="stat">
+                                <div class="stat-value">${hp}</div>
+                                <div class="stat-label">HP</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${ataque}</div>
+                                <div class="stat-label">Ataque</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${defesa}</div>
+                                <div class="stat-label">Defesa</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${ataqueEsp}</div>
+                                <div class="stat-label">Sp.Atk</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${defesaEsp}</div>
+                                <div class="stat-label">Sp.Def</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">${velocidade}</div>
+                                <div class="stat-label">Speed</div>
+                            </div>
+                        </div>
+                        <div class="pokemon-types">
+                            <span class="type ${tipo1.toLowerCase()}">${tipo1}</span>
+                            ${tipo2 ? `<span class="type ${tipo2.toLowerCase()}">${tipo2}</span>` : ''}
+                        </div>
+                        <div class="pokemon-location">
+                            <i class="fas fa-map-marker-alt"></i> ${localizacao}
+                        </div>
+                        <div class="pokemon-tms">
+                            <i class="fas fa-compact-disc"></i> ${tmsTexto}
+                        </div>
+                        ${usuarioLogado ? `
+                        <button class="btn-edit" onclick="abrirModalEdicao('${nomeParaBusca.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        ` : ''}
+                    `;
+                    container.appendChild(card);
+                });
+                
+                document.getElementById('pokemonCount').textContent = todosPokemons.length;
+                
+                console.log(`✅ Total de Pokémons: ${todosPokemons.length}`);
+                
+            } catch (erro) {
+                console.error('❌ Erro ao carregar mais:', erro);
+                if (loadingDiv.parentNode) {
+                    loadingDiv.innerHTML = '<p style="color:#ff4444;">Erro ao carregar mais. <button onclick="carregarMaisPokemos()" style="margin-left:10px;padding:5px 15px;background:#ffd700;color:#1a2980;border:none;border-radius:15px;cursor:pointer;">Tentar novamente</button></p>';
+                }
+            } finally {
+                carregandoMais = false;
+            }
+        }
+        
+        function configurarInfiniteScroll() {
+            window.addEventListener('scroll', () => {
+                if (carregandoMais || !temMaisPaginas) return;
+                
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.documentElement.scrollHeight;
+                const clientHeight = document.documentElement.clientHeight;
+                
+                // Carregar mais quando chegar a 500px do final
+                if (scrollTop + clientHeight >= scrollHeight - 500) {
+                    carregarMaisPokemos();
+                }
+            });
         }
         
         function obterImagemPokemon(nomePrincipal, nomeBase, forceStickers = false) {
