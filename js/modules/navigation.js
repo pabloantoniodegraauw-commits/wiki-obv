@@ -19,11 +19,19 @@ async function loadPage(pageName) {
             </div>
         `;
         
-        // Fetch da página
+        // Fetch da página - caminho relativo para GitHub Pages
         const response = await fetch(`pages/${pageName}.html`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        console.log(`📡 Resposta HTTP: ${response.status} ${response.statusText}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+        }
         
         const html = await response.text();
+        
+        console.log(`📦 HTML recebido: ${html.length} caracteres`);
+        
         container.innerHTML = html;
         
         currentPage = pageName;
@@ -32,16 +40,21 @@ async function loadPage(pageName) {
         if (pageInitializers[pageName]) {
             console.log(`⚙️ Inicializando ${pageName}...`);
             pageInitializers[pageName]();
+        } else {
+            console.warn(`⚠️ Nenhum inicializador encontrado para ${pageName}`);
         }
         
-        console.log(`✅ Página ${pageName} carregada`);
+        console.log(`✅ Página ${pageName} carregada com sucesso`);
         
     } catch (erro) {
         console.error(`❌ Erro ao carregar ${pageName}:`, erro);
+        console.error('Stack:', erro.stack);
+        
         container.innerHTML = `
             <div class="error">
-                <h3><i class="fas fa-exclamation-triangle"></i> Erro</h3>
-                <p>Não foi possível carregar a página ${pageName}</p>
+                <h3><i class="fas fa-exclamation-triangle"></i> Erro ao carregar ${pageName}</h3>
+                <p style="color:#ff6464;margin:15px 0;">${erro.message}</p>
+                <p style="color:#a0e7ff;font-size:0.9em;">Verifique o console (F12) para mais detalhes</p>
                 <button onclick="loadPage('${pageName}')" style="margin-top:20px;padding:10px 25px;background:#ffd700;color:#1a2980;border:none;border-radius:25px;font-weight:bold;cursor:pointer">
                     <i class="fas fa-redo"></i> Tentar novamente
                 </button>
