@@ -1126,7 +1126,10 @@
                             e.stopPropagation();
                             const nomeReal = card.getAttribute('data-pokemon-nome');
                             const pokemonData = todosPokemons.find(p => {
-                                return (p.POKEMON || '').toLowerCase().trim() === nomeReal.toLowerCase().trim();
+                                const nomeEV = (p.EV || '').toLowerCase().trim();
+                                const nomePokemon = (p.POKEMON || '').toLowerCase().trim();
+                                const nomeParaComparar = nomeEV || nomePokemon;
+                                return nomeParaComparar === nomeReal.toLowerCase().trim();
                             });
                             editarPokemon(card, pokemonData, nomeReal);
                         });
@@ -1291,10 +1294,12 @@
                 tms: document.getElementById('edit-tms').value
             };
             
-            // Buscar Pokémon no array local pela coluna POKEMON
+            // Buscar Pokémon no array local pela coluna EV ou POKEMON
             const index = todosPokemons.findIndex(p => {
-                const nomePok = (p.POKEMON || '').toLowerCase().trim();
-                return nomePok === nomeOriginal.toLowerCase().trim();
+                const nomeEV = (p.EV || '').toLowerCase().trim();
+                const nomePokemon = (p.POKEMON || '').toLowerCase().trim();
+                const nomeParaComparar = nomeEV || nomePokemon;
+                return nomeParaComparar === nomeOriginal.toLowerCase().trim();
             });
             
             if (index === -1) {
@@ -1303,10 +1308,12 @@
             }
             
             // Atualizar Pokémon existente (NUNCA adicionar novo)
+            const temEV = todosPokemons[index].EV && todosPokemons[index].EV.trim() !== '';
+            
             todosPokemons[index] = {
                 ...todosPokemons[index],
-                POKEMON: dados.nome,  // Atualiza coluna C
-                // EV não mexemos (coluna D)
+                // Se tem EV, atualiza coluna D. Senão, atualiza coluna C
+                ...(temEV ? { EV: dados.nome } : { POKEMON: dados.nome }),
                 PS: dados.numero,
                 HP: dados.hp,
                 Attack: dados.atk,
