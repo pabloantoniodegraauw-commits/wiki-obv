@@ -10,6 +10,17 @@
         let usuarioLogado = null;
         let usarStickers = false; // false = database, true = stickers
         
+        // 🔧 Função para normalizar nomes (remover acentos, espaços extras, etc)
+        function normalizarNome(nome) {
+            if (!nome) return '';
+            return nome.toString()
+                .toLowerCase()
+                .trim()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+                .replace(/\s+/g, ' '); // Remove espaços extras
+        }
+        
         const mapeamentoImagens = {
             // ESPECIAIS
             'Phione/Manaphy': 'manaphy',
@@ -137,6 +148,14 @@
                 const resposta = await fetch(URL_DADOS);
                 const dados = await resposta.json();
                 todosPokemons = dados;
+                
+                console.log('📥 Pokémons carregados da planilha:', dados.length);
+                console.log('📝 Primeiros 3 Pokémons:', dados.slice(0, 3).map(p => ({
+                    POKEMON: p.POKEMON,
+                    EV: p.EV,
+                    PS: p.PS
+                })));
+                
                 document.getElementById('pokemonCount').textContent = dados.length;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
                 renderizarPokemons(dados);
@@ -1125,12 +1144,22 @@
                         btnEdit.addEventListener('click', (e) => {
                             e.stopPropagation();
                             const nomeReal = card.getAttribute('data-pokemon-nome');
+                            console.log('🎯 Clicou para editar:', nomeReal);
+                            
+                            const nomeNormalizado = normalizarNome(nomeReal);
                             const pokemonData = todosPokemons.find(p => {
-                                const nomeEV = (p.EV || '').toLowerCase().trim();
-                                const nomePokemon = (p.POKEMON || '').toLowerCase().trim();
+                                const nomeEV = normalizarNome(p.EV || '');
+                                const nomePokemon = normalizarNome(p.POKEMON || '');
                                 const nomeParaComparar = nomeEV || nomePokemon;
-                                return nomeParaComparar === nomeReal.toLowerCase().trim();
+                                return nomeParaComparar === nomeNormalizado;
                             });
+                            
+                            if (pokemonData) {
+                                console.log('✅ Dados do Pokémon encontrados:', pokemonData);
+                            } else {
+                                console.error('❌ Pokémon não encontrado no array!');
+                            }
+                            
                             editarPokemon(card, pokemonData, nomeReal);
                         });
                         card.style.position = 'relative';
@@ -1298,18 +1327,21 @@
             console.log('🔍 Buscando Pokémon:', nomeOriginal);
             console.log('📊 Total de Pokémons no array:', todosPokemons.length);
             
+            const nomeNormalizado = normalizarNome(nomeOriginal);
+            console.log('🔤 Nome normalizado:', nomeNormalizado);
+            
             const index = todosPokemons.findIndex(p => {
-                const nomeEV = (p.EV || '').toLowerCase().trim();
-                const nomePokemon = (p.POKEMON || '').toLowerCase().trim();
+                const nomeEV = normalizarNome(p.EV || '');
+                const nomePokemon = normalizarNome(p.POKEMON || '');
                 const nomeParaComparar = nomeEV || nomePokemon;
-                const match = nomeParaComparar === nomeOriginal.toLowerCase().trim();
+                const match = nomeParaComparar === nomeNormalizado;
                 
                 if (match) {
                     console.log('✅ ENCONTRADO!', {
                         nomeEV: p.EV,
                         nomePokemon: p.POKEMON,
                         nomeParaComparar,
-                        nomeOriginal
+                        nomeNormalizado
                     });
                 }
                 
@@ -1318,11 +1350,12 @@
             
             if (index === -1) {
                 console.error('❌ Pokémon NÃO encontrado no array!');
-                console.log('Primeiros 5 Pokémons do array:', todosPokemons.slice(0, 5).map(p => ({
+                console.log('Primeiros 10 Pokémons do array:', todosPokemons.slice(0, 10).map(p => ({
                     POKEMON: p.POKEMON,
-                    EV: p.EV
+                    EV: p.EV,
+                    normalizado: normalizarNome(p.EV || p.POKEMON)
                 })));
-                alert('❌ Erro: Pokémon não encontrado!\n\nNome buscado: ' + nomeOriginal);
+                alert('❌ Erro: Pokémon não encontrado!\n\nNome buscado: ' + nomeOriginal + '\nNome normalizado: ' + nomeNormalizado);
                 return;
             }
             
