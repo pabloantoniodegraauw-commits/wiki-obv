@@ -45,31 +45,32 @@ function doPost(e) {
       if (linhaEncontrada > 0) {
         // Atualizar a linha encontrada
         // Estrutura REAL da planilha:
-        // A: PS | B: GEN | C: POKEMON | D: LOCALIZAÇÃO | E: TM | F: Nome do TM | G: Categoria
-        // H: Type 1 | I: Type 2 | J: HP | K: Attack | L: Defense | M: Sp.Attack | N: Sp.Defense | O: Speed
+        // A: PS | B: GEN | C: POKEMON | D: EV | E: LOCALIZAÇÃO | F: TM | G: Nome do TM | H: Categoria
+        // I: Type 1 | J: Type 2 | K: HP | L: Attack | M: Defense | N: Sp.Attack | O: Sp.Defense | P: Speed
         
         aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);     // A: PS
         // Coluna B (GEN) não mexemos
         aba.getRange(linhaEncontrada, 3).setValue(dados.pokemon.nome);       // C: POKEMON
-        aba.getRange(linhaEncontrada, 4).setValue(dados.pokemon.localizacao); // D: LOCALIZAÇÃO
+        // Coluna D (EV) não mexemos
+        aba.getRange(linhaEncontrada, 5).setValue(dados.pokemon.localizacao); // E: LOCALIZAÇÃO
         
         // TMs (dividir "TM02 - Dragon Claw" em duas colunas)
         const tmPartes = dados.pokemon.tms.split(' - ');
         if (tmPartes.length > 0) {
-          aba.getRange(linhaEncontrada, 5).setValue(tmPartes[0].trim()); // E: TM
+          aba.getRange(linhaEncontrada, 6).setValue(tmPartes[0].trim()); // F: TM
           if (tmPartes.length > 1) {
-            aba.getRange(linhaEncontrada, 6).setValue(tmPartes[1].trim()); // F: Nome do TM
+            aba.getRange(linhaEncontrada, 7).setValue(tmPartes[1].trim()); // G: Nome do TM
           }
         }
-        // Coluna G (Categoria) não mexemos
+        // Coluna H (Categoria) não mexemos
         
         // Stats
-        aba.getRange(linhaEncontrada, 10).setValue(dados.pokemon.hp);        // J: HP
-        aba.getRange(linhaEncontrada, 11).setValue(dados.pokemon.atk);       // K: Attack
-        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.def);       // L: Defense
-        aba.getRange(linhaEncontrada, 13).setValue(dados.pokemon.spatk);     // M: Sp.Attack
-        aba.getRange(linhaEncontrada, 14).setValue(dados.pokemon.spdef);     // N: Sp.Defense
-        aba.getRange(linhaEncontrada, 15).setValue(dados.pokemon.speed);     // O: Speed
+        aba.getRange(linhaEncontrada, 11).setValue(dados.pokemon.hp);        // K: HP
+        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.atk);       // L: Attack
+        aba.getRange(linhaEncontrada, 13).setValue(dados.pokemon.def);       // M: Defense
+        aba.getRange(linhaEncontrada, 14).setValue(dados.pokemon.spatk);     // N: Sp.Attack
+        aba.getRange(linhaEncontrada, 15).setValue(dados.pokemon.spdef);     // O: Sp.Defense
+        aba.getRange(linhaEncontrada, 16).setValue(dados.pokemon.speed);     // P: Speed
         
         return ContentService.createTextOutput(JSON.stringify({
           sucesso: true,
@@ -89,31 +90,32 @@ function doPost(e) {
       const ultimaLinha = aba.getLastRow();
       const novaLinha = ultimaLinha + 1;
       
-      // Estrutura REAL: A: PS | B: GEN | C: POKEMON | D: LOCALIZAÇÃO | E: TM | F: Nome do TM | G: Categoria
-      // H: Type 1 | I: Type 2 | J: HP | K: Attack | L: Defense | M: Sp.Attack | N: Sp.Defense | O: Speed
+      // Estrutura REAL: A: PS | B: GEN | C: POKEMON | D: EV | E: LOCALIZAÇÃO | F: TM | G: Nome do TM | H: Categoria
+      // I: Type 1 | J: Type 2 | K: HP | L: Attack | M: Defense | N: Sp.Attack | O: Sp.Defense | P: Speed
       const tmPartes = dados.pokemon.tms.split(' - ');
       
       aba.getRange(novaLinha, 1).setValue(dados.pokemon.numero);      // A: PS
       aba.getRange(novaLinha, 2).setValue(1);                         // B: GEN (padrão 1)
       aba.getRange(novaLinha, 3).setValue(dados.pokemon.nome);        // C: POKEMON
-      aba.getRange(novaLinha, 4).setValue(dados.pokemon.localizacao); // D: LOCALIZAÇÃO
+      aba.getRange(novaLinha, 4).setValue('');                        // D: EV (vazio)
+      aba.getRange(novaLinha, 5).setValue(dados.pokemon.localizacao); // E: LOCALIZAÇÃO
       
       if (tmPartes.length > 0) {
-        aba.getRange(novaLinha, 5).setValue(tmPartes[0].trim());      // E: TM
+        aba.getRange(novaLinha, 6).setValue(tmPartes[0].trim());      // F: TM
         if (tmPartes.length > 1) {
-          aba.getRange(novaLinha, 6).setValue(tmPartes[1].trim());    // F: Nome do TM
+          aba.getRange(novaLinha, 7).setValue(tmPartes[1].trim());    // G: Nome do TM
         }
       }
       
-      aba.getRange(novaLinha, 7).setValue('');                        // G: Categoria (vazio)
-      aba.getRange(novaLinha, 8).setValue('Normal');                  // H: Type 1 padrão
-      aba.getRange(novaLinha, 9).setValue('');                        // I: Type 2 vazio
-      aba.getRange(novaLinha, 10).setValue(dados.pokemon.hp);         // J: HP
-      aba.getRange(novaLinha, 11).setValue(dados.pokemon.atk);        // K: Attack
-      aba.getRange(novaLinha, 12).setValue(dados.pokemon.def);        // L: Defense
-      aba.getRange(novaLinha, 13).setValue(dados.pokemon.spatk);      // M: Sp.Attack
-      aba.getRange(novaLinha, 14).setValue(dados.pokemon.spdef);      // N: Sp.Defense
-      aba.getRange(novaLinha, 15).setValue(dados.pokemon.speed);      // O: Speed
+      aba.getRange(novaLinha, 8).setValue('');                        // H: Categoria (vazio)
+      aba.getRange(novaLinha, 9).setValue('Normal');                  // I: Type 1 padrão
+      aba.getRange(novaLinha, 10).setValue('');                       // J: Type 2 vazio
+      aba.getRange(novaLinha, 11).setValue(dados.pokemon.hp);         // K: HP
+      aba.getRange(novaLinha, 12).setValue(dados.pokemon.atk);        // L: Attack
+      aba.getRange(novaLinha, 13).setValue(dados.pokemon.def);        // M: Defense
+      aba.getRange(novaLinha, 14).setValue(dados.pokemon.spatk);      // N: Sp.Attack
+      aba.getRange(novaLinha, 15).setValue(dados.pokemon.spdef);      // O: Sp.Defense
+      aba.getRange(novaLinha, 16).setValue(dados.pokemon.speed);      // P: Speed
       
       return ContentService.createTextOutput(JSON.stringify({
         sucesso: true,
