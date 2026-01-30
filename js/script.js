@@ -991,12 +991,6 @@
                         <h3 style="color:#ffd700;margin-bottom:10px">Nenhum Pokémon</h3>
                         <p style="color:#a0e7ff">Nenhum resultado: "${termo}"</p>`;
                     container.appendChild(mensagem);
-                } else if (termos.length > 1) {
-                    // Mostrar quantos termos foram pesquisados
-                    const hint = document.createElement('div');
-                    hint.style.cssText = 'text-align:center;padding:15px;background:rgba(255,215,0,0.1);border-radius:10px;margin-bottom:20px;color:#ffd700;font-weight:bold;';
-                    hint.innerHTML = `<i class="fas fa-search-plus"></i> Buscando ${termos.length} Pokémons: ${termos.join(', ')} • ${encontrados} encontrado(s)`;
-                    container.insertBefore(hint, container.firstChild);
                 }
             });
         }
