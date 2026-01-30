@@ -34,6 +34,8 @@ function doPost(e) {
       // Procurar o Pokémon na planilha
       // LÓGICA: Busca primeiro na coluna D (EV), se não achar, busca na coluna C (POKEMON)
       let linhaEncontrada = -1;
+      let logBusca = 'Buscando: "' + nomeOriginal + '"\n';
+      
       for (let i = 1; i < todosOsDados.length; i++) {
         const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim(); // Coluna D (EV)
         const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim(); // Coluna C (POKEMON)
@@ -41,13 +43,24 @@ function doPost(e) {
         // Se tem EV, compara com EV. Senão, compara com POKEMON
         const nomeParaComparar = nomeEV || nomePokemon;
         
+        logBusca += 'Linha ' + (i+1) + ': Pokemon="' + nomePokemon + '", EV="' + nomeEV + '", Comparando="' + nomeParaComparar + '"\n';
+        
         if (nomeParaComparar === nomeOriginal) {
-          linhaEncontrada = i + 1; // +1 porque o índice do array começa em 0, mas as linhas da planilha começam em 1
+          linhaEncontrada = i + 1;
+          logBusca += '✅ ENCONTRADO na linha ' + linhaEncontrada + '\n';
           break;
         }
       }
       
+      if (linhaEncontrada === -1) {
+        logBusca += '❌ NÃO ENCONTRADO\n';
+      }
+      
       if (linhaEncontrada > 0) {
+        // Verificar se é EV ou POKEMON normal
+        const todosOsDadosLinha = aba.getRange(linhaEncontrada, 1, 1, 16).getValues()[0];
+        const temEV = todosOsDadosLinha[3] && todosOsDadosLinha[3].toString().trim() !== ''; // Coluna D (índice 3)
+        
         // Atualizar a linha encontrada
         // Estrutura REAL da planilha:
         // A: PS | B: GEN | C: POKEMON | D: EV | E: LOCALIZAÇÃO | F: TM | G: Nome do TM | H: Categoria
@@ -55,8 +68,16 @@ function doPost(e) {
         
         aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);     // A: PS
         // Coluna B (GEN) não mexemos
-        aba.getRange(linhaEncontrada, 3).setValue(dados.pokemon.nome);       // C: POKEMON
-        // Coluna D (EV) não mexemos
+        
+        // Se tem EV, atualiza coluna D. Senão, atualiza coluna C
+        if (temEV) {
+          aba.getRange(linhaEncontrada, 4).setValue(dados.pokemon.nome);     // D: EV (evolução)
+          // Coluna C (POKEMON base) não mexemos
+        } else {
+          aba.getRange(linhaEncontrada, 3).setValue(dados.pokemon.nome);     // C: POKEMON
+          // Coluna D (EV) não mexemos
+        }
+        
         aba.getRange(linhaEncontrada, 5).setValue(dados.pokemon.localizacao); // E: LOCALIZAÇÃO
         
         // TMs (dividir "TM02 - Dragon Claw" em duas colunas)
@@ -86,7 +107,7 @@ function doPost(e) {
       } else {
         return ContentService.createTextOutput(JSON.stringify({
           sucesso: false,
-          mensagem: 'Pokémon não encontrado na planilha: ' + dados.nomeOriginal
+          mensagem: 'Pokémon não encontrado na planilha: ' + dados.nomeOriginal + '\n\nLog:\n' + logBusca
         })).setMimeType(ContentService.MimeType.JSON);
       }
     }
