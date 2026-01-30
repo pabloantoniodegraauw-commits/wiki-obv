@@ -1,5 +1,5 @@
 ﻿// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwiy6x8JAl9DMXW-85fbyv7pZG8q3dNCDgmXK8U3eHr9oV7rnFz560ED6RvM-rlHW1Ihw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGXynMVvQqoK9madx3_jHilmwKhtZg7wB50-uoAsfufRnz8_9SY1BHFWUvgqUCO9ewcw/exec';
         
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
