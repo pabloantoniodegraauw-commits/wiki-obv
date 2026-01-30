@@ -1295,17 +1295,38 @@
             };
             
             // Buscar Pokémon no array local pela coluna EV ou POKEMON
+            console.log('🔍 Buscando Pokémon:', nomeOriginal);
+            console.log('📊 Total de Pokémons no array:', todosPokemons.length);
+            
             const index = todosPokemons.findIndex(p => {
                 const nomeEV = (p.EV || '').toLowerCase().trim();
                 const nomePokemon = (p.POKEMON || '').toLowerCase().trim();
                 const nomeParaComparar = nomeEV || nomePokemon;
-                return nomeParaComparar === nomeOriginal.toLowerCase().trim();
+                const match = nomeParaComparar === nomeOriginal.toLowerCase().trim();
+                
+                if (match) {
+                    console.log('✅ ENCONTRADO!', {
+                        nomeEV: p.EV,
+                        nomePokemon: p.POKEMON,
+                        nomeParaComparar,
+                        nomeOriginal
+                    });
+                }
+                
+                return match;
             });
             
             if (index === -1) {
+                console.error('❌ Pokémon NÃO encontrado no array!');
+                console.log('Primeiros 5 Pokémons do array:', todosPokemons.slice(0, 5).map(p => ({
+                    POKEMON: p.POKEMON,
+                    EV: p.EV
+                })));
                 alert('❌ Erro: Pokémon não encontrado!\n\nNome buscado: ' + nomeOriginal);
                 return;
             }
+            
+            console.log('✅ Pokémon encontrado no índice:', index);
             
             // Atualizar Pokémon existente (NUNCA adicionar novo)
             const temEV = todosPokemons[index].EV && todosPokemons[index].EV.trim() !== '';
@@ -1357,12 +1378,14 @@
                         body: JSON.stringify(payload)
                     });
                     
-                    console.log('✅ Requisição enviada ao Google Sheets');
+                    console.log('✅ Requisição enviada ao Google Sheets (no-cors, sem resposta legível)');
+                    console.log('ℹ️ Status da resposta:', resposta.type, resposta.status);
                     alert('✅ Pokémon atualizado com sucesso!\n\n📡 Dados enviados ao Google Sheets!\n\n⏳ A planilha será atualizada em alguns segundos.\n\n💾 Dados também salvos localmente.');
                     
                 } catch (erro) {
-                    console.error('Erro ao salvar no Google Sheets:', erro);
-                    alert('✅ Pokémon atualizado localmente!\n\n⚠️ Não foi possível conectar ao Google Sheets.\n\n💾 Dados salvos no navegador.\n\n🔄 Tente novamente ou verifique a conexão.');
+                    console.error('❌ Erro ao salvar no Google Sheets:', erro);
+                    console.error('Detalhes do erro:', erro.message, erro.stack);
+                    alert('✅ Pokémon atualizado localmente!\n\n⚠️ Não foi possível conectar ao Google Sheets.\n\nErro: ' + erro.message + '\n\n💾 Dados salvos no navegador.\n\n🔄 Tente novamente ou verifique a conexão.');
                 }
             } else {
                 alert('✅ Pokémon atualizado!\n\n⚠️ Google Apps Script não configurado.\n\n💾 Dados salvos localmente no navegador.');
