@@ -1121,7 +1121,12 @@
                         });
                         btnEdit.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            editarPokemon(card);
+                            const pokemonNome = card.querySelector('.pokemon-name').textContent.trim();
+                            const pokemonData = todosPokemons.find(p => {
+                                const nomeDisplay = (p.EV || p.POKEMON || '').trim();
+                                return nomeDisplay === pokemonNome;
+                            });
+                            editarPokemon(card, pokemonData);
                         });
                         card.style.position = 'relative';
                         card.appendChild(btnEdit);
@@ -1178,31 +1183,32 @@
             }, 500);
         }
         
-        function editarPokemon(card) {
-            const nome = card.querySelector('.pokemon-name').textContent.trim();
+        function editarPokemon(card, pokemonData) {
+            const nomeDisplay = card.querySelector('.pokemon-name').textContent.trim();
+            const nomeReal = pokemonData ? (pokemonData.POKEMON || nomeDisplay) : nomeDisplay;
             const numero = card.querySelector('.pokemon-number')?.textContent.replace('#', '').trim() || '';
             const stats = Array.from(card.querySelectorAll('.stat-value')).map(el => el.textContent);
             const localizacao = card.querySelector('.pokemon-location div:last-child')?.textContent.trim() || '';
             const tms = card.querySelector('.tms-content')?.textContent.trim() || '';
             
-            const modal = criarModalEdicao(nome, numero, stats, localizacao, tms);
+            const modal = criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms);
             document.body.appendChild(modal);
         }
         
-        function criarModalEdicao(nome, numero, stats, localizacao, tms) {
+        function criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms) {
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
             
             overlay.innerHTML = `
-                <div style="background: linear-gradient(145deg, #1a2980, #0f3460); border-radius: 20px; padding: 30px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid #ffd700;">
+                <div style="background: linear-gradient(145deg, #1a2980, #0f3460); border-radius: 20px; padding: 30px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid #ffd700;" data-nome-real="${nomeReal}">
                     <h2 style="color: #ffd700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-edit"></i> Editando: ${nome}
+                        <i class="fas fa-edit"></i> Editando: ${nomeDisplay}
                     </h2>
                     
                     <div style="display: grid; gap: 15px;">
                         <div>
                             <label style="color: #88d3ff; display: block; margin-bottom: 5px;">Nome do Pokémon:</label>
-                            <input type="text" id="edit-nome" value="${nome}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ffd700; background: rgba(0,0,0,0.3); color: #fff; font-size: 16px;">
+                            <input type="text" id="edit-nome" value="${nomeReal}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ffd700; background: rgba(0,0,0,0.3); color: #fff; font-size: 16px;">
                         </div>
                         
                         <div>
@@ -1267,7 +1273,7 @@
         }
         
         async function salvarEdicao() {
-            const nomeOriginal = document.querySelector('[style*=fixed] h2').textContent.replace('Editando: ', '').replace('🔧', '').trim();
+            const nomeOriginal = document.querySelector('[style*=fixed] div[data-nome-real]').getAttribute('data-nome-real');
             
             const dados = {
                 nome: document.getElementById('edit-nome').value,
@@ -1284,7 +1290,7 @@
             
             // Atualizar no array local
             const index = todosPokemons.findIndex(p => {
-                const nomePok = (p.EV || p.POKEMON || '').toLowerCase().trim();
+                const nomePok = (p.POKEMON || '').toLowerCase().trim();
                 return nomePok === nomeOriginal.toLowerCase().trim();
             });
             
