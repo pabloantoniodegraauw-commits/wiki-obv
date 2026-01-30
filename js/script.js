@@ -129,36 +129,49 @@
         
         async function carregarDados() {
             try {
-                // Verificar se existe dados editados no localStorage
-                const dadosLocais = localStorage.getItem('pokemons_editados');
-                
-                if (dadosLocais) {
-                    todosPokemons = JSON.parse(dadosLocais);
-                    document.getElementById('pokemonCount').textContent = todosPokemons.length;
-                    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
-                    renderizarPokemons(todosPokemons);
-                    
-                    // Mostrar aviso de que está usando dados locais
-                    if (usuarioLogado) {
-                        console.log('✓ Usando dados editados localmente');
-                    }
-                    return;
-                }
-                
+                // ⚠️ SEMPRE carregar da planilha primeiro para ter estrutura atualizada
                 const resposta = await fetch(URL_DADOS);
                 const dados = await resposta.json();
                 todosPokemons = dados;
                 
                 console.log('📥 Pokémons carregados da planilha:', dados.length);
-                console.log('📝 Primeiros 3 Pokémons:', dados.slice(0, 3).map(p => ({
+                console.log('📝 Primeiros 5 Pokémons:', dados.slice(0, 5).map(p => ({
                     POKEMON: p.POKEMON,
                     EV: p.EV,
-                    PS: p.PS
+                    PS: p.PS,
+                    normalizado: normalizarNome(p.EV || p.POKEMON)
                 })));
                 
-                document.getElementById('pokemonCount').textContent = dados.length;
+                // Se tem dados locais editados, aplicar as edições sobre os dados da planilha
+                const dadosLocais = localStorage.getItem('pokemons_editados');
+                if (dadosLocais && usuarioLogado) {
+                    const editados = JSON.parse(dadosLocais);
+                    console.log('💾 Mesclando', editados.length, 'edições locais');
+                    
+                    // Mesclar edições locais com dados atualizados da planilha
+                    editados.forEach(editado => {
+                        const nomeEV = normalizarNome(editado.EV || '');
+                        const nomePokemon = normalizarNome(editado.POKEMON || '');
+                        const nomeEditado = nomeEV || nomePokemon;
+                        
+                        const index = todosPokemons.findIndex(p => {
+                            const nomeEVOriginal = normalizarNome(p.EV || '');
+                            const nomePokemonOriginal = normalizarNome(p.POKEMON || '');
+                            const nomeOriginal = nomeEVOriginal || nomePokemonOriginal;
+                            return nomeOriginal === nomeEditado;
+                        });
+                        
+                        if (index !== -1) {
+                            todosPokemons[index] = { ...todosPokemons[index], ...editado };
+                        }
+                    });
+                    
+                    console.log('✓ Dados mesclados com edições locais');
+                }
+                
+                document.getElementById('pokemonCount').textContent = todosPokemons.length;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
-                renderizarPokemons(dados);
+                renderizarPokemons(todosPokemons);
             } catch (erro) {
                 document.getElementById('pokemonContainer').innerHTML = `
                     <div class="error">
