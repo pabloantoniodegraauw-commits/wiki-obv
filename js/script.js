@@ -182,6 +182,7 @@
                 
                 const card = document.createElement('div');
                 card.className = 'pokemon-card';
+                card.setAttribute('data-pokemon-nome', nomePokemon);  // Guardar nome real
                 card.innerHTML = `
                     <div class="img-container">
                         <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
@@ -1121,12 +1122,11 @@
                         });
                         btnEdit.addEventListener('click', (e) => {
                             e.stopPropagation();
-                            const pokemonNome = card.querySelector('.pokemon-name').textContent.trim();
+                            const nomeReal = card.getAttribute('data-pokemon-nome');
                             const pokemonData = todosPokemons.find(p => {
-                                const nomeDisplay = (p.EV || p.POKEMON || '').trim();
-                                return nomeDisplay === pokemonNome;
+                                return (p.POKEMON || '').toLowerCase().trim() === nomeReal.toLowerCase().trim();
                             });
-                            editarPokemon(card, pokemonData);
+                            editarPokemon(card, pokemonData, nomeReal);
                         });
                         card.style.position = 'relative';
                         card.appendChild(btnEdit);
@@ -1185,9 +1185,8 @@
             }, 500);
         }
         
-        function editarPokemon(card, pokemonData) {
+        function editarPokemon(card, pokemonData, nomeReal) {
             const nomeDisplay = card.querySelector('.pokemon-name').textContent.trim();
-            const nomeReal = pokemonData ? (pokemonData.POKEMON || nomeDisplay) : nomeDisplay;
             const numero = card.querySelector('.pokemon-number')?.textContent.replace('#', '').trim() || '';
             const stats = Array.from(card.querySelectorAll('.stat-value')).map(el => el.textContent);
             const localizacao = card.querySelector('.pokemon-location div:last-child')?.textContent.trim() || '';
