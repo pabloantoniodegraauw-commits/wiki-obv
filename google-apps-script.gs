@@ -126,7 +126,47 @@ function doPost(e) {
   }
 }
 
-// Recebe requisições GET (opcional, para testar)
+// Recebe requisições GET (ler dados da planilha)
 function doGet(e) {
-  return ContentService.createTextOutput('Google Apps Script funcionando! Use POST para enviar dados.');
+  try {
+    const planilha = SpreadsheetApp.openById('1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ');
+    const aba = planilha.getSheets()[0];
+    
+    // Pegar parâmetros da URL
+    const acao = e.parameter.acao;
+    
+    // Se pedir todos os dados
+    if (acao === 'obter_todos') {
+      const dados = aba.getDataRange().getValues();
+      const cabecalho = dados[0];
+      const linhas = dados.slice(1);
+      
+      // Converter para array de objetos
+      const pokemons = linhas.map(linha => {
+        const obj = {};
+        cabecalho.forEach((coluna, index) => {
+          obj[coluna] = linha[index];
+        });
+        return obj;
+      });
+      
+      return ContentService
+        .createTextOutput(JSON.stringify(pokemons))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Resposta padrão
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        mensagem: 'Google Apps Script funcionando! Use ?acao=obter_todos para obter dados.' 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (erro) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        erro: erro.toString() 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }

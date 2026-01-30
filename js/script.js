@@ -1,8 +1,10 @@
 ﻿const PLANILHA_ID = '1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ';
-        const URL_DADOS = `https://opensheet.elk.sh/${PLANILHA_ID}/1`;
         
         // 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby4z893TKrAFnj2LAypQj-ajnounRGkFRFg8B6UaFdoAWJcHtWHD0C9HaLINCZLXBlaXA/exec';
+        
+        // 🚀 Usar Apps Script para leitura também (mais rápido que OpenSheet)
+        const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
         
         let todosPokemons = [];
         let todosTMs = [];
@@ -129,12 +131,20 @@
         
         async function carregarDados() {
             try {
+                // Mostrar loading
+                const container = document.getElementById('pokemonContainer');
+                container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando Pokémons...</p></div>';
+                
+                console.log('⏳ Iniciando carregamento...');
+                const inicio = Date.now();
+                
                 // ⚠️ SEMPRE carregar da planilha primeiro para ter estrutura atualizada
                 const resposta = await fetch(URL_DADOS);
                 const dados = await resposta.json();
                 todosPokemons = dados;
                 
-                console.log('📥 Pokémons carregados da planilha:', dados.length);
+                const tempoDecorrido = Date.now() - inicio;
+                console.log(`📥 Pokémons carregados em ${tempoDecorrido}ms:`, dados.length);
                 console.log('📝 Primeiros 5 Pokémons:', dados.slice(0, 5).map(p => ({
                     POKEMON: p.POKEMON,
                     EV: p.EV,
@@ -1415,6 +1425,15 @@
                         pokemon: payload.pokemon
                     });
                     
+                    // Desabilitar botão e mostrar loading
+                    const btnSalvar = document.querySelector('[style*=fixed] button[style*="background:#ffd700"]');
+                    if (btnSalvar) {
+                        btnSalvar.disabled = true;
+                        btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                        btnSalvar.style.opacity = '0.7';
+                    }
+                    
+                    const inicio = Date.now();
                     const resposta = await fetch(APPS_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
@@ -1424,12 +1443,13 @@
                         body: JSON.stringify(payload)
                     });
                     
-                    console.log('✅ Requisição enviada ao Google Sheets (no-cors, sem resposta legível)');
+                    const tempoDecorrido = Date.now() - inicio;
+                    console.log(`✅ Requisição enviada em ${tempoDecorrido}ms (no-cors, sem resposta legível)`);
                     console.log('ℹ️ Status da resposta:', resposta.type, resposta.status);
                     
                     // Fechar modal e recarregar página
                     document.querySelector('[style*=fixed]').remove();
-                    setTimeout(() => location.reload(), 500);
+                    setTimeout(() => location.reload(), 300);
                     
                 } catch (erro) {
                     console.error('❌ Erro ao salvar no Google Sheets:', erro);
