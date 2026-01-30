@@ -991,6 +991,25 @@ footer {
     image-rendering: crisp-edges;
 }
 
+.member-avatar-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    object-fit: contain;
+    display: block;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+.member-card:hover .member-avatar-img {
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
+    transform: scale(1.05);
+}
+
 .member-avatar.text {
     display: flex;
     align-items: center;
