@@ -5,12 +5,14 @@
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
         
         let todosPokemons = [];
+        let todosPokemonsCompleto = []; // Array com TODOS os dados para busca
         let todosTMs = [];
         let todasTasks = [];
         let usuarioLogado = null;
         let paginaAtual = 1;
         let carregandoMais = false;
         let temMaisPaginas = true;
+        let dadosCompletosCarregados = false;
         let usarStickers = false; // false = database, true = stickers
         
         // 🔧 Função para normalizar nomes (remover acentos, espaços extras, etc)
@@ -1080,30 +1082,53 @@
             }
         }
         
-        function configurarBuscaInstantanea() {
+        async function configurarBuscaInstantanea() {
             const input = document.getElementById('searchInput');
             const container = document.getElementById('pokemonContainer');
             
-            input.addEventListener('input', function() {
+            input.addEventListener('input', async function() {
                 const termo = this.value.toLowerCase().trim();
-                const cards = container.querySelectorAll('.pokemon-card');
                 container.querySelectorAll('.no-results').forEach(m => m.remove());
-                let encontrados = 0;
                 
                 // 🔥 BUSCA MÚLTIPLA: Separar por vírgula
                 const termos = termo.split(',').map(t => t.trim()).filter(t => t !== '');
                 
-                cards.forEach(card => {
-                    const textoCard = card.textContent.toLowerCase();
+                // Se não tem busca, mostrar apenas os cards já carregados
+                if (termos.length === 0) {
+                    const cards = container.querySelectorAll('.pokemon-card');
+                    cards.forEach(card => card.style.display = 'block');
+                    return;
+                }
+                
+                // Se tem busca e ainda não carregou todos os dados, carregar agora
+                if (!dadosCompletosCarregados) {
+                    console.log('🔍 Carregando todos os dados para busca...');
+                    container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando todos os Pokémons para busca...</p></div>';
                     
-                    // Se não tem termo de busca, mostra tudo
-                    if (termos.length === 0) {
-                        card.style.display = 'block';
-                        encontrados++;
+                    try {
+                        // Carregar TODOS os dados sem paginação (limit alto)
+                        const resposta = await fetch(`${URL_DADOS}&page=1&limit=9999`);
+                        const resultado = await resposta.json();
+                        todosPokemonsCompleto = resultado.data;
+                        dadosCompletosCarregados = true;
+                        console.log('✅ Todos os dados carregados:', todosPokemonsCompleto.length);
+                        
+                        // Renderizar todos
+                        renderizarPokemons(todosPokemonsCompleto);
+                        todosPokemons = todosPokemonsCompleto;
+                        temMaisPaginas = false; // Desabilitar infinite scroll
+                    } catch (erro) {
+                        console.error('❌ Erro ao carregar dados completos:', erro);
                         return;
                     }
-                    
-                    // Verifica se o card corresponde a ALGUM dos termos
+                }
+                
+                // Agora buscar nos cards
+                const cards = container.querySelectorAll('.pokemon-card');
+                let encontrados = 0;
+                
+                cards.forEach(card => {
+                    const textoCard = card.textContent.toLowerCase();
                     const corresponde = termos.some(t => textoCard.includes(t));
                     
                     if (corresponde) {
@@ -1114,7 +1139,7 @@
                     }
                 });
                 
-                if (termo && encontrados === 0) {
+                if (encontrados === 0) {
                     const mensagem = document.createElement('div');
                     mensagem.className = 'no-results';
                     mensagem.innerHTML = `
