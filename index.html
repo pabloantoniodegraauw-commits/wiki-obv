@@ -12,10 +12,17 @@
     <script>
         // Verificar se está logado ANTES de carregar a página
         const SESSION_EXPIRATION = 8 * 60 * 60 * 1000; // 8 horas
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        let user = null;
+        try {
+            user = JSON.parse(localStorage.getItem('user') || '{}');
+        } catch (e) {
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
         
-        if (!user.email || !user.token) {
+        if (!user || !user.email || !user.authToken) {
             // Não está logado - redirecionar para login
+            localStorage.removeItem('user');
             window.location.href = 'login.html';
         } else {
             // Verificar se sessão expirou
@@ -66,6 +73,9 @@
             <button class="tab-btn" data-page="cla">
                 <i class="fas fa-users"></i> CLÃ
             </button>
+            <button class="tab-btn" id="adminBtn" data-page="admin" style="display:none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="fas fa-crown"></i> ADMIN
+            </button>
         </div>
 
         <!-- Container dinâmico -->
@@ -93,5 +103,31 @@
     <script src="js/modules/tms.js"></script>
     <script src="js/modules/tasks.js"></script>
     <script src="js/modules/cla.js"></script>
+    
+    <!-- Script para mostrar botão Admin -->
+    <script>
+        // Verificar se usuário é admin e mostrar botão
+        document.addEventListener('DOMContentLoaded', function() {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.role === 'admin') {
+                        const adminBtn = document.getElementById('adminBtn');
+                        if (adminBtn) {
+                            adminBtn.style.display = 'block';
+                            
+                            // Adicionar evento de clique para carregar página admin
+                            adminBtn.addEventListener('click', function() {
+                                window.location.href = './admin/admin.html';
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Erro ao verificar role:', e);
+                }
+            }
+        });
+    </script>
 </body>
 </html>

@@ -131,6 +131,7 @@
           nickname: data.nickname,
           role: data.role || 'membro',
           loginAt: Date.now(), // Timestamp para expiração de sessão
+          token: credential, // Para compatibilidade
           authToken: credential // Token para validação no backend
         };
 
