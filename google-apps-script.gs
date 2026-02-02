@@ -120,16 +120,29 @@ function doPost(e) {
         break;
     }
     
-    // Adicionar headers CORS
-    return addCorsHeaders(result);
+    // Converter resultado para ContentService com CORS
+    // Se result já é ContentService, retornar como está
+    if (result && typeof result.getContent === 'function') {
+      return result;
+    }
+    
+    // Se é objeto simples, converter para ContentService com CORS
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader('Access-Control-Allow-Origin', '*')
+      .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+      .setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
   } catch (error) {
-    const errorResponse = ContentService.createTextOutput(JSON.stringify({
+    return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: error.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
-    
-    return addCorsHeaders(errorResponse);
+    }))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
 }
 
@@ -253,10 +266,10 @@ function handleCadastro(planilha, dados) {
   const todosOsDados = abaUsuarios.getDataRange().getValues();
   for (let i = 1; i < todosOsDados.length; i++) {
     if (todosOsDados[i][0].toLowerCase() === dados.email.toLowerCase()) {
-      return ContentService.createTextOutput(JSON.stringify({
+      return {
         success: false,
         message: 'Usuário já cadastrado'
-      })).setMimeType(ContentService.MimeType.JSON);
+      };
     }
   }
   
@@ -274,10 +287,10 @@ function handleCadastro(planilha, dados) {
     new Date() // dataCadastro
   ]);
   
-  return ContentService.createTextOutput(JSON.stringify({
+  return {
     success: true,
     message: 'Cadastro enviado com sucesso'
-  })).setMimeType(ContentService.MimeType.JSON);
+  };
 }
 
 /* ============================================
@@ -297,9 +310,9 @@ function handleLog(planilha, dados) {
     new Date()
   ]);
   
-  return ContentService.createTextOutput(JSON.stringify({
+  return {
     success: true
-  })).setMimeType(ContentService.MimeType.JSON);
+  };
 }
 
 /**
@@ -698,30 +711,22 @@ function getOrCreateSheet(planilha, nome) {
  * Adicionar headers CORS a uma resposta
  */
 function addCorsHeaders(response) {
-  return response
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Se já é um ContentService, não pode adicionar headers depois
+  // Apenas retornar como está
+  return response;
 }
 
 /**
  * Criar resposta com CORS habilitado
  */
 function createCorsResponse(content) {
-  // Se já é um ContentService, adicionar headers
-  if (typeof content === 'object' && content.getContent) {
-    return addCorsHeaders(content);
-  }
-  
-  // Se é um objeto, converter para JSON
-  const response = ContentService
+  // Sempre criar nova resposta com headers CORS
+  return ContentService
     .createTextOutput(JSON.stringify(content))
     .setMimeType(ContentService.MimeType.JSON)
     .setHeader('Access-Control-Allow-Origin', '*')
     .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     .setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  return response;
 }
 
 /* ============================================
