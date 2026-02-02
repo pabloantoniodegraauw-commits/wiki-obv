@@ -46,7 +46,7 @@
 
   header.innerHTML = `
     <div class="left">
-      <img src="./assets/logo-obv.png" alt="OBV" onerror="this.style.display='none'" />
+      <img src="${isIndexPage ? './assets/logo-obv.png' : '../assets/logo-obv.png'}" alt="OBV" onerror="this.style.display='none'" />
       <span>Wiki-OBV</span>
     </div>
 

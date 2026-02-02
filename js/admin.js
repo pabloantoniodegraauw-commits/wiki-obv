@@ -267,30 +267,44 @@ async function removeAdmin(email) {
  * DELETAR MEMBRO (REMOVER DA PLANILHA)
  */
 async function deleteMember(email) {
-  if (!confirm('⚠️ ATENÇÃO: Deseja REMOVER PERMANENTEMENTE este membro?\n\nEsta ação não pode ser desfeita!')) return;
+  console.log('🗑️ deleteMember chamado para:', email);
+  console.log('Admin user:', adminUser);
+  
+  if (!confirm('⚠️ ATENÇÃO: Deseja REMOVER PERMANENTEMENTE este membro?\n\nEsta ação não pode ser desfeita!')) {
+    console.log('Usuário cancelou a remoção');
+    return;
+  }
 
   try {
+    const payload = {
+      action: 'deleteUser',
+      email: email,
+      authToken: adminUser.authToken,
+      adminEmail: adminUser.email
+    };
+    
+    console.log('📤 Enviando payload:', payload);
+    console.log('📍 URL:', APPS_SCRIPT_URL);
+    
     // Enviar requisição (modo no-cors porque Apps Script tem CORS limitado)
-    fetch(APPS_SCRIPT_URL, {
+    await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
-      body: JSON.stringify({
-        action: 'deleteUser',
-        email: email,
-        authToken: adminUser.authToken, // Token validado no backend
-        adminEmail: adminUser.email // Fallback
-      })
+      body: JSON.stringify(payload)
     }).catch(err => console.log('Fetch error (expected with no-cors):', err));
 
-    // Aguardar 1 segundo e recarregar
-    alert('Membro removido com sucesso!');
+    console.log('✅ Requisição enviada');
+    
+    // Aguardar 2 segundos e recarregar
+    alert('Membro removido com sucesso!\n\nAguarde enquanto a tabela é atualizada...');
     setTimeout(() => {
+      console.log('🔄 Recarregando membros...');
       loadMembers();
-    }, 1000);
+    }, 2000);
     
   } catch (error) {
-    console.error('Erro ao deletar membro:', error);
-    alert('Erro ao remover membro. Tente recarregar a página.');
+    console.error('❌ Erro ao deletar membro:', error);
+    alert('Erro ao remover membro. Verifique o console (F12) para mais detalhes.');
   }
 }
 
