@@ -107,9 +107,18 @@
         </footer>
     </div>
     
-    <!-- Função de logout para o novo sistema de autenticação -->
+    <!-- Core scripts -->
+    <script src="js/script.js"></script>
+    <script src="js/modules/navigation.js"></script>
+    <script src="js/modules/pokedex.js"></script>
+    <script src="js/modules/tms.js"></script>
+    <script src="js/modules/tasks.js"></script>
+    <script src="js/modules/cla.js"></script>
+    
+    <!-- Sobrescrever função de logout para o novo sistema de autenticação -->
     <script>
-        function fazerLogout() {
+        // Sobrescrever a função antiga do script.js
+        window.fazerLogout = function() {
             const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUakDr5kqR07LFGCzPjVkKGeBJl7pGmvEuY0UQpDHPtpcF7e4r5mFNWcdyksyjdgxifw/exec';
             
             const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -134,16 +143,8 @@
             
             // Redirecionar para login
             window.location.href = './login.html';
-        }
+        };
     </script>
-    
-    <!-- Core scripts -->
-    <script src="js/script.js"></script>
-    <script src="js/modules/navigation.js"></script>
-    <script src="js/modules/pokedex.js"></script>
-    <script src="js/modules/tms.js"></script>
-    <script src="js/modules/tasks.js"></script>
-    <script src="js/modules/cla.js"></script>
     
     <!-- Script para popular informações do usuário no header -->
     <script>
