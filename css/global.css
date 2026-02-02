@@ -1,0 +1,106 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
+
+* {
+  font-family: "Poppins", Arial, sans-serif;
+}
+
+/* HEADER GLOBAL */
+.obv-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(20, 25, 50, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 999;
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+}
+
+.obv-header .left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.obv-header .left img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.obv-header .left span {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.obv-header .right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.obv-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.obv-user img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.obv-user .info {
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.obv-user .info .nickname {
+  font-weight: 600;
+}
+
+.obv-user .info .role {
+  opacity: 0.7;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.obv-header a {
+  color: #9bbcff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.obv-header a:hover {
+  color: #c5d9ff;
+}
+
+.obv-header button {
+  background: none;
+  border: none;
+  color: #ff9b9b;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.obv-header button:hover {
+  color: #ffbcbc;
+}
+
+/* AJUSTE DE CONTEÚDO PARA NÃO FICAR ATRÁS DO HEADER */
+body {
+  padding-top: 64px;
+}

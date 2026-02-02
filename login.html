@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wiki OBV - Login</title>
+
+  <link rel="stylesheet" href="/css/login.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+  <div class="login-overlay"></div>
+
+  <main class="login-container">
+
+    <img src="/assets/logo-obv.png" alt="OBV Clã" class="logo" />
+
+    <h1>Bem-vindo ao Wiki-OBV!</h1>
+    <p class="subtitle">
+      Faça login para acessar o conteúdo do clã.
+    </p>
+
+    <div id="g_id_onload"
+         data-client_id="231571582984-j60dppufdvusrd9qct1qh34ts8oucpko.apps.googleusercontent.com"
+         data-login_uri="https://pabloantoniodegraauw-commits.github.io/wiki-obv/callback.html"
+         data-ux_mode="redirect">
+    </div>
+
+    <div class="g_id_signin" 
+         data-type="standard" 
+         data-size="large" 
+         data-theme="outline" 
+         data-text="sign_in_with" 
+         data-shape="rectangular"
+         data-logo_alignment="left">
+    </div>
+
+    <p class="info">
+      Acesso restrito: Somente membros aprovados pelo administrador.
+    </p>
+
+    <footer class="login-footer">
+      <a href="#">Política de Privacidade</a>
+      <span>•</span>
+      <a href="#">Suporte</a>
+    </footer>
+
+  </main>
+
+  <script>
+    // Verificar se já está logado
+    const user = localStorage.getItem('user');
+    if (user) {
+      window.location.href = 'index.html';
+    }
+  </script>
+
+</body>
+</html>

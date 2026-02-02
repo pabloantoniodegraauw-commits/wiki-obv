@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Wiki OBV</title>
+
+  <link rel="stylesheet" href="../css/global.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0a0f1e 0%, #1a1f3a 100%);
+      min-height: 100vh;
+      color: #ffffff;
+    }
+
+    .admin-container {
+      padding: 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .tab-btn.active {
+      color: #ffffff;
+      border-bottom-color: #9bbcff;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .section-title {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      background: rgba(20, 25, 50, 0.5);
+      border-radius: 12px;
+      overflow: hidden;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: rgba(20, 25, 50, 0.8);
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    th {
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    tbody tr:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-pendente {
+      background: #ffa50080;
+      color: #fff;
+    }
+
+    .status-aprovado {
+      background: #4caf5080;
+      color: #fff;
+    }
+
+    .status-rejeitado {
+      background: #f4433680;
+      color: #fff;
+    }
+
+    .role-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(155, 188, 255, 0.2);
+      color: #9bbcff;
+    }
+
+    .role-admin {
+      background: rgba(255, 215, 0, 0.2);
+      color: #ffd700;
+    }
+
+    .action-btn {
+      padding: 6px 12px;
+      margin: 0 4px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-approve {
+      background: #4caf50;
+      color: white;
+    }
+
+    .btn-approve:hover {
+      background: #45a049;
+    }
+
+    .btn-reject {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-reject:hover {
+      background: #da190b;
+    }
+
+    .btn-admin {
+      background: #ffd700;
+      color: #333;
+    }
+
+    .btn-admin:hover {
+      background: #ffed4e;
+    }
+
+    .btn-remove-admin {
+      background: #ff9800;
+      color: white;
+    }
+
+    .btn-remove-admin:hover {
+      background: #fb8c00;
+    }
+
+    .filters {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .filters input,
+    .filters select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+<script src="../js/header.js"></script>
+
+<div class="admin-container">
+  <h1 class="section-title">Administração</h1>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="membros">Membros</button>
+    <button class="tab-btn" data-tab="logs">Logs</button>
+  </div>
+
+  <!-- ABA MEMBROS -->
+  <div class="tab-content active" id="tab-membros">
+    <table>
+      <thead>
+        <tr>
+          <th>Nick</th>
+          <th>Email</th>
+          <th>Level</th>
+          <th>Tipo</th>
+          <th>Tier</th>
+          <th>Status</th>
+          <th>Cargo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="membersTable">
+        <tr>
+          <td colspan="8" class="empty-state">Carregando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ABA LOGS -->
+  <div class="tab-content" id="tab-logs">
+    <div class="filters">
+      <input type="date" id="filterDate" placeholder="Data" />
+      <input type="text" id="filterUser" placeholder="Buscar por nick ou email" />
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nick</th>
+          <th>Email</th>
+          <th>Primeiro Login</th>
+          <th>Última Atividade</th>
+          <th>Tempo Online</th>
+        </tr>
+      </thead>
+      <tbody id="logsTable">
+        <tr>
+          <td colspan="5" class="empty-state">Carregando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="../js/admin.js"></script>
+
+</body>
+</html>

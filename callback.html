@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Processando Login...</title>
+
+  <link rel="stylesheet" href="/css/login.css" />
+</head>
+<body>
+
+  <div class="login-overlay"></div>
+
+  <main class="login-container">
+    <img src="/assets/logo-obv.png" alt="OBV Clã" class="logo" />
+    <h1>Processando login...</h1>
+    <p class="subtitle" id="status">Aguarde enquanto validamos suas credenciais.</p>
+  </main>
+
+  <script>
+    // URL do Google Apps Script (CONFIGURAR)
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUakDr5kqR07LFGCzPjVkKGeBJl7pGmvEuY0UQpDHPtpcF7e4r5mFNWcdyksyjdgxifw/exec';
+
+    // Função para obter parâmetros da URL
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      return {
+        credential: params.get('credential') || getCredentialFromHash()
+      };
+    }
+
+    // Para modo redirect, o token pode vir no hash
+    function getCredentialFromHash() {
+      const hash = window.location.hash;
+      if (hash) {
+        const params = new URLSearchParams(hash.substring(1));
+        return params.get('credential') || params.get('id_token');
+      }
+      return null;
+    }
+
+    // Decodificar JWT (básico, só para email)
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Processar autenticação
+    async function processAuth() {
+      const { credential } = getUrlParams();
+      const statusEl = document.getElementById('status');
+
+      if (!credential) {
+        statusEl.textContent = 'Erro: Token não encontrado. Redirecionando...';
+        setTimeout(() => window.location.href = 'login.html', 2000);
+        return;
+      }
+
+      // Decodificar token para obter info básica
+      const tokenData = parseJwt(credential);
+      
+      if (!tokenData) {
+        statusEl.textContent = 'Erro ao processar token. Redirecionando...';
+        setTimeout(() => window.location.href = 'login.html', 2000);
+        return;
+      }
+
+      try {
+        statusEl.textContent = 'Validando com o servidor...';
+
+        // Enviar token para Apps Script validar
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors', // Necessário para Apps Script
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'login',
+            token: credential,
+            email: tokenData.email
+          })
+        });
+
+        // Como no-cors não retorna response, precisamos fazer uma segunda chamada GET
+        // ou usar JSONP, ou configurar CORS no Apps Script
+        // Por ora, vamos simular a resposta usando localStorage temporário
+
+        // SOLUÇÃO ALTERNATIVA: fazer chamada GET com parâmetros
+        const checkResponse = await fetch(
+          `${APPS_SCRIPT_URL}?action=checkUser&email=${encodeURIComponent(tokenData.email)}`
+        ).then(r => r.json());
+
+        handleAuthResponse(checkResponse, tokenData);
+
+      } catch (error) {
+        console.error('Erro na autenticação:', error);
+        statusEl.textContent = 'Erro ao conectar com o servidor.';
+        
+        // MODO DESENVOLVIMENTO: permitir login mesmo com erro
+        // REMOVER EM PRODUÇÃO
+        console.warn('Modo desenvolvimento: autorizando temporariamente');
+        const devUser = {
+          email: tokenData.email,
+          nome: tokenData.name,
+          foto: tokenData.picture,
+          nickname: tokenData.given_name || tokenData.name.split(' ')[0],
+          role: 'membro',
+          status: 'aprovado'
+        };
+        localStorage.setItem('user', JSON.stringify(devUser));
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Tratar resposta da autenticação
+    function handleAuthResponse(data, tokenData) {
+      const statusEl = document.getElementById('status');
+
+      if (!data.success) {
+        statusEl.textContent = data.message || 'Erro na autenticação.';
+        setTimeout(() => window.location.href = 'login.html', 3000);
+        return;
+      }
+
+      // Verificar status do usuário
+      if (data.status === 'pendente') {
+        window.location.href = 'aguardando.html';
+        return;
+      }
+
+      if (data.status === 'rejeitado') {
+        statusEl.textContent = 'Seu cadastro foi rejeitado.';
+        setTimeout(() => window.location.href = 'login.html', 3000);
+        return;
+      }
+
+      if (data.status === 'aprovado') {
+        // Salvar dados no localStorage
+        const userData = {
+          email: data.email || tokenData.email,
+          nome: data.nome || tokenData.name,
+          foto: data.foto || tokenData.picture,
+          nickname: data.nickname,
+          role: data.role || 'membro',
+          loginAt: Date.now(), // Timestamp para expiração de sessão
+          authToken: credential // Token para validação no backend
+        };
+
+        localStorage.setItem('user', JSON.stringify(userData));
+
+        // Registrar login nos logs
+        fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          body: JSON.stringify({
+            action: 'log',
+            email: userData.email,
+            nickname: userData.nickname,
+            evento: 'login'
+          })
+        });
+
+        statusEl.textContent = 'Login realizado com sucesso! Redirecionando...';
+        setTimeout(() => window.location.href = 'index.html', 1000);
+        return;
+      }
+
+      // Usuário não cadastrado - redirecionar para cadastro
+      if (data.status === 'nao_cadastrado') {
+        // Salvar dados temporários para o cadastro
+        sessionStorage.setItem('tempUser', JSON.stringify({
+          email: tokenData.email,
+          nome: tokenData.name,
+          foto: tokenData.picture
+        }));
+        window.location.href = 'cadastro.html';
+        return;
+      }
+    }
+
+    // Iniciar processo ao carregar página
+    processAuth();
+  </script>
+
+</body>
+</html>

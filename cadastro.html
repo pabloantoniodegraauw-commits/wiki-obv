@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro - Wiki OBV</title>
+
+  <link rel="stylesheet" href="/css/login.css" />
+</head>
+<body>
+
+<div class="login-overlay"></div>
+
+<main class="login-container">
+  <img src="/assets/logo-obv.png" class="logo" />
+
+  <h1>Cadastro de Membro</h1>
+  <p class="subtitle">Complete seu cadastro para solicitar acesso.</p>
+
+  <form id="cadastroForm">
+    <input type="text" id="nickname" placeholder="Nickname" required />
+    <input type="number" id="level" placeholder="Level" min="1" required />
+
+    <select id="tipoCla" required>
+      <option value="">Tipo de Clã</option>
+      <option value="TIME">TIME</option>
+      <option value="SPACE">SPACE</option>
+      <option value="VOID">VOID</option>
+    </select>
+
+    <select id="tier" required>
+      <option value="">Tier</option>
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+      <option value="5">5</option>
+    </select>
+
+    <button class="google-btn" type="submit">Enviar Cadastro</button>
+  </form>
+
+  <p class="info">Seu cadastro será analisado por um administrador.</p>
+</main>
+
+<script>
+  // URL do Google Apps Script (CONFIGURAR)
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUakDr5kqR07LFGCzPjVkKGeBJl7pGmvEuY0UQpDHPtpcF7e4r5mFNWcdyksyjdgxifw/exec';
+
+  // Recuperar dados temporários do Google
+  const tempUserStr = sessionStorage.getItem('tempUser');
+  
+  if (!tempUserStr) {
+    // Não há dados temporários - redirecionar para login
+    alert('Sessão expirada. Faça login novamente.');
+    window.location.href = 'login.html';
+  }
+
+  const tempUser = JSON.parse(tempUserStr);
+
+  // Processar formulário
+  document.getElementById('cadastroForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const nickname = document.getElementById('nickname').value.trim();
+    const level = parseInt(document.getElementById('level').value);
+    const tipoCla = document.getElementById('tipoCla').value;
+    const tier = parseInt(document.getElementById('tier').value);
+
+    if (!nickname || !level || !tipoCla || !tier) {
+      alert('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    try {
+      // Enviar cadastro para Apps Script
+      const response = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'cadastrar',
+          email: tempUser.email,
+          nome: tempUser.nome,
+          foto: tempUser.foto,
+          nickname: nickname,
+          level: level,
+          tipoCla: tipoCla,
+          tier: tier
+        })
+      });
+
+      // Como usamos no-cors, não conseguimos verificar a resposta
+      // Assumir sucesso e redirecionar
+      sessionStorage.removeItem('tempUser');
+      window.location.href = 'aguardando.html';
+
+    } catch (error) {
+      console.error('Erro ao enviar cadastro:', error);
+      alert('Erro ao enviar cadastro. Tente novamente.');
+    }
+  });
+</script>
+
+</body>
+</html>

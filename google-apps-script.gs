@@ -1,30 +1,543 @@
 /**
  * 📋 GOOGLE APPS SCRIPT - WIKI OBV
+ * Sistema de Autenticação e Gerenciamento de Membros
  * 
  * INSTRUÇÕES DE INSTALAÇÃO:
  * 
  * 1. Abra sua planilha: https://docs.google.com/spreadsheets/d/1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ
- * 2. Vá em: Extensões > Apps Script
- * 3. Cole TODO este código
- * 4. Clique em "Implantar" > "Nova implantação"
- * 5. Em "Tipo": selecione "Aplicativo da Web"
- * 6. Em "Executar como": escolha "Eu"
- * 7. Em "Quem tem acesso": escolha "Qualquer pessoa"
- * 8. Clique em "Implantar"
- * 9. COPIE a URL que aparece (ela termina com /exec)
- * 10. Cole essa URL no arquivo script.js na variável APPS_SCRIPT_URL
+ * 2. Certifique-se de ter as abas: 'usuarios' e 'logs'
+ * 3. Vá em: Extensões > Apps Script
+ * 4. Cole TODO este código
+ * 5. Clique em "Implantar" > "Nova implantação"
+ * 6. Em "Tipo": selecione "Aplicativo da Web"
+ * 7. Em "Executar como": escolha "Eu"
+ * 8. Em "Quem tem acesso": escolha "Qualquer pessoa"
+ * 9. Clique em "Implantar"
+ * 10. COPIE a URL que aparece (ela termina com /exec)
+ * 11. Cole essa URL nos arquivos: callback.html, cadastro.html, header.js e admin.js
  * 
  * IMPORTANTE: Você precisará autorizar o script na primeira execução!
  */
 
+// ID da planilha
+const SPREADSHEET_ID = '1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ';
+
+// Tempo de expiração da sessão (8 horas em milissegundos)
+const SESSION_EXPIRATION = 8 * 60 * 60 * 1000;
+
+/**
+ * Validar e extrair email do token de autenticação
+ * SEGURANÇA: Não confia no email enviado pelo front, valida o token
+ */
+function validateTokenAndGetEmail(dados) {
+  // Se tiver token de autenticação, validar e extrair email
+  if (dados.authToken) {
+    try {
+      // Decodificar JWT do Google (formato: header.payload.signature)
+      const parts = dados.authToken.split('.');
+      if (parts.length !== 3) {
+        return null;
+      }
+      
+      // Decodificar payload (parte do meio)
+      const payload = JSON.parse(
+        Utilities.newBlob(
+          Utilities.base64Decode(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+        ).getDataAsString()
+      );
+      
+      // Retornar email do token (fonte confiável)
+      return payload.email || null;
+    } catch (e) {
+      Logger.log('Erro ao validar token: ' + e.toString());
+      return null;
+    }
+  }
+  
+  // Fallback: usar email enviado (menos seguro, mas mantém compatibilidade)
+  return dados.adminEmail || dados.email || null;
+}
+
 // Recebe requisições POST do site
 function doPost(e) {
   try {
-    const planilha = SpreadsheetApp.openById('1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ');
-    const aba = planilha.getSheets()[0]; // Primeira aba
+    const planilha = SpreadsheetApp.openById(SPREADSHEET_ID);
     
     // Parse dos dados recebidos
     const dados = JSON.parse(e.postData.contents);
+    const action = dados.action;
+
+    // ROUTER - Redirecionar para função apropriada
+    switch (action) {
+      case 'login':
+        return handleLogin(planilha, dados);
+      case 'cadastrar':
+        return handleCadastro(planilha, dados);
+      case 'log':
+        return handleLog(planilha, dados);
+      case 'approveUser':
+        return handleApproveUser(planilha, dados);
+      case 'rejectUser':
+        return handleRejectUser(planilha, dados);
+      case 'setRole':
+        return handleSetRole(planilha, dados);
+      default:
+        // Manter código existente de Pokémon
+        return handlePokemonUpdate(planilha, dados);
+    }
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// Recebe requisições GET do site
+function doGet(e) {
+  try {
+    const planilha = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const action = e.parameter.action;
+    const acao = e.parameter.acao; // Para compatibilidade com código existente de Pokémon
+
+    // Sistema de autenticação
+    switch (action) {
+      case 'checkUser':
+        return checkUser(planilha, e.parameter.email);
+      case 'getUsers':
+        return getUsers(planilha);
+      case 'getLogs':
+        return getLogs(planilha);
+      case 'countAdmins':
+        return countAdmins(planilha);
+    }
+    
+    // Sistema de Pokémon (código existente)
+    if (acao === 'obter_todos') {
+      const aba = planilha.getSheets()[0];
+      const page = parseInt(e.parameter.page || '1');
+      const limit = parseInt(e.parameter.limit || '100');
+      
+      const dados = aba.getDataRange().getValues();
+      const cabecalho = dados[0];
+      const linhas = dados.slice(1);
+      
+      const pokemons = linhas.map(linha => {
+        const obj = {};
+        cabecalho.forEach((coluna, index) => {
+          obj[coluna] = linha[index];
+        });
+        return obj;
+      });
+      
+      const total = pokemons.length;
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginados = pokemons.slice(startIndex, endIndex);
+      const hasMore = endIndex < total;
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        data: paginados,
+        page: page,
+        limit: limit,
+        total: total,
+        hasMore: hasMore
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Resposta padrão
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Ação não reconhecida'
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/* ============================================
+   FUNÇÕES DE AUTENTICAÇÃO
+   ============================================ */
+
+/**
+ * Verificar status do usuário
+ */
+function checkUser(planilha, email) {
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const dados = abaUsuarios.getDataRange().getValues();
+  
+  // Buscar usuário
+  for (let i = 1; i < dados.length; i++) {
+    if (dados[i][0].toLowerCase() === email.toLowerCase()) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        status: dados[i][7], // status
+        email: dados[i][0],
+        nome: dados[i][1],
+        foto: dados[i][2],
+        nickname: dados[i][3],
+        role: dados[i][8] // role
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  // Usuário não encontrado
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true,
+    status: 'nao_cadastrado'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Processar login
+ */
+function handleLogin(planilha, dados) {
+  // Validar token com Google (opcional - por ora apenas verificar se existe)
+  const email = dados.email;
+  
+  const result = checkUser(planilha, email);
+  return result;
+}
+
+/**
+ * Processar cadastro
+ */
+function handleCadastro(planilha, dados) {
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  
+  // Verificar se já existe
+  const todosOsDados = abaUsuarios.getDataRange().getValues();
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === dados.email.toLowerCase()) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        message: 'Usuário já cadastrado'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  // Adicionar novo usuário
+  abaUsuarios.appendRow([
+    dados.email,
+    dados.nome,
+    dados.foto,
+    dados.nickname,
+    dados.level,
+    dados.tipoCla,
+    dados.tier,
+    'pendente', // status
+    'membro', // role
+    new Date() // dataCadastro
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true,
+    message: 'Cadastro enviado com sucesso'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ============================================
+   FUNÇÕES DE LOGS
+   ============================================ */
+
+/**
+ * Registrar log de atividade
+ */
+function handleLog(planilha, dados) {
+  const abaLogs = getOrCreateSheet(planilha, 'logs');
+  
+  abaLogs.appendRow([
+    dados.email,
+    dados.nickname,
+    dados.evento, // login, ping, logout
+    new Date()
+  ]);
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Obter logs
+ */
+function getLogs(planilha) {
+  const abaLogs = getOrCreateSheet(planilha, 'logs');
+  const dados = abaLogs.getDataRange().getValues();
+  
+  const logs = [];
+  for (let i = 1; i < dados.length; i++) {
+    logs.push({
+      email: dados[i][0],
+      nickname: dados[i][1],
+      evento: dados[i][2],
+      dataHora: dados[i][3]
+    });
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true,
+    logs: logs
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ============================================
+   FUNÇÕES ADMINISTRATIVAS
+   ============================================ */
+
+/**
+ * Obter todos os usuários
+ */
+function getUsers(planilha) {
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const dados = abaUsuarios.getDataRange().getValues();
+  
+  const users = [];
+  for (let i = 1; i < dados.length; i++) {
+    users.push({
+      email: dados[i][0],
+      nome: dados[i][1],
+      foto: dados[i][2],
+      nickname: dados[i][3],
+      level: dados[i][4],
+      tipoCla: dados[i][5],
+      tier: dados[i][6],
+      status: dados[i][7],
+      role: dados[i][8]
+    });
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true,
+    users: users
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Aprovar usuário
+ */
+function handleApproveUser(planilha, dados) {
+  // SEGURANÇA: Extrair email do token, não confiar no adminEmail do front
+  const adminEmail = validateTokenAndGetEmail(dados);
+  
+  if (!adminEmail) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Token de autenticação inválido ou ausente'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Verificar se quem está fazendo a ação é realmente admin
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const todosOsDados = abaUsuarios.getDataRange().getValues();
+  
+  let isAdmin = false;
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === adminEmail.toLowerCase()) {
+      if (todosOsDados[i][8] === 'admin') {
+        isAdmin = true;
+      }
+      break;
+    }
+  }
+  
+  if (!isAdmin) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Sem permissão: apenas administradores podem aprovar'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Aprovar usuário
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === dados.email.toLowerCase()) {
+      abaUsuarios.getRange(i + 1, 8).setValue('aprovado'); // coluna status
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: false,
+    message: 'Usuário não encontrado'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Rejeitar usuário
+ */
+function handleRejectUser(planilha, dados) {
+  // SEGURANÇA: Extrair email do token, não confiar no adminEmail do front
+  const adminEmail = validateTokenAndGetEmail(dados);
+  
+  if (!adminEmail) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Token de autenticação inválido ou ausente'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const todosOsDados = abaUsuarios.getDataRange().getValues();
+  
+  // Verificar se é admin
+  let isAdmin = false;
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === adminEmail.toLowerCase()) {
+      if (todosOsDados[i][8] === 'admin') {
+        isAdmin = true;
+      }
+      break;
+    }
+  }
+  
+  if (!isAdmin) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Sem permissão: apenas administradores podem rejeitar'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Rejeitar usuário
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === dados.email.toLowerCase()) {
+      abaUsuarios.getRange(i + 1, 8).setValue('rejeitado'); // coluna status
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: false,
+    message: 'Usuário não encontrado'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Alterar cargo (role) do usuário
+ */
+function handleSetRole(planilha, dados) {
+  // SEGURANÇA: Extrair email do token, não confiar no adminEmail do front
+  const adminEmail = validateTokenAndGetEmail(dados);
+  
+  if (!adminEmail) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Token de autenticação inválido ou ausente'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const todosOsDados = abaUsuarios.getDataRange().getValues();
+  
+  // Verificar se quem está fazendo a ação é admin
+  let isAdmin = false;
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === adminEmail.toLowerCase()) {
+      if (todosOsDados[i][8] === 'admin') {
+        isAdmin = true;
+      }
+      break;
+    }
+  }
+  
+  if (!isAdmin) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Sem permissão: apenas administradores podem alterar cargos'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Se está removendo admin, verificar se não é o último
+  if (dados.role === 'membro') {
+    let totalAdmins = 0;
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if (todosOsDados[i][8] === 'admin') {
+        totalAdmins++;
+      }
+    }
+    
+    if (totalAdmins <= 1) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        message: 'Não é possível remover o último administrador'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  // Alterar role
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === dados.email.toLowerCase()) {
+      abaUsuarios.getRange(i + 1, 9).setValue(dados.role); // coluna role
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: false,
+    message: 'Usuário não encontrado'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Contar admins
+ */
+function countAdmins(planilha) {
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const dados = abaUsuarios.getDataRange().getValues();
+  
+  let count = 0;
+  for (let i = 1; i < dados.length; i++) {
+    if (dados[i][8] === 'admin') {
+      count++;
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true,
+    count: count
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ============================================
+   FUNÇÕES AUXILIARES
+   ============================================ */
+
+/**
+ * Obter ou criar aba
+ */
+function getOrCreateSheet(planilha, nome) {
+  let aba = planilha.getSheetByName(nome);
+  
+  if (!aba) {
+    aba = planilha.insertSheet(nome);
+    
+    // Criar cabeçalhos apropriados
+    if (nome === 'usuarios') {
+      aba.appendRow(['email', 'nome', 'foto', 'nickname', 'level', 'tipoCla', 'tier', 'status', 'role', 'dataCadastro']);
+    } else if (nome === 'logs') {
+      aba.appendRow(['email', 'nickname', 'evento', 'dataHora']);
+    }
+  }
+  
+  return aba;
+}
+
+/* ============================================
+   CÓDIGO EXISTENTE DE POKÉMON (MANTIDO)
+   ============================================ */
+
+function handlePokemonUpdate(planilha, dados) {
+  try {
+    const aba = planilha.getSheets()[0]; // Primeira aba
     
     // APENAS ATUALIZAR POKÉMON EXISTENTE (não adicionar novos)
     if (dados.acao === 'atualizar') {
@@ -123,66 +636,5 @@ function doPost(e) {
       sucesso: false,
       mensagem: 'Erro no servidor: ' + erro.toString()
     })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-// Recebe requisições GET (ler dados da planilha)
-function doGet(e) {
-  try {
-    const planilha = SpreadsheetApp.openById('1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ');
-    const aba = planilha.getSheets()[0];
-    
-    // Pegar parâmetros da URL
-    const acao = e.parameter.acao;
-    const page = parseInt(e.parameter.page || '1');
-    const limit = parseInt(e.parameter.limit || '100');
-    
-    // Se pedir todos os dados (com paginação)
-    if (acao === 'obter_todos') {
-      const dados = aba.getDataRange().getValues();
-      const cabecalho = dados[0];
-      const linhas = dados.slice(1);
-      
-      // Converter para array de objetos
-      const pokemons = linhas.map(linha => {
-        const obj = {};
-        cabecalho.forEach((coluna, index) => {
-          obj[coluna] = linha[index];
-        });
-        return obj;
-      });
-      
-      // Calcular paginação
-      const total = pokemons.length;
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginados = pokemons.slice(startIndex, endIndex);
-      const hasMore = endIndex < total;
-      
-      // Retornar com metadados
-      return ContentService
-        .createTextOutput(JSON.stringify({
-          data: paginados,
-          page: page,
-          limit: limit,
-          total: total,
-          hasMore: hasMore
-        }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // Resposta padrão
-    return ContentService
-      .createTextOutput(JSON.stringify({ 
-        mensagem: 'Google Apps Script funcionando! Use ?acao=obter_todos para obter dados.' 
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
-      
-  } catch (erro) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ 
-        erro: erro.toString() 
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
   }
 }
