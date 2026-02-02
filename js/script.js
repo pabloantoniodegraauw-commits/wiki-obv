@@ -1720,7 +1720,7 @@
             
             try {
                 // Usar a MESMA URL do script.js (Apps Script de Pokémon)
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGXynMVvQqoK9madx3_jHilmwKhtZg7wB50-uoAsfufRnz8_9SY1BHFWUvgqUCO9ewcw/exec';
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzn1xNPJTR0diOuEeiGfJm14LnVCy67tOqpOGd6Lq3PZNvAXxtlAk962H2pcoTFP0R_/exec';
                 
                 const payload = {
                     action: 'atualizarSugestao',
