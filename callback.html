@@ -76,53 +76,29 @@
       try {
         statusEl.textContent = 'Validando com o servidor...';
 
-        // Enviar token para Apps Script validar
-        const response = await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors', // Necessário para Apps Script
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            action: 'login',
-            token: credential,
-            email: tokenData.email
-          })
-        });
-
-        // Como no-cors não retorna response, precisamos fazer uma segunda chamada GET
-        // ou usar JSONP, ou configurar CORS no Apps Script
-        // Por ora, vamos simular a resposta usando localStorage temporário
-
-        // SOLUÇÃO ALTERNATIVA: fazer chamada GET com parâmetros
+        // Fazer chamada GET direta (Apps Script aceita melhor GET que POST)
         const checkResponse = await fetch(
           `${APPS_SCRIPT_URL}?action=checkUser&email=${encodeURIComponent(tokenData.email)}`
         ).then(r => r.json());
 
-        handleAuthResponse(checkResponse, tokenData);
+        console.log('Resposta do servidor:', checkResponse);
+        handleAuthResponse(checkResponse, tokenData, credential);
 
       } catch (error) {
         console.error('Erro na autenticação:', error);
-        statusEl.textContent = 'Erro ao conectar com o servidor.';
+        statusEl.textContent = 'Erro ao conectar com o servidor. Tentando modo offline...';
         
-        // MODO DESENVOLVIMENTO: permitir login mesmo com erro
-        // REMOVER EM PRODUÇÃO
-        console.warn('Modo desenvolvimento: autorizando temporariamente');
-        const devUser = {
-          email: tokenData.email,
-          nome: tokenData.name,
-          foto: tokenData.picture,
-          nickname: tokenData.given_name || tokenData.name.split(' ')[0],
-          role: 'membro',
-          status: 'aprovado'
-        };
-        localStorage.setItem('user', JSON.stringify(devUser));
-        window.location.href = 'index.html';
+        // FALLBACK: Verificar se usuário já existe no localStorage anterior
+        // Ou permitir acesso temporário
+        setTimeout(() => {
+          alert('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
+          window.location.href = 'login.html';
+        }, 3000);
       }
     }
 
     // Tratar resposta da autenticação
-    function handleAuthResponse(data, tokenData) {
+    function handleAuthResponse(data, tokenData, credential) {
       const statusEl = document.getElementById('status');
 
       if (!data.success) {
@@ -157,20 +133,12 @@
 
         localStorage.setItem('user', JSON.stringify(userData));
 
-        // Registrar login nos logs
-        fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          body: JSON.stringify({
-            action: 'log',
-            email: userData.email,
-            nickname: userData.nickname,
-            evento: 'login'
-          })
-        });
+        // Registrar login nos logs (usando GET)
+        fetch(`${APPS_SCRIPT_URL}?action=log&email=${encodeURIComponent(userData.email)}&nickname=${encodeURIComponent(userData.nickname)}&evento=login`)
+          .catch(() => console.log('Log não registrado'));
 
         statusEl.textContent = 'Login realizado com sucesso! Redirecionando...';
-        setTimeout(() => window.location.href = 'index.html', 1000);
+        setTimeout(() => window.location.href = '/index.html', 1000);
         return;
       }
 

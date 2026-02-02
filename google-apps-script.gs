@@ -103,13 +103,13 @@ function doGet(e) {
     // Sistema de autenticação
     switch (action) {
       case 'checkUser':
-        return checkUser(planilha, e.parameter.email);
+        return createCorsResponse(checkUser(planilha, e.parameter.email));
       case 'getUsers':
-        return getUsers(planilha);
+        return createCorsResponse(getUsers(planilha));
       case 'getLogs':
-        return getLogs(planilha);
+        return createCorsResponse(getLogs(planilha));
       case 'countAdmins':
-        return countAdmins(planilha);
+        return createCorsResponse(countAdmins(planilha));
     }
     
     // Sistema de Pokémon (código existente)
@@ -529,6 +529,20 @@ function getOrCreateSheet(planilha, nome) {
   }
   
   return aba;
+}
+
+/**
+ * Criar resposta com CORS habilitado
+ */
+function createCorsResponse(content) {
+  // Se já é um ContentService, extrair o conteúdo
+  if (typeof content === 'object' && content.getContent) {
+    return content;
+  }
+  
+  return ContentService
+    .createTextOutput(JSON.stringify(content))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /* ============================================
