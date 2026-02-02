@@ -1151,6 +1151,9 @@
             const container = document.getElementById('tmsContainer');
             const filterBtns = document.querySelectorAll('.filter-btn');
             
+            // Verificar se os elementos existem
+            if (!input || !container) return;
+            
             let filtroCategoria = 'todos';
             
             // Configurar botões de filtro
@@ -1196,6 +1199,21 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
+            // Restaurar login se existir
+            const loginSalvo = localStorage.getItem('usuario_logado');
+            if (loginSalvo) {
+                try {
+                    usuarioLogado = JSON.parse(loginSalvo);
+                    atualizarTelaLogin();
+                    // Aguardar carregar dados antes de mostrar opções admin
+                    setTimeout(() => {
+                        if (usuarioLogado) mostrarOpcoesAdmin();
+                    }, 1000);
+                } catch (e) {
+                    localStorage.removeItem('usuario_logado');
+                }
+            }
+            
             // Executar apenas se os elementos correspondentes existirem
             if (document.getElementById('pokemonContainer')) {
                 carregarDados();
@@ -1287,36 +1305,6 @@
             document.querySelectorAll('.btn-edit-pokemon').forEach(btn => btn.remove());
             
             atualizarTelaLogin();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Restaurar login se existir
-            const loginSalvo = localStorage.getItem('usuario_logado');
-            if (loginSalvo) {
-                try {
-                    usuarioLogado = JSON.parse(loginSalvo);
-                    atualizarTelaLogin();
-                    // Aguardar carregar dados antes de mostrar opções admin
-                    setTimeout(() => {
-                        if (usuarioLogado) mostrarOpcoesAdmin();
-                    }, 1000);
-                } catch (e) {
-                    localStorage.removeItem('usuario_logado');
-                }
-            }
-            
-            carregarDados();
-            carregarTMs();
-            configurarBuscaTMs();
-            renderizarMembrosClã();
-            inicializarGoogle();
-        });
-
-        function inicializarGoogle() {
-            google.accounts.id.initialize({
-                client_id: '294066496258-ojjgv3m4n3qkouq9lg5sg72ms7tlhi34.apps.googleusercontent.com',
-                callback: aoFazerLogin
-            });
         }
 
         function iniciarLogin() {
