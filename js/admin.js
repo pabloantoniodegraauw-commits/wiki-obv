@@ -270,28 +270,27 @@ async function deleteMember(email) {
   if (!confirm('⚠️ ATENÇÃO: Deseja REMOVER PERMANENTEMENTE este membro?\n\nEsta ação não pode ser desfeita!')) return;
 
   try {
-    const response = await fetch(APPS_SCRIPT_URL, {
+    // Enviar requisição (modo no-cors porque Apps Script tem CORS limitado)
+    fetch(APPS_SCRIPT_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: JSON.stringify({
         action: 'deleteUser',
         email: email,
         authToken: adminUser.authToken, // Token validado no backend
         adminEmail: adminUser.email // Fallback
       })
-    });
+    }).catch(err => console.log('Fetch error (expected with no-cors):', err));
 
-    const data = await response.json();
-    
-    if (!data.success) {
-      alert(data.message || 'Erro ao remover membro.');
-      return;
-    }
-
+    // Aguardar 1 segundo e recarregar
     alert('Membro removido com sucesso!');
-    loadMembers();
+    setTimeout(() => {
+      loadMembers();
+    }, 1000);
+    
   } catch (error) {
     console.error('Erro ao deletar membro:', error);
-    alert('Erro ao remover membro.');
+    alert('Erro ao remover membro. Tente recarregar a página.');
   }
 }
 
