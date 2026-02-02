@@ -95,7 +95,7 @@
   // Configurar botão de logout
   document.getElementById("logoutBtn").onclick = () => {
     // Registrar logout nos logs
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvR6-l5RnV0yPAWehSxaIyuuEqu8fks1AzjFjEtEFsOa0IAYepBmMeTj-7GJ6v0HXNFA/exec';
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6Njp0Z39dMtb1_HnNdPgw44cJMwuGkIdCDC0GY2vr9P9qWUpCCcEtDOlnRx7gk2oQDA/exec';
     
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -122,7 +122,7 @@
  * Buscar quantidade de cadastros pendentes (somente para admins)
  */
 async function fetchPendingCount() {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvR6-l5RnV0yPAWehSxaIyuuEqu8fks1AzjFjEtEFsOa0IAYepBmMeTj-7GJ6v0HXNFA/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6Njp0Z39dMtb1_HnNdPgw44cJMwuGkIdCDC0GY2vr9P9qWUpCCcEtDOlnRx7gk2oQDA/exec';
   
   try {
     const response = await fetch(`${APPS_SCRIPT_URL}?action=getUsers`);
@@ -142,7 +142,7 @@ async function fetchPendingCount() {
  * Sistema de ping automático para registrar atividade
  */
 function startActivityPing(user) {
-  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvR6-l5RnV0yPAWehSxaIyuuEqu8fks1AzjFjEtEFsOa0IAYepBmMeTj-7GJ6v0HXNFA/exec';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6Njp0Z39dMtb1_HnNdPgw44cJMwuGkIdCDC0GY2vr9P9qWUpCCcEtDOlnRx7gk2oQDA/exec';
   const PING_INTERVAL = 5 * 60 * 1000; // 5 minutos
 
   function sendPing() {

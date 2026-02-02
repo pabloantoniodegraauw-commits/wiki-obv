@@ -213,7 +213,7 @@ function checkUser(planilha, email) {
   // Buscar usuário
   for (let i = 1; i < dados.length; i++) {
     if (dados[i][0].toLowerCase() === email.toLowerCase()) {
-      return ContentService.createTextOutput(JSON.stringify({
+      return {
         success: true,
         status: dados[i][7], // status
         email: dados[i][0],
@@ -221,15 +221,15 @@ function checkUser(planilha, email) {
         foto: dados[i][2],
         nickname: dados[i][3],
         role: dados[i][8] // role
-      })).setMimeType(ContentService.MimeType.JSON);
+      };
     }
   }
   
   // Usuário não encontrado
-  return ContentService.createTextOutput(JSON.stringify({
+  return {
     success: true,
     status: 'nao_cadastrado'
-  })).setMimeType(ContentService.MimeType.JSON);
+  };
 }
 
 /**
@@ -319,10 +319,10 @@ function getLogs(planilha) {
     });
   }
   
-  return ContentService.createTextOutput(JSON.stringify({
+  return {
     success: true,
     logs: logs
-  })).setMimeType(ContentService.MimeType.JSON);
+  };
 }
 
 /* ============================================
@@ -351,10 +351,10 @@ function getUsers(planilha) {
     });
   }
   
-  return ContentService.createTextOutput(JSON.stringify({
+  return {
     success: true,
     users: users
-  })).setMimeType(ContentService.MimeType.JSON);
+  };
 }
 
 /**
@@ -541,10 +541,10 @@ function countAdmins(planilha) {
     }
   }
   
-  return ContentService.createTextOutput(JSON.stringify({
+  return {
     success: true,
     count: count
-  })).setMimeType(ContentService.MimeType.JSON);
+  };
 }
 
 /**
@@ -708,16 +708,20 @@ function addCorsHeaders(response) {
  * Criar resposta com CORS habilitado
  */
 function createCorsResponse(content) {
-  // Se já é um ContentService, extrair o conteúdo
+  // Se já é um ContentService, adicionar headers
   if (typeof content === 'object' && content.getContent) {
     return addCorsHeaders(content);
   }
   
+  // Se é um objeto, converter para JSON
   const response = ContentService
     .createTextOutput(JSON.stringify(content))
-    .setMimeType(ContentService.MimeType.JSON);
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  return addCorsHeaders(response);
+  return response;
 }
 
 /* ============================================
