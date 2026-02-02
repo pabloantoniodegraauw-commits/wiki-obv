@@ -85,6 +85,8 @@ function doPost(e) {
         return handleDeleteUser(planilha, dados);
       case 'updateUser':
         return handleUpdateUser(planilha, dados);
+      case 'atualizarSugestao':
+        return handleAtualizarSugestao(planilha, dados);
       default:
         // Manter código existente de Pokémon
         return handlePokemonUpdate(planilha, dados);
@@ -673,8 +675,50 @@ function createCorsResponse(content) {
 }
 
 /* ============================================
-   CÓDIGO EXISTENTE DE POKÉMON (MANTIDO)
+   FUNÇÕES DE POKÉMON
    ============================================ */
+
+/**
+ * Atualizar sugestão de localização de um Pokémon
+ * PERMITE que qualquer membro autenticado contribua
+ */
+function handleAtualizarSugestao(planilha, dados) {
+  try {
+    const aba = planilha.getSheets()[0];
+    const nomeOriginal = dados.nomePokemon.toLowerCase().trim();
+    const novaSugestao = dados.sugestao || '';
+    
+    const todosOsDados = aba.getDataRange().getValues();
+    
+    // Buscar Pokémon
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim();
+      const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim();
+      const nomeParaComparar = nomeEV || nomePokemon;
+      
+      if (nomeParaComparar === nomeOriginal) {
+        // COLUNA F = índice 6 (SUGESTÃO DE LOCALIZAÇÃO)
+        aba.getRange(i + 1, 6).setValue(novaSugestao);
+        
+        return ContentService.createTextOutput(JSON.stringify({
+          sucesso: true,
+          mensagem: 'Sugestão atualizada com sucesso!'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      sucesso: false,
+      mensagem: 'Pokémon não encontrado'
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (erro) {
+    return ContentService.createTextOutput(JSON.stringify({
+      sucesso: false,
+      mensagem: 'Erro: ' + erro.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
 
 function handlePokemonUpdate(planilha, dados) {
   try {
@@ -716,9 +760,9 @@ function handlePokemonUpdate(planilha, dados) {
         const temEV = todosOsDadosLinha[3] && todosOsDadosLinha[3].toString().trim() !== ''; // Coluna D (índice 3)
         
         // Atualizar a linha encontrada
-        // Estrutura REAL da planilha:
-        // A: PS | B: GEN | C: POKEMON | D: EV | E: LOCALIZAÇÃO | F: TM | G: Nome do TM | H: Categoria
-        // I: Type 1 | J: Type 2 | K: HP | L: Attack | M: Defense | N: Sp.Attack | O: Sp.Defense | P: Speed
+        // Estrutura ATUALIZADA da planilha (com nova coluna F):
+        // A: PS | B: GEN | C: POKEMON | D: EV | E: LOCALIZAÇÃO | F: SUGESTÃO LOCALIZAÇÃO | G: TM | H: Nome do TM | I: Categoria
+        // J: Type 1 | K: Type 2 | L: HP | M: Attack | N: Defense | O: Sp.Attack | P: Sp.Defense | Q: Speed
         
         aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);     // A: PS
         // Coluna B (GEN) não mexemos
@@ -733,24 +777,25 @@ function handlePokemonUpdate(planilha, dados) {
         }
         
         aba.getRange(linhaEncontrada, 5).setValue(dados.pokemon.localizacao); // E: LOCALIZAÇÃO
+        // Coluna F (SUGESTÃO LOCALIZAÇÃO) não mexemos aqui - tem função própria
         
-        // TMs (dividir "TM02 - Dragon Claw" em duas colunas)
+        // TMs (dividir "TM02 - Dragon Claw" em duas colunas) - AGORA COLUNA G e H
         const tmPartes = dados.pokemon.tms.split(' - ');
         if (tmPartes.length > 0) {
-          aba.getRange(linhaEncontrada, 6).setValue(tmPartes[0].trim()); // F: TM
+          aba.getRange(linhaEncontrada, 7).setValue(tmPartes[0].trim()); // G: TM (era F)
           if (tmPartes.length > 1) {
-            aba.getRange(linhaEncontrada, 7).setValue(tmPartes[1].trim()); // G: Nome do TM
+            aba.getRange(linhaEncontrada, 8).setValue(tmPartes[1].trim()); // H: Nome do TM (era G)
           }
         }
-        // Coluna H (Categoria) não mexemos
+        // Coluna I (Categoria) não mexemos
         
-        // Stats
-        aba.getRange(linhaEncontrada, 11).setValue(dados.pokemon.hp);        // K: HP
-        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.atk);       // L: Attack
-        aba.getRange(linhaEncontrada, 13).setValue(dados.pokemon.def);       // M: Defense
-        aba.getRange(linhaEncontrada, 14).setValue(dados.pokemon.spatk);     // N: Sp.Attack
-        aba.getRange(linhaEncontrada, 15).setValue(dados.pokemon.spdef);     // O: Sp.Defense
-        aba.getRange(linhaEncontrada, 16).setValue(dados.pokemon.speed);     // P: Speed
+        // Stats - TODAS DESLOCADAS +1
+        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.hp);        // L: HP (era K)
+        aba.getRange(linhaEncontrada, 13).setValue(dados.pokemon.atk);       // M: Attack (era L)
+        aba.getRange(linhaEncontrada, 14).setValue(dados.pokemon.def);       // N: Defense (era M)
+        aba.getRange(linhaEncontrada, 15).setValue(dados.pokemon.spatk);     // O: Sp.Attack (era N)
+        aba.getRange(linhaEncontrada, 16).setValue(dados.pokemon.spdef);     // P: Sp.Defense (era O)
+        aba.getRange(linhaEncontrada, 17).setValue(dados.pokemon.speed);     // Q: Speed (era P)
         
         return ContentService.createTextOutput(JSON.stringify({
           sucesso: true,

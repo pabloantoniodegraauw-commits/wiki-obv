@@ -223,6 +223,7 @@
                 const tipo2 = pokemon['Type 2'] || '';
                 const evolucao = pokemon['EV'] || '';
                 const localizacao = pokemon['LOCALIZAÇÃO'] || 'Não informado';
+                const sugestaoLocalizacao = pokemon['SUGESTÃO LOCALIZAÇÃO'] || '';
                 const hp = pokemon['HP'] || '0';
                 const ataque = pokemon['Attack'] || '0';
                 const defesa = pokemon['Defense'] || '0';
@@ -287,6 +288,17 @@
                         </div>
                         <div>${localizacao}</div>
                     </div>
+                    ${sugestaoLocalizacao ? `
+                    <div class="pokemon-suggestion">
+                        <div class="suggestion-title">
+                            <i class="fas fa-lightbulb"></i> Sugestão da Comunidade
+                        </div>
+                        <div>${sugestaoLocalizacao}</div>
+                    </div>
+                    ` : ''}
+                    <button class="btn-sugerir-local" onclick="abrirModalSugestao('${nomeParaBusca.replace(/'/g, "\\'")}', '${sugestaoLocalizacao.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-edit"></i> Sugerir Localização
+                    </button>
                     <!-- ⭐ NOVA SEÇÃO: TMs / Moves ⭐ -->
                     <div class="pokemon-tms">
                         <div class="tms-title">
@@ -1662,3 +1674,80 @@
             const modal = criarModalEdicao('Novo Pokémon', '', ['0','0','0','0','0','0'], '', '');
             document.body.appendChild(modal);
         }
+
+        // ========================
+        // 💡 SISTEMA DE SUGESTÕES DE LOCALIZAÇÃO
+        // ========================
+        
+        window.abrirModalSugestao = function(nomePokemon, sugestaoAtual) {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+            
+            modal.innerHTML = `
+                <div style="background:linear-gradient(135deg, #1a2980 0%, #0f3460 100%);padding:30px;border-radius:20px;max-width:600px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:2px solid rgba(255,215,0,0.3);">
+                    <h2 style="color:#ffd700;margin:0 0 20px 0;font-size:24px;"><i class="fas fa-lightbulb"></i> Sugerir Localização</h2>
+                    <p style="color:#fff;margin-bottom:20px;"><strong>${nomePokemon}</strong></p>
+                    
+                    <label style="color:#ffd700;display:block;margin-bottom:8px;font-weight:600;">💡 Sua sugestão de localização:</label>
+                    <textarea id="sugestaoInput" placeholder="Ex: Encontrado na rota 5, próximo ao lago..." style="width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;min-height:100px;resize:vertical;font-family:Arial;">${sugestaoAtual}</textarea>
+                    
+                    <div style="display:flex;gap:10px;margin-top:20px;">
+                        <button onclick="salvarSugestao('${nomePokemon.replace(/'/g, "\\'")}', this)" style="flex:1;padding:12px;background:linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:16px;transition:all 0.3s;">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:12px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            setTimeout(() => document.getElementById('sugestaoInput').focus(), 100);
+        };
+        
+        window.salvarSugestao = async function(nomePokemon, botao) {
+            const sugestao = document.getElementById('sugestaoInput').value.trim();
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!user.email) {
+                alert('Você precisa estar logado para sugerir localizações!');
+                return;
+            }
+            
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            
+            try {
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5Hzx2pORCZz6EXM0xZQk98j0Pq8VDPyxh4h0lE8UJ9fZfMiV28nSUSGjp0QfHr0Ip/exec';
+                
+                const payload = {
+                    action: 'atualizarSugestao',
+                    nomePokemon: nomePokemon,
+                    sugestao: sugestao,
+                    email: user.email,
+                    authToken: user.authToken
+                };
+                
+                const resposta = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('✅ Sugestão salva com sucesso!');
+                
+                // Fechar modal e recarregar
+                document.querySelector('[style*=fixed]').remove();
+                setTimeout(() => location.reload(), 300);
+                
+            } catch (erro) {
+                console.error('❌ Erro ao salvar sugestão:', erro);
+                alert('Erro ao salvar. Tente novamente.');
+                botao.disabled = false;
+                botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            }
+        };

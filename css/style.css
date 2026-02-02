@@ -1046,6 +1046,54 @@ footer {
     text-align: right;
 }
 
+/* 💡 Sugestões de Localização */
+.pokemon-suggestion {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 237, 78, 0.1) 100%);
+    border-left: 4px solid #ffd700;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 12px;
+}
+
+.suggestion-title {
+    font-weight: 700;
+    color: #ffd700;
+    margin-bottom: 8px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-sugerir-local {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 237, 78, 0.15) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    border-radius: 10px;
+    color: #ffd700;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-sugerir-local:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 237, 78, 0.25) 100%);
+    border-color: #ffd700;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
+}
+
+.btn-sugerir-local:active {
+    transform: translateY(0);
+}
+
 @media (max-width: 768px) {
     .clan-members-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
