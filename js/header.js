@@ -58,7 +58,7 @@
       <div class="obv-user">
         <img src="${user.foto}" alt="Foto do usuário" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=667eea&color=fff'" />
         <div class="info">
-          <div class="nickname">${user.nickname}</div>
+          <div class="nickname">${user.nome}</div>
           <div class="role">${user.role === "admin" ? "ADMIN" : "MEMBRO"}</div>
         </div>
       </div>
