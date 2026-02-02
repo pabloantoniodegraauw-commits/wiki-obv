@@ -87,17 +87,22 @@
 }
 
 .obv-header button {
-  background: none;
+  background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
   border: none;
-  color: #ff9b9b;
+  color: #ffffff;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  transition: color 0.2s;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
 }
 
 .obv-header button:hover {
-  color: #ffbcbc;
+  background: linear-gradient(135deg, #ff6b81 0%, #ff8fa3 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
 }
 
 /* AJUSTE DE CONTEÚDO PARA NÃO FICAR ATRÁS DO HEADER */
