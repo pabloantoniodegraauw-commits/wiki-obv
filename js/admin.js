@@ -6,12 +6,8 @@
 // URL do Google Apps Script (CONFIGURAR)
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUakDr5kqR07LFGCzPjVkKGeBJl7pGmvEuY0UQpDHPtpcF7e4r5mFNWcdyksyjdgxifw/exec';
 
-// Verificar se é admin
-const user = JSON.parse(localStorage.getItem('user'));
-if (!user || user.role !== 'admin') {
-  alert('Acesso negado. Área restrita a administradores.');
-  window.location.href = '../index.html';
-}
+// Obter usuário (já validado pelo admin.html)
+const adminUser = JSON.parse(localStorage.getItem('user'));
 
 // Sistema de tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -158,8 +154,8 @@ async function approveMember(email) {
       body: JSON.stringify({
         action: 'approveUser',
         email: email,
-        authToken: user.authToken, // Token validado no backend
-        adminEmail: user.email // Fallback (backend prefere o token)
+        authToken: adminUser.authToken, // Token validado no backend
+        adminEmail: adminUser.email // Fallback (backend prefere o token)
       })
     });
 
@@ -183,8 +179,8 @@ async function rejectMember(email) {
       body: JSON.stringify({
         action: 'rejectUser',
         email: email,
-        authToken: user.authToken, // Token validado no backend
-        adminEmail: user.email // Fallback
+        authToken: adminUser.authToken, // Token validado no backend
+        adminEmail: adminUser.email // Fallback
       })
     });
 
@@ -209,8 +205,8 @@ async function makeAdmin(email) {
         action: 'setRole',
         email: email,
         role: 'admin',
-        authToken: user.authToken, // Token validado no backend
-        adminEmail: user.email // Fallback
+        authToken: adminUser.authToken, // Token validado no backend
+        adminEmail: adminUser.email // Fallback
       })
     });
 
@@ -236,8 +232,8 @@ async function removeAdmin(email) {
         action: 'setRole',
         email: email,
         role: 'membro',
-        authToken: user.authToken, // Token validado no backend
-        adminEmail: user.email // Fallback
+        authToken: adminUser.authToken, // Token validado no backend
+        adminEmail: adminUser.email // Fallback
       })
     });
 
