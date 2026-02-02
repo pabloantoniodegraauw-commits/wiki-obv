@@ -23,8 +23,7 @@
 
     <div id="g_id_onload"
          data-client_id="231571582984-j60dppufdvusrd9qct1qh34ts8oucpko.apps.googleusercontent.com"
-         data-login_uri="https://pabloantoniodegraauw-commits.github.io/wiki-obv/callback.html"
-         data-ux_mode="redirect">
+         data-callback="handleCredentialResponse">
     </div>
 
     <div class="g_id_signin" 
@@ -53,6 +52,12 @@
     const user = localStorage.getItem('user');
     if (user) {
       window.location.href = 'index.html';
+    }
+
+    // Callback do Google Sign-In (modo popup)
+    function handleCredentialResponse(response) {
+      // Redirecionar para callback com o token na URL
+      window.location.href = `/callback.html?credential=${response.credential}`;
     }
   </script>
 
