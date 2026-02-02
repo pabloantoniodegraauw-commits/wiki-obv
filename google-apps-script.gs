@@ -26,6 +26,19 @@ const SPREADSHEET_ID = '1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ';
 const SESSION_EXPIRATION = 8 * 60 * 60 * 1000;
 
 /**
+ * Responder requisições OPTIONS (preflight CORS)
+ */
+function doOptions() {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    .setHeader('Access-Control-Max-Age', '86400');
+}
+
+/**
  * Validar e extrair email do token de autenticação
  * SEGURANÇA: Não confia no email enviado pelo front, valida o token
  */
@@ -66,36 +79,57 @@ function doPost(e) {
     // Parse dos dados recebidos
     const dados = JSON.parse(e.postData.contents);
     const action = dados.action;
+    
+    Logger.log('=== doPost CHAMADO ===');
+    Logger.log('Action recebida: "' + action + '"');
+    Logger.log('Dados completos: ' + JSON.stringify(dados));
 
     // ROUTER - Redirecionar para função apropriada
+    let result;
     switch (action) {
       case 'login':
-        return handleLogin(planilha, dados);
+        result = handleLogin(planilha, dados);
+        break;
       case 'cadastrar':
-        return handleCadastro(planilha, dados);
+        result = handleCadastro(planilha, dados);
+        break;
       case 'log':
-        return handleLog(planilha, dados);
+        result = handleLog(planilha, dados);
+        break;
       case 'approveUser':
-        return handleApproveUser(planilha, dados);
+        result = handleApproveUser(planilha, dados);
+        break;
       case 'rejectUser':
-        return handleRejectUser(planilha, dados);
+        result = handleRejectUser(planilha, dados);
+        break;
       case 'setRole':
-        return handleSetRole(planilha, dados);
+        result = handleSetRole(planilha, dados);
+        break;
       case 'deleteUser':
-        return handleDeleteUser(planilha, dados);
+        result = handleDeleteUser(planilha, dados);
+        break;
       case 'updateUser':
-        return handleUpdateUser(planilha, dados);
+        result = handleUpdateUser(planilha, dados);
+        break;
       case 'atualizarSugestao':
-        return handleAtualizarSugestao(planilha, dados);
+        result = handleAtualizarSugestao(planilha, dados);
+        break;
       default:
         // Manter código existente de Pokémon
-        return handlePokemonUpdate(planilha, dados);
+        result = handlePokemonUpdate(planilha, dados);
+        break;
     }
+    
+    // Adicionar headers CORS
+    return addCorsHeaders(result);
+    
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({
+    const errorResponse = ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: error.toString()
     })).setMimeType(ContentService.MimeType.JSON);
+    
+    return addCorsHeaders(errorResponse);
   }
 }
 
@@ -661,17 +695,29 @@ function getOrCreateSheet(planilha, nome) {
 }
 
 /**
+ * Adicionar headers CORS a uma resposta
+ */
+function addCorsHeaders(response) {
+  return response
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+/**
  * Criar resposta com CORS habilitado
  */
 function createCorsResponse(content) {
   // Se já é um ContentService, extrair o conteúdo
   if (typeof content === 'object' && content.getContent) {
-    return content;
+    return addCorsHeaders(content);
   }
   
-  return ContentService
+  const response = ContentService
     .createTextOutput(JSON.stringify(content))
     .setMimeType(ContentService.MimeType.JSON);
+  
+  return addCorsHeaders(response);
 }
 
 /* ============================================
@@ -684,11 +730,18 @@ function createCorsResponse(content) {
  */
 function handleAtualizarSugestao(planilha, dados) {
   try {
+    Logger.log('=== INICIANDO handleAtualizarSugestao ===');
+    Logger.log('Dados recebidos: ' + JSON.stringify(dados));
+    
     const aba = planilha.getSheets()[0];
     const nomeOriginal = dados.nomePokemon.toLowerCase().trim();
     const novaSugestao = dados.sugestao || '';
     
+    Logger.log('Nome procurado: ' + nomeOriginal);
+    Logger.log('Nova sugestão: ' + novaSugestao);
+    
     const todosOsDados = aba.getDataRange().getValues();
+    Logger.log('Total de linhas na planilha: ' + todosOsDados.length);
     
     // Buscar Pokémon
     for (let i = 1; i < todosOsDados.length; i++) {
@@ -697,8 +750,13 @@ function handleAtualizarSugestao(planilha, dados) {
       const nomeParaComparar = nomeEV || nomePokemon;
       
       if (nomeParaComparar === nomeOriginal) {
-        // COLUNA F = índice 6 (SUGESTÃO DE LOCALIZAÇÃO)
+        Logger.log('POKEMON ENCONTRADO na linha ' + (i + 1));
+        Logger.log('Coluna F (índice 5): ' + todosOsDados[i][5]);
+        
+        // COLUNA F = índice 5 (contando de 0: A=0, B=1, C=2, D=3, E=4, F=5)
         aba.getRange(i + 1, 6).setValue(novaSugestao);
+        
+        Logger.log('Sugestão salva com sucesso!');
         
         return ContentService.createTextOutput(JSON.stringify({
           sucesso: true,
@@ -706,6 +764,8 @@ function handleAtualizarSugestao(planilha, dados) {
         })).setMimeType(ContentService.MimeType.JSON);
       }
     }
+    
+    Logger.log('ERRO: Pokemon não encontrado: ' + nomeOriginal);
     
     return ContentService.createTextOutput(JSON.stringify({
       sucesso: false,
