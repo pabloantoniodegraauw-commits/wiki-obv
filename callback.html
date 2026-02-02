@@ -24,6 +24,9 @@
     // Função para obter parâmetros da URL
     function getUrlParams() {
       const params = new URLSearchParams(window.location.search);
+      console.log('URL completa:', window.location.href);
+      console.log('Search params:', window.location.search);
+      console.log('Hash:', window.location.hash);
       return {
         credential: params.get('credential') || getCredentialFromHash()
       };
