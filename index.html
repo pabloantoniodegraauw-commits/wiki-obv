@@ -7,6 +7,26 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- 🔐 PROTEÇÃO DE AUTENTICAÇÃO -->
+    <script>
+        // Verificar se está logado ANTES de carregar a página
+        const SESSION_EXPIRATION = 8 * 60 * 60 * 1000; // 8 horas
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!user.email || !user.token) {
+            // Não está logado - redirecionar para login
+            window.location.href = '/login.html';
+        } else {
+            // Verificar se sessão expirou
+            const loginAt = user.loginAt || 0;
+            if (Date.now() - loginAt > SESSION_EXPIRATION) {
+                // Sessão expirada - limpar e redirecionar
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="container">
