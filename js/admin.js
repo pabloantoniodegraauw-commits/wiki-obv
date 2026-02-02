@@ -276,10 +276,6 @@ function attachMemberActions() {
     });
   });
 }
-      }
-    });
-  });
-}
 
 /**
  * APROVAR MEMBRO
