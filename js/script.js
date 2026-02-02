@@ -1730,16 +1730,31 @@
                     authToken: user.authToken
                 };
                 
+                console.log('📤 ENVIANDO PARA APPS SCRIPT:', payload);
+                console.log('📍 URL:', APPS_SCRIPT_URL);
+                
                 const resposta = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(payload)
                 });
                 
-                console.log('✅ Sugestão salva com sucesso!');
+                console.log('📥 RESPOSTA:', resposta);
+                
+                const resultado = await resposta.json();
+                console.log('📋 RESULTADO:', resultado);
+                
+                if (resultado.sucesso) {
+                    console.log('✅ Sugestão salva com sucesso!');
+                } else {
+                    console.error('❌ Erro do servidor:', resultado.mensagem);
+                    alert('Erro: ' + resultado.mensagem);
+                    botao.disabled = false;
+                    botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+                    return;
+                }
                 
                 // Fechar modal e recarregar
                 document.querySelector('[style*=fixed]').remove();
