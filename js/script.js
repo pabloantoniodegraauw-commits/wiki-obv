@@ -198,7 +198,10 @@
                     configurarInfiniteScroll();
                 }
             } catch (erro) {
-                document.getElementById('pokemonContainer').innerHTML = `
+                const container = document.getElementById('pokemonContainer');
+                if (!container) return; // Sair se o elemento não existir
+                
+                container.innerHTML = `
                     <div class="error">
                         <h3><i class="fas fa-exclamation-triangle"></i> Erro</h3>
                         <p>${erro.message}</p>
@@ -923,6 +926,8 @@
 
         function renderizarTMs(dados) {
             const container = document.getElementById('tmsContainer');
+            if (!container) return; // Sair se o elemento não existir
+            
             container.innerHTML = '';
 
             if (dados.length === 0) {
@@ -1190,10 +1195,17 @@
         }
         
         document.addEventListener('DOMContentLoaded', () => {
-            carregarDados();
-            carregarTMs();
-            configurarBuscaTMs();
-            renderizarMembrosClã();
+            // Executar apenas se os elementos correspondentes existirem
+            if (document.getElementById('pokemonContainer')) {
+                carregarDados();
+            }
+            if (document.getElementById('tmsContainer')) {
+                carregarTMs();
+                configurarBuscaTMs();
+            }
+            if (document.getElementById('membrosContainer')) {
+                renderizarMembrosClã();
+            }
             inicializarGoogle();
         });
 
