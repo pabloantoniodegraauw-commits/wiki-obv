@@ -107,6 +107,36 @@
         </footer>
     </div>
     
+    <!-- Função de logout para o novo sistema de autenticação -->
+    <script>
+        function fazerLogout() {
+            const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUakDr5kqR07LFGCzPjVkKGeBJl7pGmvEuY0UQpDHPtpcF7e4r5mFNWcdyksyjdgxifw/exec';
+            
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            // Registrar logout nos logs
+            if (user.email) {
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'log',
+                        email: user.email,
+                        nickname: user.nickname,
+                        evento: 'logout'
+                    })
+                }).catch(err => console.error('Erro ao registrar logout:', err));
+            }
+            
+            // Limpar localStorage e sessionStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Redirecionar para login
+            window.location.href = './login.html';
+        }
+    </script>
+    
     <!-- Core scripts -->
     <script src="js/script.js"></script>
     <script src="js/modules/navigation.js"></script>
