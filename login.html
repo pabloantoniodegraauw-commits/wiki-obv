@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Wiki OBV - Login</title>
 
-  <link rel="stylesheet" href="/css/login.css" />
+  <link rel="stylesheet" href="./css/login.css" />
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -14,7 +14,7 @@
 
   <main class="login-container">
 
-    <img src="/assets/logo-obv.png" alt="OBV Clã" class="logo" />
+    <img src="./assets/logo-obv.png" alt="OBV Clã" class="logo" />
 
     <h1>Bem-vindo ao Wiki-OBV!</h1>
     <p class="subtitle">
@@ -57,7 +57,7 @@
     // Callback do Google Sign-In (modo popup)
     function handleCredentialResponse(response) {
       // Redirecionar para callback com o token na URL
-      window.location.href = `/callback.html?credential=${response.credential}`;
+      window.location.href = `callback.html?credential=${response.credential}`;
     }
   </script>
 

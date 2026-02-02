@@ -16,14 +16,14 @@
         
         if (!user.email || !user.token) {
             // Não está logado - redirecionar para login
-            window.location.href = '/login.html';
+            window.location.href = 'login.html';
         } else {
             // Verificar se sessão expirou
             const loginAt = user.loginAt || 0;
             if (Date.now() - loginAt > SESSION_EXPIRATION) {
                 // Sessão expirada - limpar e redirecionar
                 localStorage.removeItem('user');
-                window.location.href = '/login.html';
+                window.location.href = 'login.html';
             }
         }
     </script>

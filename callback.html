@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Processando Login...</title>
 
-  <link rel="stylesheet" href="/css/login.css" />
+  <link rel="stylesheet" href="./css/login.css" />
 </head>
 <body>
 
   <div class="login-overlay"></div>
 
   <main class="login-container">
-    <img src="/assets/logo-obv.png" alt="OBV Clã" class="logo" />
+    <img src="./assets/logo-obv.png" alt="OBV Clã" class="logo" />
     <h1>Processando login...</h1>
     <p class="subtitle" id="status">Aguarde enquanto validamos suas credenciais.</p>
   </main>
@@ -63,7 +63,7 @@
 
       if (!credential) {
         statusEl.textContent = 'Erro: Token não encontrado. Redirecionando...';
-        setTimeout(() => window.location.href = 'login.html', 2000);
+        setTimeout(() => window.location.href = './login.html', 2000);
         return;
       }
 
@@ -72,7 +72,7 @@
       
       if (!tokenData) {
         statusEl.textContent = 'Erro ao processar token. Redirecionando...';
-        setTimeout(() => window.location.href = 'login.html', 2000);
+        setTimeout(() => window.location.href = './login.html', 2000);
         return;
       }
 
@@ -95,7 +95,7 @@
         // Ou permitir acesso temporário
         setTimeout(() => {
           alert('Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.');
-          window.location.href = 'login.html';
+          window.location.href = './login.html';
         }, 3000);
       }
     }
@@ -106,19 +106,19 @@
 
       if (!data.success) {
         statusEl.textContent = data.message || 'Erro na autenticação.';
-        setTimeout(() => window.location.href = 'login.html', 3000);
+        setTimeout(() => window.location.href = './login.html', 3000);
         return;
       }
 
       // Verificar status do usuário
       if (data.status === 'pendente') {
-        window.location.href = 'aguardando.html';
+        window.location.href = './aguardando.html';
         return;
       }
 
       if (data.status === 'rejeitado') {
         statusEl.textContent = 'Seu cadastro foi rejeitado.';
-        setTimeout(() => window.location.href = 'login.html', 3000);
+        setTimeout(() => window.location.href = './login.html', 3000);
         return;
       }
 
@@ -141,7 +141,7 @@
           .catch(() => console.log('Log não registrado'));
 
         statusEl.textContent = 'Login realizado com sucesso! Redirecionando...';
-        setTimeout(() => window.location.href = '/index.html', 1000);
+        setTimeout(() => window.location.href = './index.html', 1000);
         return;
       }
 
@@ -153,7 +153,7 @@
           nome: tokenData.name,
           foto: tokenData.picture
         }));
-        window.location.href = 'cadastro.html';
+        window.location.href = './cadastro.html';
         return;
       }
     }
