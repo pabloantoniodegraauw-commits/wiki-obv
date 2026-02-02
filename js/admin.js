@@ -9,6 +9,9 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUakDr5kqR07LF
 // Obter usuário (já validado pelo admin.html)
 const adminUser = JSON.parse(localStorage.getItem('user'));
 
+// Armazenar todos os membros para filtros
+let allMembers = [];
+
 // Sistema de tabs
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -30,6 +33,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
+// Sistema de filtros e busca
+document.getElementById('searchInput')?.addEventListener('input', applyFilters);
+document.getElementById('filterStatus')?.addEventListener('change', applyFilters);
+document.getElementById('filterRole')?.addEventListener('change', applyFilters);
+document.getElementById('btnExportCSV')?.addEventListener('click', exportToCSV);
+
 // Carregar membros ao iniciar
 loadMembers();
 
@@ -49,37 +58,141 @@ async function loadMembers() {
       return;
     }
 
-    // Renderizar tabela
-    tbody.innerHTML = data.users.map(member => `
-      <tr data-email="${member.email}">
-        <td>${member.nickname}</td>
-        <td>${member.email}</td>
-        <td>${member.level || '-'}</td>
-        <td>${member.tipoCla || '-'}</td>
-        <td>${member.tier || '-'}</td>
-        <td>
-          <span class="status-badge status-${member.status}">
-            ${member.status.toUpperCase()}
-          </span>
-        </td>
-        <td>
-          <span class="role-badge ${member.role === 'admin' ? 'role-admin' : ''}">
-            ${member.role.toUpperCase()}
-          </span>
-        </td>
-        <td>
-          ${renderActions(member)}
-        </td>
-      </tr>
-    `).join('');
+    // Armazenar membros para filtros
+    allMembers = data.users;
 
-    // Adicionar eventos aos botões
-    attachMemberActions();
+    // Atualizar estatísticas
+    updateStats(allMembers);
+
+    // Renderizar tabela
+    renderMembersTable(allMembers);
 
   } catch (error) {
     console.error('Erro ao carregar membros:', error);
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Erro ao carregar membros.</td></tr>';
   }
+}
+
+/**
+ * ATUALIZAR ESTATÍSTICAS DO DASHBOARD
+ */
+function updateStats(members) {
+  const total = members.length;
+  const pendentes = members.filter(m => m.status === 'pendente').length;
+  const aprovados = members.filter(m => m.status === 'aprovado').length;
+  const rejeitados = members.filter(m => m.status === 'rejeitado').length;
+  const admins = members.filter(m => m.role === 'admin').length;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPendentes').textContent = pendentes;
+  document.getElementById('statAprovados').textContent = aprovados;
+  document.getElementById('statRejeitados').textContent = rejeitados;
+  document.getElementById('statAdmins').textContent = admins;
+}
+
+/**
+ * RENDERIZAR TABELA DE MEMBROS
+ */
+function renderMembersTable(members) {
+  const tbody = document.getElementById('membersTable');
+
+  if (members.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum membro encontrado com esses filtros.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = members.map(member => `
+    <tr data-email="${member.email}">
+      <td>${member.nickname}</td>
+      <td>${member.email}</td>
+      <td>${member.level || '-'}</td>
+      <td>${member.tipoCla || '-'}</td>
+      <td>${member.tier || '-'}</td>
+      <td>
+        <span class="status-badge status-${member.status}">
+          ${member.status.toUpperCase()}
+        </span>
+      </td>
+      <td>
+        <span class="role-badge ${member.role === 'admin' ? 'role-admin' : ''}">
+          ${member.role.toUpperCase()}
+        </span>
+      </td>
+      <td>
+        ${renderActions(member)}
+      </td>
+    </tr>
+  `).join('');
+
+  // Adicionar eventos aos botões
+  attachMemberActions();
+}
+
+/**
+ * APLICAR FILTROS E BUSCA
+ */
+function applyFilters() {
+  const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+  const statusFilter = document.getElementById('filterStatus')?.value || '';
+  const roleFilter = document.getElementById('filterRole')?.value || '';
+
+  let filtered = allMembers;
+
+  // Filtrar por busca
+  if (searchTerm) {
+    filtered = filtered.filter(m => 
+      m.nickname.toLowerCase().includes(searchTerm) ||
+      m.email.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  // Filtrar por status
+  if (statusFilter) {
+    filtered = filtered.filter(m => m.status === statusFilter);
+  }
+
+  // Filtrar por role
+  if (roleFilter) {
+    filtered = filtered.filter(m => m.role === roleFilter);
+  }
+
+  renderMembersTable(filtered);
+}
+
+/**
+ * EXPORTAR PARA CSV
+ */
+function exportToCSV() {
+  if (allMembers.length === 0) {
+    alert('Nenhum dado para exportar.');
+    return;
+  }
+
+  // Cabeçalho CSV
+  const headers = ['Nickname', 'Email', 'Level', 'Tipo de Clã', 'Tier', 'Status', 'Cargo'];
+  const csvContent = [
+    headers.join(','),
+    ...allMembers.map(m => [
+      m.nickname,
+      m.email,
+      m.level || '',
+      m.tipoCla || '',
+      m.tier || '',
+      m.status,
+      m.role
+    ].join(','))
+  ].join('\n');
+
+  // Criar download
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `wiki-obv-membros-${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 /**
@@ -96,6 +209,15 @@ function renderActions(member) {
       </button>
       <button class="action-btn btn-reject" data-action="reject" data-email="${member.email}">
         Rejeitar
+      </button>
+    `);
+  }
+
+  // Botão de editar (para todos os aprovados)
+  if (member.status === 'aprovado') {
+    actions.push(`
+      <button class="action-btn btn-edit" data-action="edit" data-email="${member.email}">
+        ✏️ Editar
       </button>
     `);
   }
@@ -148,6 +270,12 @@ function attachMemberActions() {
         await removeAdmin(email);
       } else if (action === 'deleteMember') {
         await deleteMember(email);
+      } else if (action === 'edit') {
+        openEditModal(email);
+      }
+    });
+  });
+}
       }
     });
   });
@@ -305,6 +433,83 @@ async function deleteMember(email) {
   } catch (error) {
     console.error('❌ Erro ao deletar membro:', error);
     alert('Erro ao remover membro. Verifique o console (F12) para mais detalhes.');
+  }
+}
+
+/* ============================================
+   MODAL PARA EDITAR DADOS DO USUÁRIO
+   ============================================ */
+
+/**
+ * ABRIR MODAL DE EDIÇÃO
+ */
+function openEditModal(email) {
+  const member = allMembers.find(m => m.email === email);
+  if (!member) return;
+
+  // Preencher formulário
+  document.getElementById('editEmail').value = member.email;
+  document.getElementById('editNickname').value = member.nickname;
+  document.getElementById('editLevel').value = member.level || '';
+  document.getElementById('editTipoCla').value = member.tipoCla || '';
+  document.getElementById('editTier').value = member.tier || '';
+
+  // Mostrar modal
+  document.getElementById('editModal').classList.add('active');
+}
+
+/**
+ * FECHAR MODAL DE EDIÇÃO
+ */
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('active');
+}
+
+/**
+ * SALVAR EDIÇÃO DO MEMBRO
+ */
+async function saveEdit() {
+  const email = document.getElementById('editEmail').value;
+  const level = document.getElementById('editLevel').value;
+  const tipoCla = document.getElementById('editTipoCla').value;
+  const tier = document.getElementById('editTier').value;
+
+  if (!level || !tipoCla || !tier) {
+    alert('Por favor, preencha todos os campos obrigatórios.');
+    return;
+  }
+
+  try {
+    const payload = {
+      action: 'updateUser',
+      email: email,
+      level: parseInt(level),
+      tipoCla: tipoCla,
+      tier: tier,
+      authToken: adminUser.authToken,
+      adminEmail: adminUser.email
+    };
+
+    console.log('📤 Atualizando usuário:', payload);
+
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify(payload)
+    });
+
+    console.log('✅ Atualização enviada');
+    
+    closeEditModal();
+    alert('Dados atualizados com sucesso!');
+    
+    setTimeout(() => {
+      loadMembers();
+    }, 1000);
+
+  } catch (error) {
+    console.error('❌ Erro ao atualizar:', error);
+    alert('Erro ao atualizar dados. Tente novamente.');
   }
 }
 

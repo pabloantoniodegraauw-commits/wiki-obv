@@ -83,6 +83,8 @@ function doPost(e) {
         return handleSetRole(planilha, dados);
       case 'deleteUser':
         return handleDeleteUser(planilha, dados);
+      case 'updateUser':
+        return handleUpdateUser(planilha, dados);
       default:
         // Manter código existente de Pokémon
         return handlePokemonUpdate(planilha, dados);
@@ -560,6 +562,68 @@ function handleDeleteUser(planilha, dados) {
       return ContentService.createTextOutput(JSON.stringify({
         success: true,
         message: 'Usuário removido com sucesso'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: false,
+    message: 'Usuário não encontrado'
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Atualizar dados do usuário (level, tier, tipoCla)
+ */
+function handleUpdateUser(planilha, dados) {
+  // SEGURANÇA: Extrair email do token, não confiar no adminEmail do front
+  const adminEmail = validateTokenAndGetEmail(dados);
+  
+  if (!adminEmail) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Token de autenticação inválido ou ausente'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const todosOsDados = abaUsuarios.getDataRange().getValues();
+  
+  // Verificar se quem está fazendo a ação é admin
+  let isAdmin = false;
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === adminEmail.toLowerCase()) {
+      if (todosOsDados[i][8] === 'admin') {
+        isAdmin = true;
+      }
+      break;
+    }
+  }
+  
+  if (!isAdmin) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Sem permissão: apenas administradores podem atualizar dados'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Atualizar dados do usuário
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === dados.email.toLowerCase()) {
+      // Atualizar colunas: level (5), tipoCla (6), tier (7)
+      if (dados.level !== undefined) {
+        abaUsuarios.getRange(i + 1, 5).setValue(dados.level);
+      }
+      if (dados.tipoCla !== undefined) {
+        abaUsuarios.getRange(i + 1, 6).setValue(dados.tipoCla);
+      }
+      if (dados.tier !== undefined) {
+        abaUsuarios.getRange(i + 1, 7).setValue(dados.tier);
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: 'Dados atualizados com sucesso'
       })).setMimeType(ContentService.MimeType.JSON);
     }
   }

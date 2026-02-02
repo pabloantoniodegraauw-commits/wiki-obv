@@ -220,6 +220,154 @@
       padding: 60px 20px;
       opacity: 0.6;
     }
+
+    /* DASHBOARD DE ESTATÍSTICAS */
+    .stats-dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: rgba(20, 25, 50, 0.5);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border: 1px solid rgba(155, 188, 255, 0.2);
+      transition: all 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(155, 188, 255, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-card-admin {
+      border-color: rgba(255, 215, 0, 0.3);
+    }
+
+    .stat-card-admin:hover {
+      border-color: rgba(255, 215, 0, 0.5);
+    }
+
+    .stat-icon {
+      font-size: 36px;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(155, 188, 255, 0.1);
+      border-radius: 12px;
+    }
+
+    .stat-card-admin .stat-icon {
+      background: rgba(255, 215, 0, 0.1);
+    }
+
+    .stat-info {
+      flex: 1;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #9bbcff;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-card-admin .stat-value {
+      color: #ffd700;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      opacity: 0.7;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* FILTROS E BUSCA */
+    .filters-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 250px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: #9bbcff;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .search-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .filter-select {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: #9bbcff;
+    }
+
+    .filter-select option {
+      background: #1a1f3a;
+      color: white;
+    }
+
+    .btn-export {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: 1px solid rgba(76, 175, 80, 0.5);
+      background: rgba(76, 175, 80, 0.2);
+      color: #4caf50;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-export:hover {
+      background: rgba(76, 175, 80, 0.3);
+      border-color: #4caf50;
+    }
+
+    .btn-edit {
+      background: #2196f3;
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background: #0b7dda;
+    }
   </style>
 </head>
 <body>
@@ -229,6 +377,45 @@
 <div class="admin-container">
   <h1 class="section-title">Administração</h1>
 
+  <!-- DASHBOARD DE ESTATÍSTICAS -->
+  <div class="stats-dashboard">
+    <div class="stat-card">
+      <div class="stat-icon">👥</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-label">Total de Membros</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statPendentes">0</div>
+        <div class="stat-label">Pendentes</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statAprovados">0</div>
+        <div class="stat-label">Aprovados</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">❌</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statRejeitados">0</div>
+        <div class="stat-label">Rejeitados</div>
+      </div>
+    </div>
+    <div class="stat-card stat-card-admin">
+      <div class="stat-icon">👑</div>
+      <div class="stat-info">
+        <div class="stat-value" id="statAdmins">0</div>
+        <div class="stat-label">Administradores</div>
+      </div>
+    </div>
+  </div>
+
   <div class="tabs">
     <button class="tab-btn active" data-tab="membros">Membros</button>
     <button class="tab-btn" data-tab="logs">Logs</button>
@@ -236,6 +423,23 @@
 
   <!-- ABA MEMBROS -->
   <div class="tab-content active" id="tab-membros">
+    <!-- FILTROS E BUSCA -->
+    <div class="filters-container">
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar por nickname ou email..." />
+      <select id="filterStatus" class="filter-select">
+        <option value="">Todos os Status</option>
+        <option value="pendente">Pendentes</option>
+        <option value="aprovado">Aprovados</option>
+        <option value="rejeitado">Rejeitados</option>
+      </select>
+      <select id="filterRole" class="filter-select">
+        <option value="">Todos os Cargos</option>
+        <option value="admin">Admins</option>
+        <option value="membro">Membros</option>
+      </select>
+      <button id="btnExportCSV" class="btn-export">📥 Exportar CSV</button>
+    </div>
+
     <table>
       <thead>
         <tr>
@@ -282,6 +486,187 @@
     </table>
   </div>
 </div>
+
+<!-- MODAL PARA EDITAR DADOS DO USUÁRIO -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Editar Membro</h2>
+      <button class="modal-close" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editEmail" />
+      <div class="form-group">
+        <label>Nickname</label>
+        <input type="text" id="editNickname" disabled />
+      </div>
+      <div class="form-group">
+        <label>Level</label>
+        <input type="number" id="editLevel" min="1" max="100" />
+      </div>
+      <div class="form-group">
+        <label>Tipo de Clã</label>
+        <select id="editTipoCla">
+          <option value="">Selecione...</option>
+          <option value="Terrestre">Terrestre</option>
+          <option value="Aquático">Aquático</option>
+          <option value="Aéreo">Aéreo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Tier</label>
+        <select id="editTier">
+          <option value="">Selecione...</option>
+          <option value="Bronze">Bronze</option>
+          <option value="Prata">Prata</option>
+          <option value="Ouro">Ouro</option>
+          <option value="Platina">Platina</option>
+          <option value="Diamante">Diamante</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-cancel" onclick="closeEditModal()">Cancelar</button>
+      <button class="modal-btn modal-btn-save" onclick="saveEdit()">Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+  }
+
+  .modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-content {
+    background: linear-gradient(135deg, #1a1f3a 0%, #0a0f1e 100%);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    border: 1px solid rgba(155, 188, 255, 0.2);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal-header {
+    padding: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #9bbcff;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 32px;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .modal-close:hover {
+    color: white;
+  }
+
+  .modal-body {
+    padding: 24px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .form-group input,
+  .form-group select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 14px;
+  }
+
+  .form-group input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: #9bbcff;
+  }
+
+  .form-group select option {
+    background: #1a1f3a;
+    color: white;
+  }
+
+  .modal-footer {
+    padding: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .modal-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .modal-btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .modal-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .modal-btn-save {
+    background: #4caf50;
+    color: white;
+  }
+
+  .modal-btn-save:hover {
+    background: #45a049;
+  }
+</style>
 
 <script src="../js/admin.js"></script>
 

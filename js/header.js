@@ -44,6 +44,22 @@
   const header = document.createElement("header");
   header.className = "obv-header";
 
+  // Variável para o badge de pendentes
+  let badgeHTML = '';
+  
+  // Se for admin, buscar quantidade de pendentes
+  if (user.role === 'admin') {
+    fetchPendingCount().then(count => {
+      if (count > 0) {
+        const badge = document.querySelector('.admin-badge');
+        if (badge) {
+          badge.textContent = count;
+          badge.style.display = 'flex';
+        }
+      }
+    });
+  }
+
   header.innerHTML = `
     <div class="left">
       <img src="${isIndexPage ? './assets/logo-obv.png' : '../assets/logo-obv.png'}" alt="OBV" onerror="this.style.display='none'" />
@@ -55,7 +71,10 @@
         ? `<a href="../index.html" style="margin-right: 12px; color: #9bbcff;">← Voltar</a>`
         : ""}
       ${user.role === "admin"
-        ? `<a href="${adminPath}">Admin</a>`
+        ? `<a href="${adminPath}" style="position: relative; display: inline-flex; align-items: center;">
+            Admin
+            <span class="admin-badge" style="display: none; position: absolute; top: -8px; right: -12px; background: #f44336; color: white; border-radius: 10px; padding: 2px 6px; font-size: 11px; font-weight: bold; min-width: 18px; height: 18px; align-items: center; justify-content: center;">0</span>
+          </a>`
         : ""}
       
       <div class="obv-user">
@@ -98,6 +117,26 @@
   // Iniciar sistema de ping para logs de atividade
   startActivityPing(user);
 })();
+
+/**
+ * Buscar quantidade de cadastros pendentes (somente para admins)
+ */
+async function fetchPendingCount() {
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwUakDr5kqR07LFGCzPjVkKGeBJl7pGmvEuY0UQpDHPtpcF7e4r5mFNWcdyksyjdgxifw/exec';
+  
+  try {
+    const response = await fetch(`${APPS_SCRIPT_URL}?action=getUsers`);
+    const data = await response.json();
+    
+    if (data.success && data.users) {
+      return data.users.filter(u => u.status === 'pendente').length;
+    }
+  } catch (error) {
+    console.error('Erro ao buscar pendentes:', error);
+  }
+  
+  return 0;
+}
 
 /**
  * Sistema de ping automático para registrar atividade
