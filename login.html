@@ -71,9 +71,23 @@
 
     // Callback do Google Sign-In (modo popup)
     function handleCredentialResponse(response) {
+      if (!response || !response.credential) {
+        console.error('❌ Erro: credencial não recebida do Google');
+        alert('Erro ao fazer login. Tente novamente.');
+        return;
+      }
+      
+      console.log('✅ Credencial recebida, redirecionando...');
       // Redirecionar para callback com o token na URL
       window.location.href = `callback.html?credential=${response.credential}`;
     }
+
+    // Capturar erros do Google Identity Services
+    window.addEventListener('error', function(e) {
+      if (e.message && e.message.includes('token')) {
+        console.warn('⚠️ Aviso do Google Identity Services:', e.message);
+      }
+    }, true);
   </script>
 
 </body>
