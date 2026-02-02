@@ -81,6 +81,8 @@ function doPost(e) {
         return handleRejectUser(planilha, dados);
       case 'setRole':
         return handleSetRole(planilha, dados);
+      case 'deleteUser':
+        return handleDeleteUser(planilha, dados);
       default:
         // Manter código existente de Pokémon
         return handlePokemonUpdate(planilha, dados);
@@ -504,6 +506,67 @@ function countAdmins(planilha) {
   return ContentService.createTextOutput(JSON.stringify({
     success: true,
     count: count
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Deletar usuário (remover da planilha)
+ */
+function handleDeleteUser(planilha, dados) {
+  // SEGURANÇA: Extrair email do token, não confiar no adminEmail do front
+  const adminEmail = validateTokenAndGetEmail(dados);
+  
+  if (!adminEmail) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Token de autenticação inválido ou ausente'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+  const todosOsDados = abaUsuarios.getDataRange().getValues();
+  
+  // Verificar se quem está fazendo a ação é admin
+  let isAdmin = false;
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === adminEmail.toLowerCase()) {
+      if (todosOsDados[i][8] === 'admin') {
+        isAdmin = true;
+      }
+      break;
+    }
+  }
+  
+  if (!isAdmin) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Sem permissão: apenas administradores podem deletar usuários'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Impedir que admin delete a si mesmo
+  if (adminEmail.toLowerCase() === dados.email.toLowerCase()) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: 'Você não pode remover sua própria conta'
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+  
+  // Encontrar e deletar o usuário
+  for (let i = 1; i < todosOsDados.length; i++) {
+    if (todosOsDados[i][0].toLowerCase() === dados.email.toLowerCase()) {
+      abaUsuarios.deleteRow(i + 1);
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        message: 'Usuário removido com sucesso'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  
+  return ContentService.createTextOutput(JSON.stringify({
+    success: false,
+    message: 'Usuário não encontrado'
   })).setMimeType(ContentService.MimeType.JSON);
 }
 

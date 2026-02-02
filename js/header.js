@@ -51,6 +51,9 @@
     </div>
 
     <div class="right">
+      ${!isIndexPage
+        ? `<a href="../index.html" style="margin-right: 12px; color: #9bbcff;">← Voltar</a>`
+        : ""}
       ${user.role === "admin"
         ? `<a href="${adminPath}">Admin</a>`
         : ""}

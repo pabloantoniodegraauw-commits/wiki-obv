@@ -117,6 +117,15 @@ function renderActions(member) {
     }
   }
 
+  // Botão de remover membro (para todos exceto admin atual)
+  if (member.email !== adminUser.email) {
+    actions.push(`
+      <button class="action-btn btn-reject" data-action="deleteMember" data-email="${member.email}" style="background: #9e9e9e;">
+        🗑️ Remover
+      </button>
+    `);
+  }
+
   return actions.join('');
 }
 
@@ -137,6 +146,8 @@ function attachMemberActions() {
         await makeAdmin(email);
       } else if (action === 'removeAdmin') {
         await removeAdmin(email);
+      } else if (action === 'deleteMember') {
+        await deleteMember(email);
       }
     });
   });
@@ -249,6 +260,38 @@ async function removeAdmin(email) {
   } catch (error) {
     console.error('Erro ao remover admin:', error);
     alert('Erro ao remover privilégios.');
+  }
+}
+
+/**
+ * DELETAR MEMBRO (REMOVER DA PLANILHA)
+ */
+async function deleteMember(email) {
+  if (!confirm('⚠️ ATENÇÃO: Deseja REMOVER PERMANENTEMENTE este membro?\n\nEsta ação não pode ser desfeita!')) return;
+
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'deleteUser',
+        email: email,
+        authToken: adminUser.authToken, // Token validado no backend
+        adminEmail: adminUser.email // Fallback
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      alert(data.message || 'Erro ao remover membro.');
+      return;
+    }
+
+    alert('Membro removido com sucesso!');
+    loadMembers();
+  } catch (error) {
+    console.error('Erro ao deletar membro:', error);
+    alert('Erro ao remover membro.');
   }
 }
 
