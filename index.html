@@ -36,9 +36,31 @@
     </script>
 </head>
 <body>
-    <!-- Header injetado automaticamente pelo header.js -->
+    <!-- Header customizado -->
+    <div class="top-header" style="position: fixed; top: 0; left: 0; right: 0; height: 60px; background: rgba(20, 25, 50, 0.95); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <img src="./assets/logo-obv.png" alt="OBV" style="height: 40px;" onerror="this.style.display='none'">
+            <span style="color: white; font-weight: 600; font-size: 18px;">Wiki-OBV</span>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <a href="./admin/admin.html" id="adminLink" style="display: none; color: #9bbcff; text-decoration: none; font-weight: 500; transition: color 0.2s;">Admin</a>
+            
+            <div id="userDisplay" style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 12px;">
+                <img id="userPhoto" src="" alt="User" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+                <div style="text-align: left;">
+                    <div id="userName" style="color: white; font-weight: 600; font-size: 13px; line-height: 1.2;"></div>
+                    <div id="userRole" style="color: rgba(255,255,255,0.7); font-size: 11px; text-transform: uppercase;"></div>
+                </div>
+            </div>
+            
+            <button onclick="fazerLogout()" style="background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%); border: none; color: white; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3); transition: all 0.3s ease; font-size: 14px;">
+                Sair
+            </button>
+        </div>
+    </div>
     
-    <div class="container">
+    <div class="container" style="margin-top: 60px;">
         <div class="tabs-nav">
             <button class="tab-btn active" data-page="pokedex">
                 <i class="fas fa-book"></i> Pokédex
@@ -85,9 +107,6 @@
         </footer>
     </div>
     
-    <!-- Header global com autenticação -->
-    <script src="js/header.js"></script>
-    
     <!-- Core scripts -->
     <script src="js/script.js"></script>
     <script src="js/modules/navigation.js"></script>
@@ -96,27 +115,33 @@
     <script src="js/modules/tasks.js"></script>
     <script src="js/modules/cla.js"></script>
     
-    <!-- Script para mostrar botão Admin -->
+    <!-- Script para popular informações do usuário no header -->
     <script>
-        // Verificar se usuário é admin e mostrar botão
         document.addEventListener('DOMContentLoaded', function() {
             const userStr = localStorage.getItem('user');
             if (userStr) {
                 try {
                     const user = JSON.parse(userStr);
+                    
+                    // Popular informações do header
+                    document.getElementById('userPhoto').src = user.foto || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.nickname) + '&background=667eea&color=fff';
+                    document.getElementById('userName').textContent = user.nome || user.nickname;
+                    document.getElementById('userRole').textContent = user.role === 'admin' ? 'ADMIN' : 'MEMBRO';
+                    
+                    // Mostrar link Admin se for admin
                     if (user.role === 'admin') {
+                        document.getElementById('adminLink').style.display = 'block';
+                        
                         const adminBtn = document.getElementById('adminBtn');
                         if (adminBtn) {
                             adminBtn.style.display = 'block';
-                            
-                            // Adicionar evento de clique para carregar página admin
                             adminBtn.addEventListener('click', function() {
                                 window.location.href = './admin/admin.html';
                             });
                         }
                     }
                 } catch (e) {
-                    console.error('Erro ao verificar role:', e);
+                    console.error('Erro ao carregar informações do usuário:', e);
                 }
             }
         });
