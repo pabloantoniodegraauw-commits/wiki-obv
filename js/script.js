@@ -765,7 +765,6 @@
                 { numero: 'TM208', nome: 'Whirlpool', pokemon: 'Craft', categoria: 'craft' }
             ];
             renderizarTMs(todosTMs);
-            carregarTasks();
         }
 
         function carregarTasks() {
@@ -876,6 +875,8 @@
 
         function renderizarTasks(dados) {
             const container = document.getElementById('tasksContainer');
+            if (!container) return; // Sair se o elemento não existir
+            
             container.innerHTML = '';
             
             dados.forEach((task) => {
@@ -1203,6 +1204,9 @@
                 carregarTMs();
                 configurarBuscaTMs();
             }
+            if (document.getElementById('tasksContainer')) {
+                carregarTasks();
+            }
             if (document.getElementById('membrosContainer')) {
                 renderizarMembrosClã();
             }
@@ -1210,6 +1214,12 @@
         });
 
         function inicializarGoogle() {
+            // Verificar se o Google Identity Services está carregado
+            if (typeof google === 'undefined' || !google.accounts) {
+                console.log('⏳ Google Identity Services ainda não carregado');
+                return;
+            }
+            
             google.accounts.id.initialize({
                 client_id: '294066496258-ojjgv3m4n3qkouq9lg5sg72ms7tlhi34.apps.googleusercontent.com',
                 callback: aoFazerLogin
