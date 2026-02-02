@@ -12,9 +12,14 @@
   // Verificar se usuário está logado
   const userStr = localStorage.getItem("user");
   
+  // Detectar se estamos na página principal ou admin
+  const isIndexPage = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('/wiki-obv/');
+  const loginPath = isIndexPage ? './login.html' : '../login.html';
+  const adminPath = isIndexPage ? './admin/admin.html' : '../admin/admin.html';
+  
   if (!userStr) {
     // Não está logado - redirecionar para login
-    window.location.href = "/login.html";
+    window.location.href = loginPath;
     return;
   }
 
@@ -30,7 +35,7 @@
       alert('Sua sessão expirou. Por favor, faça login novamente.');
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = "/login.html";
+      window.location.href = loginPath;
       return;
     }
   }
@@ -41,17 +46,17 @@
 
   header.innerHTML = `
     <div class="left">
-      <img src="/assets/logo-obv.png" alt="OBV" />
+      <img src="./assets/logo-obv.png" alt="OBV" onerror="this.style.display='none'" />
       <span>Wiki-OBV</span>
     </div>
 
     <div class="right">
       ${user.role === "admin"
-        ? `<a href="/admin/admin.html">Admin</a>`
+        ? `<a href="${adminPath}">Admin</a>`
         : ""}
       
       <div class="obv-user">
-        <img src="${user.foto}" alt="Foto do usuário" />
+        <img src="${user.foto}" alt="Foto do usuário" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=667eea&color=fff'" />
         <div class="info">
           <div class="nickname">${user.nickname}</div>
           <div class="role">${user.role === "admin" ? "ADMIN" : "MEMBRO"}</div>
@@ -84,7 +89,7 @@
     // Limpar localStorage e redirecionar
     localStorage.clear();
     sessionStorage.clear();
-    window.location.href = "/login.html";
+    window.location.href = loginPath;
   };
 
   // Iniciar sistema de ping para logs de atividade
