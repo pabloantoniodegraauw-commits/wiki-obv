@@ -5,6 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Wiki OBV</title>
 
+  <!-- 🔐 PROTEÇÃO ADMIN -->
+  <script>
+    // Verificar se está logado E se é admin
+    const SESSION_EXPIRATION = 8 * 60 * 60 * 1000; // 8 horas
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem('user') || '{}');
+    } catch (e) {
+      localStorage.removeItem('user');
+      window.location.href = '../login.html';
+    }
+    
+    // Verificar autenticação e role
+    if (!user || !user.email || !user.authToken) {
+      localStorage.removeItem('user');
+      window.location.href = '../login.html';
+    } else if (user.role !== 'admin') {
+      // Não é admin - redirecionar para index
+      alert('Acesso negado: apenas administradores podem acessar esta página.');
+      window.location.href = '../index.html';
+    } else {
+      // Verificar se sessão expirou
+      const loginAt = user.loginAt || 0;
+      if (Date.now() - loginAt > SESSION_EXPIRATION) {
+        localStorage.removeItem('user');
+        window.location.href = '../login.html';
+      }
+    }
+  </script>
+
   <link rel="stylesheet" href="../css/global.css" />
   <style>
     body {
