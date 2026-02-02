@@ -6,7 +6,7 @@
 }
 
 body {
-    background: linear-gradient(135deg, #1a2980 0%, #0f3460 100%);
+    background: url('../assets/fundo-site.png') center center / cover no-repeat fixed;
     color: #fff;
     min-height: 100vh;
     padding: 20px;
