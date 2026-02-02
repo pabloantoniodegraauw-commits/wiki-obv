@@ -1719,7 +1719,8 @@
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             
             try {
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz5Hzx2pORCZz6EXM0xZQk98j0Pq8VDPyxh4h0lE8UJ9fZfMiV28nSUSGjp0QfHr0Ip/exec';
+                // Usar a MESMA URL do script.js (Apps Script de Pokémon)
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzGXynMVvQqoK9madx3_jHilmwKhtZg7wB50-uoAsfufRnz8_9SY1BHFWUvgqUCO9ewcw/exec';
                 
                 const payload = {
                     action: 'atualizarSugestao',
