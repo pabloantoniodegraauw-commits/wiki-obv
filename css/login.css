@@ -9,11 +9,13 @@
 
 body {
   height: 100vh;
-  background: url("../assets/bg-login.png") center / cover no-repeat;
+  width: 100vw;
+  background: url("../assets/bg-login.png") center center / cover no-repeat fixed;
   display: flex;
   justify-content: center;
   align-items: center;
   color: #ffffff;
+  overflow: hidden;
 }
 
 .login-overlay {
