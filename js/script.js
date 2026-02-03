@@ -305,7 +305,7 @@
                         <div>${sugestaoLocalizacao}</div>
                     </div>
                     ` : ''}
-                    <button class="btn-sugerir-local" onclick="abrirModalSugestao('${nomeParaBusca.replace(/'/g, "\\'")}', '${sugestaoLocalizacao.replace(/'/g, "\\'")}')">
+                    <button class="btn-sugerir-local" onclick="abrirModalSugestao('${nomeParaBusca.replace(/'/g, "\\'")}', '${(sugestaoLocalizacao || '').toString().replace(/'/g, "\\'")}')">
                         <i class="fas fa-edit"></i> Sugerir Localização
                     </button>
                     <!-- ⭐ NOVA SEÇÃO: TMs / Moves ⭐ -->
