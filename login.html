@@ -57,7 +57,7 @@
         const user = JSON.parse(userStr);
         const loginAt = user.loginAt || 0;
         // Se sessão válida, redirecionar
-        if (user.email && user.token && (Date.now() - loginAt) < SESSION_EXPIRATION) {
+        if (user.email && (user.authToken || user.token) && (Date.now() - loginAt) < SESSION_EXPIRATION) {
           window.location.href = 'index.html';
         } else {
           // Sessão inválida ou expirada - limpar

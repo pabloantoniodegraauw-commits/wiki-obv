@@ -21,7 +21,7 @@
             window.location.href = 'login.html';
         }
         
-        if (!user || !user.email || !user.authToken) {
+        if (!user || !user.email || !(user.authToken || user.token)) {
             // Não está logado - redirecionar para login
             localStorage.removeItem('user');
             window.location.href = 'login.html';
