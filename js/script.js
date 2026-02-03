@@ -1,11 +1,9 @@
 ﻿// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZ7bdw1o-1uTM1trZ_ixCakyH9qYM-VG1_mDvyByfzLuTMy-4QzsYalTEMbCfFnLQNg/exec';
         
-        // 🤖 GOOGLE GEMINI AI - API Key para busca por imagem
-        // Obtenha sua chave GRATUITA em: https://aistudio.google.com/app/apikey
-        // Gratuito: 1500 requests/dia (mais que suficiente!)
-        // ⚠️ SEGURANÇA: Restrinja por HTTP referrer em: https://console.cloud.google.com/apis/credentials
-        const GEMINI_API_KEY = "AIzaSyClQ3jezSiOj_tlkMRwVr6Yq6-_pNii5XI";
+        // 🤖 OCR COM TESSERACT.JS - Totalmente gratuito e local!
+        // Roda direto no navegador, sem APIs externas ou chaves
+        // Carregado via CDN: https://cdn.jsdelivr.net/npm/tesseract.js
         
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
@@ -1930,112 +1928,80 @@
             console.log('🤖 Busca por imagem configurada! Cole uma imagem com Ctrl+V');
         }
 
-        // Extrair nomes de Pokémon da imagem usando Gemini Vision
+        // Extrair nomes de Pokémon da imagem usando OCR (Tesseract.js)
         async function extrairNomesPokemonComIA(imageFile) {
             try {
-                // Verificar se API Key está configurada
-                if (!GEMINI_API_KEY || GEMINI_API_KEY === 'COLE_SUA_API_KEY_AQUI') {
-                    throw new Error('⚙️ Configure sua API Key do Gemini em js/script.js (linha ~9)\n\n' +
-                                  '📍 Obtenha GRÁTIS em: https://aistudio.google.com/app/apikey\n' +
-                                  '✅ 1500 requests/dia gratuitos!');
+                console.log('🔍 Iniciando OCR com Tesseract.js...');
+                
+                // Verificar se Tesseract está carregado
+                if (typeof Tesseract === 'undefined') {
+                    throw new Error('⚠️ Tesseract.js não foi carregado. Verifique a conexão com internet.');
                 }
                 
-                // Converter imagem para base64
-                const base64Image = await fileToBase64(imageFile);
-                const base64Data = base64Image.split(',')[1]; // Remover prefixo "data:image/png;base64,"
+                // Criar URL temporária da imagem
+                const imageUrl = URL.createObjectURL(imageFile);
                 
-                // ✅ ENDPOINT CORRETO: API v1beta com Gemini Flash Latest (Free Tier)
-                // Sempre aponta para o melhor modelo gratuito disponível
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+                // Executar OCR na imagem
+                const { data: { text } } = await Tesseract.recognize(
+                    imageUrl,
+                    'eng', // Idioma inglês (nomes de Pokémon)
+                    {
+                        logger: info => {
+                            if (info.status === 'recognizing text') {
+                                console.log(`🔄 OCR Progresso: ${Math.round(info.progress * 100)}%`);
+                            }
+                        }
+                    }
+                );
                 
-                // Prompt otimizado para extrair nomes de Pokémon
-                const prompt = `Analise esta imagem e extraia APENAS os nomes dos Pokémon que aparecem.
+                // Limpar URL temporária
+                URL.revokeObjectURL(imageUrl);
                 
-                REGRAS:
-                - Retorne APENAS os nomes, separados por vírgula
-                - Não adicione explicações, números ou texto extra
-                - Se não houver Pokémon, retorne "nenhum"
-                - Exemplos corretos: "Pikachu, Charizard, Bulbasaur"
+                console.log('📝 Texto extraído:', text);
                 
-                Nomes dos Pokémon:`;
-                
-                // ✅ Estrutura multimodal correta (text + inline_data)
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                {
-                                    inline_data: {
-                                        mime_type: imageFile.type,
-                                        data: base64Data
-                                    }
-                                }
-                            ]
-                        }]
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`Gemini API Error: ${JSON.stringify(errorData)}`);
-                }
-                
-                const data = await response.json();
-                
-                // Processar resposta da API
-                return processarERetornarNomes(data);
+                // Processar texto extraído
+                return processarERetornarNomes(text);
                 
             } catch (erro) {
-                console.error('Erro na IA:', erro);
+                console.error('❌ Erro no OCR:', erro);
                 throw erro;
             }
         }
 
         /**
-         * Processar resposta da API Gemini e extrair nomes de Pokémon
-         * @param {Object} apiResponse - Resposta da API Gemini
+         * Processar texto extraído do OCR e filtrar nomes de Pokémon
+         * @param {string} textoExtraido - Texto extraído pela OCR
          * @returns {Array<string>} - Array com nomes dos Pokémon detectados
          */
-        function processarERetornarNomes(apiResponse) {
+        function processarERetornarNomes(textoExtraido) {
             try {
-                console.log('📦 Resposta da API:', apiResponse);
+                console.log('📦 Processando texto:', textoExtraido);
                 
-                // Verificar se há resposta válida
-                if (!apiResponse.candidates || apiResponse.candidates.length === 0) {
-                    console.warn('⚠️ Nenhum candidato na resposta');
+                // Verificar se há texto
+                if (!textoExtraido || textoExtraido.trim().length === 0) {
+                    console.warn('⚠️ Nenhum texto extraído');
                     return [];
                 }
                 
-                // Extrair texto da resposta
-                const candidate = apiResponse.candidates[0];
-                if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-                    console.warn('⚠️ Nenhum conteúdo na resposta');
-                    return [];
-                }
+                // Dividir texto em linhas e palavras
+                const palavras = textoExtraido.split(/[\s,;|\n\r]+/);
                 
-                const fullText = candidate.content.parts[0].text.trim();
-                console.log('🤖 IA respondeu:', fullText);
+                console.log('📝 Palavras encontradas:', palavras);
                 
-                // Verificar se não detectou nada
-                if (!fullText || fullText.toLowerCase() === 'nenhum') {
-                    return [];
-                }
-                
-                // Processar texto: divide por vírgula, espaços ou quebras de linha
-                const namesArray = fullText
-                    .split(/[,\n]+/)           // Separa por vírgula ou quebra de linha
-                    .map(name => name.trim())  // Remove espaços extras
+                // Filtrar e limpar palavras que podem ser nomes de Pokémon
+                const namesArray = palavras
+                    .map(word => word.trim())
                     .filter(name => {
-                        // Remove entradas vazias e números (níveis, stats, etc)
+                        // Remove entradas vazias, números e texto indesejado
                         return name && 
                                name.length > 2 && 
-                               !(/^\d+$/.test(name)) &&           // Remove números puros
-                               !(/^(lv|lvl|level)\s*\d+$/i.test(name)); // Remove "Lv 42", etc
+                               !/^\d+$/.test(name) &&              // Remove números puros
+                               !/^(lv|lvl|level|hp|atk|def|spa|spd)(\s*\d*)?$/i.test(name) && // Remove stats
+                               !/^(male|female|shiny|★|♂|♀)$/i.test(name); // Remove outros textos
+                    })
+                    .map(name => {
+                        // Capitalizar primeira letra
+                        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
                     });
                 
                 console.log('✅ Nomes extraídos:', namesArray);
@@ -2043,9 +2009,17 @@
                 return namesArray;
                 
             } catch (erro) {
-                console.error('❌ Erro ao processar resposta:', erro);
+                console.error('❌ Erro ao processar texto:', erro);
                 return [];
             }
+        }
+
+        // Inicializar busca por imagem quando página carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', configurarBuscaPorImagem);
+        } else {
+            configurarBuscaPorImagem();
+        }
         }
 
         // Converter arquivo para base64
