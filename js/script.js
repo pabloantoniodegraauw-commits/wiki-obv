@@ -2020,7 +2020,6 @@
         } else {
             configurarBuscaPorImagem();
         }
-        }
 
         // Converter arquivo para base64
         function fileToBase64(file) {
