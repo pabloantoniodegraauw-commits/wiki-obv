@@ -218,6 +218,9 @@
                     <div class="error">
                         <h3><i class="fas fa-exclamation-triangle"></i> Erro</h3>
                         <p>${erro.message}</p>
+                        <button onclick="location.reload()" style="margin-top:20px;padding:10px 25px;background:#ffd700;color:#1a2980;border:none;border-radius:25px;font-weight:bold;cursor:pointer">
+                            <i class="fas fa-redo"></i> Tentar novamente
+                        </button>
                     </div>
                 `;
             }
@@ -225,14 +228,6 @@
         
         // ⭐ Tornar carregarDados acessível globalmente
         window.carregarDados = carregarDados;
-        
-        // ⭐ Renderizar Pokémons no container
-                        <button onclick="location.reload()" style="margin-top:20px;padding:10px 25px;background:#ffd700;color:#1a2980;border:none;border-radius:25px;font-weight:bold;cursor:pointer">
-                            <i class="fas fa-redo"></i> Tentar
-                        </button>
-                    </div>`;
-            }
-        }
         
         function renderizarPokemons(dados) {
             const container = document.getElementById('pokemonContainer');
