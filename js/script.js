@@ -4,6 +4,7 @@
         // 🤖 GOOGLE GEMINI AI - API Key para busca por imagem
         // Obtenha sua chave GRATUITA em: https://aistudio.google.com/app/apikey
         // Gratuito: 1500 requests/dia (mais que suficiente!)
+        // ⚠️ SEGURANÇA: Restrinja por HTTP referrer em: https://console.cloud.google.com/apis/credentials
         const GEMINI_API_KEY = "AIzaSyDXQvDWlQkUB9f10XVulerAcfeTQgXGt0A";
         
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
@@ -1943,8 +1944,8 @@
                 const base64Image = await fileToBase64(imageFile);
                 const base64Data = base64Image.split(',')[1]; // Remover prefixo "data:image/png;base64,"
                 
-                // ✅ ENDPOINT CORRETO: v1 (NÃO v1beta) + gemini-1.5-pro-latest
-                const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`;
+                // ✅ ENDPOINT CORRETO: v1 + gemini-1.5-pro (SEM -latest)
+                const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
                 
                 // Prompt otimizado para extrair nomes de Pokémon
                 const prompt = `Analise esta imagem e extraia APENAS os nomes dos Pokémon que aparecem.
