@@ -1939,15 +1939,12 @@
                                   '✅ 1500 requests/dia gratuitos!');
                 }
                 
-                // Importar biblioteca Gemini
-                const { GoogleGenerativeAI } = await import('@google/generative-ai');
-                const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-                
                 // Converter imagem para base64
                 const base64Image = await fileToBase64(imageFile);
+                const base64Data = base64Image.split(',')[1]; // Remover prefixo "data:image/png;base64,"
                 
-                // ✅ MODELO CORRETO PARA IMAGENS: gemini-pro-vision
-                const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+                // ✅ ENDPOINT CORRETO: v1 (NÃO v1beta) + gemini-1.5-pro-latest
+                const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`;
                 
                 // Prompt otimizado para extrair nomes de Pokémon
                 const prompt = `Analise esta imagem e extraia APENAS os nomes dos Pokémon que aparecem.
@@ -1960,19 +1957,34 @@
                 
                 Nomes dos Pokémon:`;
                 
-                // Enviar para IA
-                const result = await model.generateContent([
-                    prompt,
-                    {
-                        inlineData: {
-                            data: base64Image.split(',')[1],
-                            mimeType: imageFile.type
-                        }
-                    }
-                ]);
+                // ✅ Estrutura multimodal correta (text + inline_data)
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inline_data: {
+                                        mime_type: imageFile.type,
+                                        data: base64Data
+                                    }
+                                }
+                            ]
+                        }]
+                    })
+                });
                 
-                const response = await result.response;
-                const text = response.text().trim();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Gemini API Error: ${JSON.stringify(errorData)}`);
+                }
+                
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text.trim();
                 
                 console.log('🤖 IA respondeu:', text);
                 
