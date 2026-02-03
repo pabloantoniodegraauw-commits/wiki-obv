@@ -1846,19 +1846,34 @@
         // Configurar busca por imagem ao colar (Ctrl+V)
         async function configurarBuscaPorImagem() {
             const searchInput = document.getElementById('searchInput');
-            if (!searchInput) return;
+            
+            if (!searchInput) {
+                console.warn('⚠️ searchInput não encontrado. Tentando novamente em 1s...');
+                setTimeout(configurarBuscaPorImagem, 1000);
+                return;
+            }
+
+            console.log('✅ Busca por imagem configurada no input:', searchInput);
 
             searchInput.addEventListener('paste', async (e) => {
+                console.log('📋 Evento paste detectado!', e);
                 const items = e.clipboardData?.items;
                 if (!items) return;
 
                 // Procurar por imagem no clipboard
+                console.log('🔍 Clipboard items:', items.length);
                 for (let item of items) {
+                    console.log('📦 Item type:', item.type);
                     if (item.type.indexOf('image') !== -1) {
+                        console.log('🖼️ Imagem detectada!');
                         e.preventDefault(); // Evitar colar a imagem como texto
                         
                         const file = item.getAsFile();
-                        if (!file) continue;
+                        console.log('📁 File:', file);
+                        if (!file) {
+                            console.warn('⚠️ Não foi possível obter arquivo');
+                            continue;
+                        }
 
                         // Feedback visual
                         const placeholderOriginal = searchInput.placeholder;
