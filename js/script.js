@@ -4,7 +4,7 @@
         // 🤖 GOOGLE GEMINI AI - API Key para busca por imagem
         // Obtenha sua chave GRATUITA em: https://aistudio.google.com/app/apikey
         // Gratuito: 1500 requests/dia (mais que suficiente!)
-        const GEMINI_API_KEY = "COLE_SUA_API_KEY_AQUI";
+        const GEMINI_API_KEY = "AIzaSyDXQvDWlQkUB9f10XVulerAcfeTQgXGt0A";
         
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
