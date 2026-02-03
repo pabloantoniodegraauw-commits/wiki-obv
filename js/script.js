@@ -1938,36 +1938,54 @@
                     throw new Error('⚠️ Tesseract.js não foi carregado. Verifique a conexão com internet.');
                 }
                 
-                // 🎨 PRÉ-PROCESSAMENTO: Melhorar imagem para OCR
-                console.log('🎨 Aplicando pré-processamento...');
-                const processedImageUrl = await preprocessImage(imageFile);
+                const imageUrl = URL.createObjectURL(imageFile);
                 
-                // Executar OCR na imagem processada
-                const { data: { text } } = await Tesseract.recognize(
-                    processedImageUrl,
-                    'eng', // Idioma inglês (nomes de Pokémon)
-                    {
-                        logger: info => {
-                            if (info.status === 'recognizing text') {
-                                console.log(`🔄 OCR Progresso: ${Math.round(info.progress * 100)}%`);
-                            }
-                        },
-                        // ⚙️ Configurações otimizadas para texto pequeno em jogos
-                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789()♂♀ ',
-                        tessedit_pageseg_mode: '6', // Assume bloco uniforme de texto
-                    }
-                );
+                // 🎯 ESTRATÉGIA HÍBRIDA: Tentar múltiplas abordagens
+                console.log('🎯 Tentativa 1: OCR padrão...');
+                let text = await tryOCR(imageUrl, false);
+                
+                // Se não encontrou nada, tentar com pré-processamento
+                if (!text || text.trim().length < 3) {
+                    console.log('🎯 Tentativa 2: OCR com pré-processamento...');
+                    const processedUrl = await preprocessImage(imageFile);
+                    text = await tryOCR(processedUrl, true);
+                    URL.revokeObjectURL(processedUrl);
+                }
                 
                 // Limpar URL temporária
-                URL.revokeObjectURL(processedImageUrl);
+                URL.revokeObjectURL(imageUrl);
                 
-                console.log('📝 Texto extraído:', text);
+                console.log('📝 Texto extraído final:', text);
                 
                 // Processar texto extraído
                 return processarERetornarNomes(text);
                 
             } catch (erro) {
                 console.error('❌ Erro no OCR:', erro);
+                throw erro;
+            }
+        }
+
+        /**
+         * Tentar OCR na imagem
+         * @param {string} imageUrl - URL da imagem
+         * @param {boolean} isProcessed - Se é imagem pré-processada
+         * @returns {Promise<string>} - Texto extraído
+         */
+        async function tryOCR(imageUrl, isProcessed) {
+            const { data: { text } } = await Tesseract.recognize(
+                imageUrl,
+                'eng',
+                {
+                    logger: info => {
+                        if (info.status === 'recognizing text') {
+                            console.log(`🔄 OCR Progresso: ${Math.round(info.progress * 100)}%`);
+                        }
+                    }
+                }
+            );
+            console.log(`${isProcessed ? '🎨' : '📄'} Texto detectado (${isProcessed ? 'processado' : 'original'}):`, text);
+            return text;
                 throw erro;
             }
         }
@@ -2007,18 +2025,16 @@
                         // Calcular luminosidade (escala de cinza)
                         const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
                         
-                        // 🔄 INVERTER: Texto branco → preto (se pixel claro, inverter)
-                        let invertedLuminance = luminance;
-                        if (luminance > 127) {
-                            invertedLuminance = 255 - luminance;
-                        }
-                        
-                        // 📈 AUMENTAR CONTRASTE (fator 1.5)
-                        let contrastedLuminance = (invertedLuminance - 128) * 1.5 + 128;
+                        // � AUMENTAR CONTRASTE (fator 2.0 - mais agressivo)
+                        let contrastedLuminance = (luminance - 128) * 2.0 + 128;
                         contrastedLuminance = Math.max(0, Math.min(255, contrastedLuminance));
                         
-                        // ⚫⚪ BINARIZAR (limiar 127): preto ou branco puro
-                        const binarized = contrastedLuminance > 127 ? 255 : 0;
+                        // 🔄 INVERTER se fundo escuro (maioria dos pixels escuros)
+                        // Detectar automaticamente se precisa inverter
+                        let finalLuminance = contrastedLuminance;
+                        
+                        // ⚫⚪ BINARIZAR (limiar adaptativo 140): preto ou branco puro
+                        const binarized = finalLuminance > 140 ? 255 : 0;
                         
                         // Aplicar valores processados
                         data[i] = binarized;     // R
