@@ -1,6 +1,11 @@
 ﻿// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZ7bdw1o-1uTM1trZ_ixCakyH9qYM-VG1_mDvyByfzLuTMy-4QzsYalTEMbCfFnLQNg/exec';
         
+        // 🤖 GOOGLE GEMINI AI - API Key para busca por imagem
+        // Obtenha sua chave GRATUITA em: https://aistudio.google.com/app/apikey
+        // Gratuito: 1500 requests/dia (mais que suficiente!)
+        const GEMINI_API_KEY = "COLE_SUA_API_KEY_AQUI";
+        
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
         
