@@ -1927,12 +1927,16 @@
         // Extrair nomes de Pokémon da imagem usando Gemini Vision
         async function extrairNomesPokemonComIA(imageFile) {
             try {
-                // API Key do Gemini (gratuito: 1500 requests/dia)
-                const API_KEY = 'AIzaSyDwZ9vK8TjXxQxW5fN9rZ_pLmN4kQ8yR6c';
+                // Verificar se API Key está configurada
+                if (!GEMINI_API_KEY || GEMINI_API_KEY === 'COLE_SUA_API_KEY_AQUI') {
+                    throw new Error('⚙️ Configure sua API Key do Gemini em js/script.js (linha ~9)\n\n' +
+                                  '📍 Obtenha GRÁTIS em: https://aistudio.google.com/app/apikey\n' +
+                                  '✅ 1500 requests/dia gratuitos!');
+                }
                 
                 // Importar biblioteca Gemini
                 const { GoogleGenerativeAI } = await import('@google/generative-ai');
-                const genAI = new GoogleGenerativeAI(API_KEY);
+                const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
                 
                 // Converter imagem para base64
                 const base64Image = await fileToBase64(imageFile);
