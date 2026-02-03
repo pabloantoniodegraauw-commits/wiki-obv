@@ -786,6 +786,7 @@
                 { numero: 'TM208', nome: 'Whirlpool', pokemon: 'Craft', categoria: 'craft' }
             ];
             renderizarTMs(todosTMs);
+            configurarBuscaTMs();
         }
 
         function carregarTasks() {
