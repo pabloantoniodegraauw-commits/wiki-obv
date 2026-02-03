@@ -1323,15 +1323,24 @@
         function atualizarTelaLogin() {
             const btnLogin = document.getElementById('loginBtn');
             const userInfo = document.getElementById('userInfo');
+            const userNameEl = document.getElementById('userName');
+            const userPicEl = document.getElementById('userPic');
+
+            // Guardas: algumas páginas não possuem estes elementos
+            if (!btnLogin || !userInfo) {
+                return;
+            }
 
             if (usuarioLogado) {
                 btnLogin.style.display = 'none';
                 userInfo.style.display = 'flex';
-                document.getElementById('userName').textContent = usuarioLogado.nome;
-                document.getElementById('userPic').src = usuarioLogado.foto;
+                if (userNameEl) userNameEl.textContent = usuarioLogado.nome || '';
+                if (userPicEl) userPicEl.src = usuarioLogado.foto || '';
             } else {
                 btnLogin.style.display = 'block';
                 userInfo.style.display = 'none';
+                if (userNameEl) userNameEl.textContent = '';
+                if (userPicEl) userPicEl.src = '';
             }
         }
 
