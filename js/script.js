@@ -1946,8 +1946,8 @@
                 // Converter imagem para base64
                 const base64Image = await fileToBase64(imageFile);
                 
-                // Configurar modelo Gemini Vision (versão mais recente)
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+                // Configurar modelo Gemini Vision (versão Flash com suporte a imagens)
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
                 
                 // Prompt otimizado para extrair nomes de Pokémon
                 const prompt = `Analise esta imagem e extraia APENAS os nomes dos Pokémon que aparecem.
