@@ -4,7 +4,7 @@
  */
 
 // URL do Google Apps Script (CONFIGURAR)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVk4YPiVkSHXtw4bkvmz-TzaRTi8T76zWu6VVD84ex09BDmna0zaGd-txEzVnwkEGtrA/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZ7bdw1o-1uTM1trZ_ixCakyH9qYM-VG1_mDvyByfzLuTMy-4QzsYalTEMbCfFnLQNg/exec';
 
 // Obter usuário (já validado pelo admin.html)
 const adminUser = JSON.parse(localStorage.getItem('user'));

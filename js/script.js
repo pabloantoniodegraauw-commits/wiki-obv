@@ -1,5 +1,5 @@
 ﻿// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVk4YPiVkSHXtw4bkvmz-TzaRTi8T76zWu6VVD84ex09BDmna0zaGd-txEzVnwkEGtrA/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZ7bdw1o-1uTM1trZ_ixCakyH9qYM-VG1_mDvyByfzLuTMy-4QzsYalTEMbCfFnLQNg/exec';
         
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
@@ -1762,7 +1762,7 @@
             
             try {
                 // Usar a MESMA URL do script.js (Apps Script de Pokémon)
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVk4YPiVkSHXtw4bkvmz-TzaRTi8T76zWu6VVD84ex09BDmna0zaGd-txEzVnwkEGtrA/exec';
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZ7bdw1o-1uTM1trZ_ixCakyH9qYM-VG1_mDvyByfzLuTMy-4QzsYalTEMbCfFnLQNg/exec';
                 
                 const payload = {
                     action: 'atualizarSugestao',
