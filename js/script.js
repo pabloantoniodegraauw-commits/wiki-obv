@@ -1986,26 +1986,65 @@
                 }
                 
                 const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text.trim();
                 
-                console.log('🤖 IA respondeu:', text);
-                
-                // Extrair nomes
-                if (text.toLowerCase() === 'nenhum' || !text) {
-                    return [];
-                }
-                
-                // Limpar e separar nomes
-                const nomes = text
-                    .split(',')
-                    .map(nome => nome.trim())
-                    .filter(nome => nome && nome.length > 2);
-                
-                return nomes;
+                // Processar resposta da API
+                return processarERetornarNomes(data);
                 
             } catch (erro) {
                 console.error('Erro na IA:', erro);
                 throw erro;
+            }
+        }
+
+        /**
+         * Processar resposta da API Gemini e extrair nomes de Pokémon
+         * @param {Object} apiResponse - Resposta da API Gemini
+         * @returns {Array<string>} - Array com nomes dos Pokémon detectados
+         */
+        function processarERetornarNomes(apiResponse) {
+            try {
+                console.log('📦 Resposta da API:', apiResponse);
+                
+                // Verificar se há resposta válida
+                if (!apiResponse.candidates || apiResponse.candidates.length === 0) {
+                    console.warn('⚠️ Nenhum candidato na resposta');
+                    return [];
+                }
+                
+                // Extrair texto da resposta
+                const candidate = apiResponse.candidates[0];
+                if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
+                    console.warn('⚠️ Nenhum conteúdo na resposta');
+                    return [];
+                }
+                
+                const fullText = candidate.content.parts[0].text.trim();
+                console.log('🤖 IA respondeu:', fullText);
+                
+                // Verificar se não detectou nada
+                if (!fullText || fullText.toLowerCase() === 'nenhum') {
+                    return [];
+                }
+                
+                // Processar texto: divide por vírgula, espaços ou quebras de linha
+                const namesArray = fullText
+                    .split(/[,\n]+/)           // Separa por vírgula ou quebra de linha
+                    .map(name => name.trim())  // Remove espaços extras
+                    .filter(name => {
+                        // Remove entradas vazias e números (níveis, stats, etc)
+                        return name && 
+                               name.length > 2 && 
+                               !(/^\d+$/.test(name)) &&           // Remove números puros
+                               !(/^(lv|lvl|level)\s*\d+$/i.test(name)); // Remove "Lv 42", etc
+                    });
+                
+                console.log('✅ Nomes extraídos:', namesArray);
+                
+                return namesArray;
+                
+            } catch (erro) {
+                console.error('❌ Erro ao processar resposta:', erro);
+                return [];
             }
         }
 
