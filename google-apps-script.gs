@@ -31,11 +31,7 @@ const SESSION_EXPIRATION = 8 * 60 * 60 * 1000;
 function doOptions() {
   return ContentService
     .createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
-    .setHeader('Access-Control-Max-Age', '86400');
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 /**
@@ -120,29 +116,23 @@ function doPost(e) {
         break;
     }
     
-    // Converter resultado para ContentService com CORS
+    // Converter resultado para ContentService
     // Se result já é ContentService, retornar como está
     if (result && typeof result.getContent === 'function') {
       return result;
     }
     
-    // Se é objeto simples, converter para ContentService com CORS
+    // Se é objeto simples, converter para ContentService
     return ContentService
       .createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader('Access-Control-Allow-Origin', '*')
-      .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-      .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      .setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: error.toString()
     }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
@@ -711,8 +701,7 @@ function getOrCreateSheet(planilha, nome) {
  * Adicionar headers CORS a uma resposta
  */
 function addCorsHeaders(response) {
-  // Se já é um ContentService, não pode adicionar headers depois
-  // Apenas retornar como está
+  // Apps Script não suporta setHeader em ContentService; apenas retorna
   return response;
 }
 
@@ -720,13 +709,10 @@ function addCorsHeaders(response) {
  * Criar resposta com CORS habilitado
  */
 function createCorsResponse(content) {
-  // Sempre criar nova resposta com headers CORS
+  // Retorna JSON simples; CORS será gerenciado pelo Apps Script
   return ContentService
     .createTextOutput(JSON.stringify(content))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /* ============================================
