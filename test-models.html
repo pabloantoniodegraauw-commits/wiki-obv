@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Gemini Models</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #eee;
+        }
+        h1 {
+            color: #4ecca3;
+            text-align: center;
+        }
+        #result {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .model {
+            background: #0f3460;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4ecca3;
+        }
+        .model-name {
+            color: #4ecca3;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .model-info {
+            color: #bbb;
+            margin-top: 5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #4ecca3;
+        }
+        .error {
+            background: #dc3545;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button {
+            background: #4ecca3;
+            color: #16213e;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #45b393;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Gemini Models - Test API</h1>
+    <button onclick="listarModelos()">Listar Modelos Disponíveis</button>
+    <div id="result"></div>
+
+    <script>
+        const API_KEY = "AIzaSyClQ3jezSiOj_tlkMRwVr6Yq6-_pNii5XI";
+        
+        async function listarModelos() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="loading">🔄 Buscando modelos disponíveis...</div>';
+            
+            try {
+                // Testar v1beta
+                console.log('🔍 Testando endpoint v1beta...');
+                const urlBeta = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
+                
+                const response = await fetch(urlBeta);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Erro ${response.status}: ${JSON.stringify(errorData)}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Resposta recebida:', data);
+                
+                // Processar e exibir modelos
+                let html = `<h2>✅ Modelos Disponíveis (Total: ${data.models?.length || 0})</h2>`;
+                
+                if (data.models && data.models.length > 0) {
+                    // Filtrar modelos com suporte a visão/imagem
+                    const modelosComVisao = data.models.filter(m => 
+                        m.supportedGenerationMethods?.includes('generateContent') &&
+                        (m.name.includes('vision') || m.name.includes('flash') || m.name.includes('pro'))
+                    );
+                    
+                    html += `<h3>🖼️ Modelos com suporte a imagem (${modelosComVisao.length})</h3>`;
+                    
+                    modelosComVisao.forEach(model => {
+                        const name = model.name.replace('models/', '');
+                        const displayName = model.displayName || name;
+                        const description = model.description || 'Sem descrição';
+                        const methods = model.supportedGenerationMethods?.join(', ') || 'N/A';
+                        
+                        html += `
+                            <div class="model">
+                                <div class="model-name">📌 ${name}</div>
+                                <div class="model-info">
+                                    <strong>Nome de exibição:</strong> ${displayName}<br>
+                                    <strong>Descrição:</strong> ${description}<br>
+                                    <strong>Métodos suportados:</strong> ${methods}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Todos os modelos
+                    html += `<h3>📋 Todos os modelos disponíveis</h3>`;
+                    html += `<pre>${JSON.stringify(data.models.map(m => m.name.replace('models/', '')), null, 2)}</pre>`;
+                    
+                } else {
+                    html += '<p>❌ Nenhum modelo encontrado.</p>';
+                }
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('❌ Erro:', error);
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Erro ao buscar modelos</h3>
+                        <p><strong>Mensagem:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

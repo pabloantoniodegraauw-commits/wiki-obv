@@ -254,6 +254,26 @@
                 const tmCategoria = pokemon['Categoria'] || '';
                 const tmsTexto = tmNumero ? `${tmNumero} - ${tmNome}` : 'Sem TMs registradas';
                 
+                // 📍 PROCESSAR LOCALIZAÇÃO COM FORMATAÇÃO
+                let localizacaoHTML = '';
+                if (localizacao && localizacao !== 'Não informado') {
+                    const locais = localizacao.split(' / ');
+                    let total = 0;
+                    
+                    localizacaoHTML = '<div style="line-height: 1.8;">';
+                    locais.forEach(local => {
+                        const match = local.match(/(\d+)un/);
+                        if (match) total += parseInt(match[1]);
+                        localizacaoHTML += `• ${local}<br>`;
+                    });
+                    if (total > 0) {
+                        localizacaoHTML += `<br><strong style="color: #ffd700;">Total: ${total}un</strong>`;
+                    }
+                    localizacaoHTML += '</div>';
+                } else {
+                    localizacaoHTML = 'Não informado';
+                }
+                
                 // LÓGICA: Se tem EV, usa EV. Senão, usa POKEMON
                 const nomePrincipal = evolucao || nomePokemon;
                 const nomeBase = evolucao ? nomePokemon : '';
@@ -303,7 +323,7 @@
                         <div class="location-title">
                             <i class="fas fa-map-marker-alt"></i> Localização
                         </div>
-                        <div>${localizacao}</div>
+                        ${localizacaoHTML}
                     </div>
                     ${sugestaoLocalizacao ? `
                     <div class="pokemon-suggestion">
