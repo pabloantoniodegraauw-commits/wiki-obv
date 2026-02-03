@@ -5,14 +5,14 @@ function initPokedex() {
         console.log('📘 Inicializando Pokédex...');
         
         // Se os dados já foram carregados, apenas renderizar
-        if (typeof todosPokemons !== 'undefined' && todosPokemons.length > 0) {
+        if (typeof window.todosPokemons !== 'undefined' && window.todosPokemons.length > 0) {
             console.log('✅ Dados já carregados, renderizando...');
-            renderizarPokemons(todosPokemons);
-            configurarBuscaInstantanea();
+            window.renderizarPokemons(window.todosPokemons);
+            window.configurarBuscaInstantanea();
         } else {
             // Carregar dados pela primeira vez
             console.log('🔄 Carregando dados da planilha...');
-            carregarDados();
+            window.carregarDados();
         }
     } catch (erro) {
         console.error('❌ Erro ao inicializar Pokédex:', erro);
