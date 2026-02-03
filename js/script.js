@@ -1838,3 +1838,152 @@
                 botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
             }
         };
+
+        /* ============================================
+           🤖 BUSCA POR IMAGEM COM IA (GEMINI VISION)
+           ============================================ */
+
+        // Configurar busca por imagem ao colar (Ctrl+V)
+        async function configurarBuscaPorImagem() {
+            const searchInput = document.getElementById('searchInput');
+            if (!searchInput) return;
+
+            searchInput.addEventListener('paste', async (e) => {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+
+                // Procurar por imagem no clipboard
+                for (let item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        e.preventDefault(); // Evitar colar a imagem como texto
+                        
+                        const file = item.getAsFile();
+                        if (!file) continue;
+
+                        // Feedback visual
+                        const placeholderOriginal = searchInput.placeholder;
+                        searchInput.placeholder = "🤖 IA processando imagem...";
+                        searchInput.disabled = true;
+                        searchInput.style.background = "rgba(102, 126, 234, 0.1)";
+
+                        try {
+                            // Processar imagem com IA
+                            const nomes = await extrairNomesPokemonComIA(file);
+                            
+                            if (nomes && nomes.length > 0) {
+                                // Preencher busca automaticamente
+                                searchInput.value = nomes.join(', ');
+                                searchInput.placeholder = placeholderOriginal;
+                                searchInput.disabled = false;
+                                searchInput.style.background = "";
+                                
+                                // Aplicar busca (simular evento input)
+                                searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                
+                                // Feedback sucesso
+                                searchInput.style.borderColor = "#4caf50";
+                                setTimeout(() => {
+                                    searchInput.style.borderColor = "";
+                                }, 2000);
+                            } else {
+                                throw new Error('Nenhum Pokémon detectado na imagem');
+                            }
+                        } catch (erro) {
+                            console.error('Erro ao processar imagem:', erro);
+                            searchInput.placeholder = "❌ Erro ao processar. Tente novamente...";
+                            searchInput.disabled = false;
+                            searchInput.style.background = "";
+                            searchInput.style.borderColor = "#f44336";
+                            
+                            setTimeout(() => {
+                                searchInput.placeholder = placeholderOriginal;
+                                searchInput.style.borderColor = "";
+                            }, 3000);
+                        }
+                        
+                        break; // Processar apenas primeira imagem
+                    }
+                }
+            });
+
+            console.log('🤖 Busca por imagem configurada! Cole uma imagem com Ctrl+V');
+        }
+
+        // Extrair nomes de Pokémon da imagem usando Gemini Vision
+        async function extrairNomesPokemonComIA(imageFile) {
+            try {
+                // API Key do Gemini (gratuito: 1500 requests/dia)
+                const API_KEY = 'AIzaSyDwZ9vK8TjXxQxW5fN9rZ_pLmN4kQ8yR6c';
+                
+                // Importar biblioteca Gemini
+                const { GoogleGenerativeAI } = await import('@google/generative-ai');
+                const genAI = new GoogleGenerativeAI(API_KEY);
+                
+                // Converter imagem para base64
+                const base64Image = await fileToBase64(imageFile);
+                
+                // Configurar modelo Gemini Vision
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                
+                // Prompt otimizado para extrair nomes de Pokémon
+                const prompt = `Analise esta imagem e extraia APENAS os nomes dos Pokémon que aparecem.
+                
+                REGRAS:
+                - Retorne APENAS os nomes, separados por vírgula
+                - Não adicione explicações, números ou texto extra
+                - Se não houver Pokémon, retorne "nenhum"
+                - Exemplos corretos: "Pikachu, Charizard, Bulbasaur"
+                
+                Nomes dos Pokémon:`;
+                
+                // Enviar para IA
+                const result = await model.generateContent([
+                    prompt,
+                    {
+                        inlineData: {
+                            data: base64Image.split(',')[1],
+                            mimeType: imageFile.type
+                        }
+                    }
+                ]);
+                
+                const response = await result.response;
+                const text = response.text().trim();
+                
+                console.log('🤖 IA respondeu:', text);
+                
+                // Extrair nomes
+                if (text.toLowerCase() === 'nenhum' || !text) {
+                    return [];
+                }
+                
+                // Limpar e separar nomes
+                const nomes = text
+                    .split(',')
+                    .map(nome => nome.trim())
+                    .filter(nome => nome && nome.length > 2);
+                
+                return nomes;
+                
+            } catch (erro) {
+                console.error('Erro na IA:', erro);
+                throw erro;
+            }
+        }
+
+        // Converter arquivo para base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Inicializar busca por imagem quando página carregar
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', configurarBuscaPorImagem);
+        } else {
+            configurarBuscaPorImagem();
+        }
