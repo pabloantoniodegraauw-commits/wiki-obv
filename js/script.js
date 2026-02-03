@@ -1944,8 +1944,9 @@
                 const base64Image = await fileToBase64(imageFile);
                 const base64Data = base64Image.split(',')[1]; // Remover prefixo "data:image/png;base64,"
                 
-                // ✅ ENDPOINT CORRETO: v1 + gemini-1.5-pro (SEM -latest)
-                const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+                // ✅ ENDPOINT CORRETO: generativelanguage.googleapis.com só tem Gemini 1.0
+                // Para visão/imagem: gemini-1.0-pro-vision (Gemini 1.5 só na Vertex AI)
+                const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro-vision:generateContent?key=${GEMINI_API_KEY}`;
                 
                 // Prompt otimizado para extrair nomes de Pokémon
                 const prompt = `Analise esta imagem e extraia APENAS os nomes dos Pokémon que aparecem.
