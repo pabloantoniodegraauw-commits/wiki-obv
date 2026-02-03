@@ -767,25 +767,25 @@ function handleAtualizarSugestao(planilha, dados) {
         
         Logger.log('Sugestão salva com sucesso!');
         
-        return ContentService.createTextOutput(JSON.stringify({
+        return {
           sucesso: true,
           mensagem: 'Sugestão atualizada com sucesso!'
-        })).setMimeType(ContentService.MimeType.JSON);
+        };
       }
     }
     
     Logger.log('ERRO: Pokemon não encontrado: ' + nomeOriginal);
     
-    return ContentService.createTextOutput(JSON.stringify({
+    return {
       sucesso: false,
       mensagem: 'Pokémon não encontrado'
-    })).setMimeType(ContentService.MimeType.JSON);
+    };
     
   } catch (erro) {
-    return ContentService.createTextOutput(JSON.stringify({
+    return {
       sucesso: false,
       mensagem: 'Erro: ' + erro.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
+    };
   }
 }
 
@@ -795,6 +795,35 @@ function handlePokemonUpdate(planilha, dados) {
     
     // APENAS ATUALIZAR POKÉMON EXISTENTE (não adicionar novos)
     if (dados.acao === 'atualizar') {
+      // SEGURANÇA: Apenas administradores podem editar dados de Pokémon
+      const adminEmail = validateTokenAndGetEmail(dados);
+      if (!adminEmail) {
+        return {
+          sucesso: false,
+          mensagem: 'Token de autenticação inválido ou ausente'
+        };
+      }
+
+      // Verificar se o usuário é admin na aba 'usuarios'
+      const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+      const usuarios = abaUsuarios.getDataRange().getValues();
+      let isAdmin = false;
+      for (let i = 1; i < usuarios.length; i++) {
+        if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+          if (usuarios[i][8] === 'admin') {
+            isAdmin = true;
+          }
+          break;
+        }
+      }
+
+      if (!isAdmin) {
+        return {
+          sucesso: false,
+          mensagem: 'Sem permissão: apenas administradores podem editar pokémons'
+        };
+      }
+
       const nomeOriginal = dados.nomeOriginal.toLowerCase().trim();
       const todosOsDados = aba.getDataRange().getValues();
       
@@ -866,30 +895,30 @@ function handlePokemonUpdate(planilha, dados) {
         aba.getRange(linhaEncontrada, 16).setValue(dados.pokemon.spdef);     // P: Sp.Defense (era O)
         aba.getRange(linhaEncontrada, 17).setValue(dados.pokemon.speed);     // Q: Speed (era P)
         
-        return ContentService.createTextOutput(JSON.stringify({
+        return {
           sucesso: true,
           mensagem: 'Pokémon atualizado com sucesso na planilha!',
           linha: linhaEncontrada
-        })).setMimeType(ContentService.MimeType.JSON);
+        };
         
       } else {
-        return ContentService.createTextOutput(JSON.stringify({
+        return {
           sucesso: false,
           mensagem: 'Pokémon não encontrado na planilha: ' + dados.nomeOriginal + '\n\nLog:\n' + logBusca
-        })).setMimeType(ContentService.MimeType.JSON);
+        };
       }
     }
     
     // Retornar erro se não for ação de atualizar
-    return ContentService.createTextOutput(JSON.stringify({
+    return {
       sucesso: false,
       mensagem: 'Ação não reconhecida. Use acao: "atualizar"'
-    })).setMimeType(ContentService.MimeType.JSON);
+    };
     
   } catch (erro) {
-    return ContentService.createTextOutput(JSON.stringify({
+    return {
       sucesso: false,
       mensagem: 'Erro no servidor: ' + erro.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
+    };
   }
 }

@@ -1,5 +1,5 @@
 ﻿// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyprq2DGLK7aOpS_yR-lu7oB8V4Zq9nLZJ_219xdXhbREo8Qa8AWGuH3QMYN5WVLcAxMw/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVk4YPiVkSHXtw4bkvmz-TzaRTi8T76zWu6VVD84ex09BDmna0zaGd-txEzVnwkEGtrA/exec';
         
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
@@ -14,6 +14,15 @@
         let temMaisPaginas = true;
         let dadosCompletosCarregados = false;
         let usarStickers = false; // false = database, true = stickers
+
+        function isAdmin() {
+            try {
+                const u = JSON.parse(localStorage.getItem('user') || '{}');
+                return !!u && u.role === 'admin';
+            } catch (e) {
+                return false;
+            }
+        }
         
         // 🔧 Função para normalizar nomes (remover acentos, espaços extras, etc)
         function normalizarNome(nome) {
@@ -428,7 +437,7 @@
                         <div class="pokemon-tms">
                             <i class="fas fa-compact-disc"></i> ${tmsTexto}
                         </div>
-                        ${usuarioLogado ? `
+                        ${isAdmin() ? `
                         <button class="btn-edit" onclick="abrirModalEdicao('${nomeParaBusca.replace(/'/g, "\\'")}')">
                             <i class="fas fa-edit"></i> Editar
                         </button>
@@ -1225,6 +1234,30 @@
                     localStorage.removeItem('usuario_logado');
                 }
             }
+
+            // Compatibilidade com novo sistema de login (localStorage "user")
+            if (!usuarioLogado) {
+                const userStr = localStorage.getItem('user');
+                if (userStr) {
+                    try {
+                        const userObj = JSON.parse(userStr);
+                        // Mapear para estrutura usada pelo script.js
+                        usuarioLogado = {
+                            nome: userObj.nome || userObj.nickname || '',
+                            email: userObj.email || '',
+                            foto: userObj.foto || ''
+                        };
+                        atualizarTelaLogin();
+                        setTimeout(() => {
+                            if (usuarioLogado) mostrarOpcoesAdmin();
+                        }, 1000);
+                    } catch (e) {
+                        // Se der erro ao ler, limpar e seguir sem login
+                        console.error('Erro ao ler usuário (user):', e);
+                        localStorage.removeItem('user');
+                    }
+                }
+            }
             
             // Executar apenas se os elementos correspondentes existirem
             if (document.getElementById('pokemonContainer')) {
@@ -1354,6 +1387,8 @@
         }
         
         function mostrarOpcoesAdmin() {
+            // Exibir opções somente para administradores
+            if (!isAdmin()) return;
             setTimeout(() => {
                 const pokemonCards = document.querySelectorAll('.pokemon-card');
                 pokemonCards.forEach(card => {
@@ -1638,17 +1673,24 @@
                     }
                     
                     const inicio = Date.now();
+                    // Incluir credenciais do admin para validação no backend
+                    try {
+                        const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        payload.authToken = adminUser.authToken;
+                        payload.adminEmail = adminUser.email;
+                    } catch (e) {}
+
                     const resposta = await fetch(APPS_SCRIPT_URL, {
                         method: 'POST',
-                        mode: 'no-cors',
+                        // Evitar preflight CORS usando text/plain
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'text/plain'
                         },
                         body: JSON.stringify(payload)
                     });
                     
                     const tempoDecorrido = Date.now() - inicio;
-                    console.log(`✅ Requisição enviada em ${tempoDecorrido}ms (no-cors, sem resposta legível)`);
+                    console.log(`✅ Requisição enviada em ${tempoDecorrido}ms`);
                     console.log('ℹ️ Status da resposta:', resposta.type, resposta.status);
                     
                     // Fechar modal e recarregar página
@@ -1720,7 +1762,7 @@
             
             try {
                 // Usar a MESMA URL do script.js (Apps Script de Pokémon)
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyprq2DGLK7aOpS_yR-lu7oB8V4Zq9nLZJ_219xdXhbREo8Qa8AWGuH3QMYN5WVLcAxMw/exec';
+                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVk4YPiVkSHXtw4bkvmz-TzaRTi8T76zWu6VVD84ex09BDmna0zaGd-txEzVnwkEGtrA/exec';
                 
                 const payload = {
                     action: 'atualizarSugestao',
@@ -1735,8 +1777,9 @@
                 
                 const resposta = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
+                    // Usar Content-Type "text/plain" para evitar preflight CORS
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'text/plain'
                     },
                     body: JSON.stringify(payload)
                 });
