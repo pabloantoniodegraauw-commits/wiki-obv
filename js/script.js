@@ -5,7 +5,7 @@
         // Obtenha sua chave GRATUITA em: https://aistudio.google.com/app/apikey
         // Gratuito: 1500 requests/dia (mais que suficiente!)
         // ⚠️ SEGURANÇA: Restrinja por HTTP referrer em: https://console.cloud.google.com/apis/credentials
-        const GEMINI_API_KEY = "AIzaSyDzBM7EaJ-7KRDo2ehLq8Mkzt9l9OTd8j4";
+        const GEMINI_API_KEY = "AIzaSyClQ3jezSiOj_tlkMRwVr6Yq6-_pNii5XI";
         
         // 🚀 Usando apenas Apps Script (ID da planilha protegido no servidor)
         const URL_DADOS = APPS_SCRIPT_URL + '?acao=obter_todos';
