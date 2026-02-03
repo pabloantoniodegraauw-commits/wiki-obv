@@ -1938,24 +1938,28 @@
                     throw new Error('⚠️ Tesseract.js não foi carregado. Verifique a conexão com internet.');
                 }
                 
-                // Criar URL temporária da imagem
-                const imageUrl = URL.createObjectURL(imageFile);
+                // 🎨 PRÉ-PROCESSAMENTO: Melhorar imagem para OCR
+                console.log('🎨 Aplicando pré-processamento...');
+                const processedImageUrl = await preprocessImage(imageFile);
                 
-                // Executar OCR na imagem
+                // Executar OCR na imagem processada
                 const { data: { text } } = await Tesseract.recognize(
-                    imageUrl,
+                    processedImageUrl,
                     'eng', // Idioma inglês (nomes de Pokémon)
                     {
                         logger: info => {
                             if (info.status === 'recognizing text') {
                                 console.log(`🔄 OCR Progresso: ${Math.round(info.progress * 100)}%`);
                             }
-                        }
+                        },
+                        // ⚙️ Configurações otimizadas para texto pequeno em jogos
+                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789()♂♀ ',
+                        tessedit_pageseg_mode: '6', // Assume bloco uniforme de texto
                     }
                 );
                 
                 // Limpar URL temporária
-                URL.revokeObjectURL(imageUrl);
+                URL.revokeObjectURL(processedImageUrl);
                 
                 console.log('📝 Texto extraído:', text);
                 
@@ -1966,6 +1970,81 @@
                 console.error('❌ Erro no OCR:', erro);
                 throw erro;
             }
+        }
+
+        /**
+         * Pré-processar imagem para melhorar OCR
+         * - Inverte cores (branco → preto)
+         * - Aumenta contraste
+         * - Binariza (preto e branco puro)
+         * @param {File} imageFile - Arquivo de imagem
+         * @returns {Promise<string>} - URL da imagem processada
+         */
+        async function preprocessImage(imageFile) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                img.onload = () => {
+                    // Definir tamanho do canvas
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // Desenhar imagem original
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Obter dados dos pixels
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    // Processar cada pixel
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        
+                        // Calcular luminosidade (escala de cinza)
+                        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                        
+                        // 🔄 INVERTER: Texto branco → preto (se pixel claro, inverter)
+                        let invertedLuminance = luminance;
+                        if (luminance > 127) {
+                            invertedLuminance = 255 - luminance;
+                        }
+                        
+                        // 📈 AUMENTAR CONTRASTE (fator 1.5)
+                        let contrastedLuminance = (invertedLuminance - 128) * 1.5 + 128;
+                        contrastedLuminance = Math.max(0, Math.min(255, contrastedLuminance));
+                        
+                        // ⚫⚪ BINARIZAR (limiar 127): preto ou branco puro
+                        const binarized = contrastedLuminance > 127 ? 255 : 0;
+                        
+                        // Aplicar valores processados
+                        data[i] = binarized;     // R
+                        data[i + 1] = binarized; // G
+                        data[i + 2] = binarized; // B
+                        // data[i + 3] = alpha (não mexer)
+                    }
+                    
+                    // Aplicar dados processados de volta ao canvas
+                    ctx.putImageData(imageData, 0, 0);
+                    
+                    // Converter canvas para blob e criar URL
+                    canvas.toBlob(blob => {
+                        const processedUrl = URL.createObjectURL(blob);
+                        console.log('✅ Imagem pré-processada com sucesso');
+                        resolve(processedUrl);
+                    }, 'image/png');
+                };
+                
+                img.onerror = () => {
+                    reject(new Error('Erro ao carregar imagem para processamento'));
+                };
+                
+                // Carregar imagem
+                img.src = URL.createObjectURL(imageFile);
+            });
         }
 
         /**
