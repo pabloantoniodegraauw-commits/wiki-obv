@@ -1990,8 +1990,6 @@
             );
             console.log(`${isProcessed ? '🎨' : '📄'} Texto detectado (${isProcessed ? 'processado' : 'original'}):`, text);
             return text;
-                throw erro;
-            }
         }
 
         /**
