@@ -1742,8 +1742,26 @@
                 });
                 
                 console.log('📥 RESPOSTA:', resposta);
+                console.log('📥 Status:', resposta.status);
+                console.log('📥 StatusText:', resposta.statusText);
+                console.log('📥 OK?:', resposta.ok);
                 
-                const resultado = await resposta.json();
+                if (!resposta.ok) {
+                    throw new Error(`HTTP ${resposta.status}: ${resposta.statusText}`);
+                }
+                
+                const textoResposta = await resposta.text();
+                console.log('📥 TEXTO RESPOSTA:', textoResposta);
+                
+                let resultado;
+                try {
+                    resultado = JSON.parse(textoResposta);
+                } catch (e) {
+                    console.error('❌ Erro ao parsear JSON:', e);
+                    console.error('❌ Resposta recebida:', textoResposta);
+                    throw new Error('Resposta inválida do servidor');
+                }
+                
                 console.log('📋 RESULTADO:', resultado);
                 
                 if (resultado.sucesso) {
