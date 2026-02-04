@@ -17,7 +17,7 @@
 ```javascript
 function doGet() {
   const sheet = SpreadsheetApp
-    .openById("SEU_SHEET_ID_AQUI")
+    .openById("1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ")
     .getSheetByName("POKEMONS");
 
   const data = sheet.getDataRange().getValues();
@@ -34,6 +34,8 @@ function doGet() {
     .setMimeType(ContentService.MimeType.JSON);
 }
 ```
+
+**⚠️ IMPORTANTE:** Use apenas o ID (string entre aspas), não a URL completa!
 
 4. **Substitua** `SEU_SHEET_ID_AQUI` pelo ID da sua planilha
 5. Clique em **Implantar → Nova implantação**
