@@ -31,11 +31,11 @@ const TIPO_ICONS = {
 
 function initSmeargle() {
     console.log('🎨 Inicializando Smeargle Builder...');
-    carregarDados();
+    carregarDadosSmeargle();
 }
 
 // Carregar dados do Google Sheets
-async function carregarDados() {
+async function carregarDadosSmeargle() {
     const grid = document.getElementById('movesGrid');
     
     if (!grid) {
@@ -56,11 +56,11 @@ async function carregarDados() {
         console.log('📊 Primeira linha:', dados[0]);
         
         smearglePokemonData = dados;
-        extrairGolpes(dados);
-        popularFiltros();
-        renderizarGolpes(smeargleMovesData);
+        extrairGolpesSmeargle(dados);
+        popularFiltrosSmeargle();
+        renderizarGolpesSmeargle(smeargleMovesData);
         
-        configurarEventos();
+        configurarEventosSmeargle();
         
         console.log('✅ Dados carregados:', smearglePokemonData.length, 'Pokémons');
         console.log('✅ Golpes únicos:', smeargleMovesData.length);
@@ -78,7 +78,7 @@ async function carregarDados() {
 }
 
 // Extrair todos os golpes de M1 a M10
-function extrairGolpes(pokemons) {
+function extrairGolpesSmeargle(pokemons) {
     const golpesMap = new Map();
     
     console.log('🔍 Extraindo golpes de', pokemons.length, 'pokémons...');
@@ -134,7 +134,7 @@ function parseMove(cell, pokemonOrigem) {
 }
 
 // Popular filtros dinamicamente
-function popularFiltros() {
+function popularFiltrosSmeargle() {
     const tipos = new Set();
     const acoes = new Set();
     const categorias = new Set();
@@ -163,7 +163,7 @@ function popularFiltros() {
 }
 
 // Renderizar golpes no grid
-function renderizarGolpes(golpes) {
+function renderizarGolpesSmeargle(golpes) {
     const grid = document.getElementById('movesGrid');
     
     if (golpes.length === 0) {
@@ -359,19 +359,19 @@ function obterImagemPokemon(nome) {
 }
 
 // Configurar eventos
-function configurarEventos() {
+function configurarEventosSmeargle() {
     // Filtros
-    document.getElementById('filterNome').addEventListener('input', aplicarFiltros);
-    document.getElementById('filterTipo').addEventListener('change', aplicarFiltros);
-    document.getElementById('filterAcao').addEventListener('change', aplicarFiltros);
-    document.getElementById('filterCategoria').addEventListener('change', aplicarFiltros);
+    document.getElementById('filterNome').addEventListener('input', aplicarFiltrosSmeargle);
+    document.getElementById('filterTipo').addEventListener('change', aplicarFiltrosSmeargle);
+    document.getElementById('filterAcao').addEventListener('change', aplicarFiltrosSmeargle);
+    document.getElementById('filterCategoria').addEventListener('change', aplicarFiltrosSmeargle);
     
     // Limpar tudo
     document.getElementById('btnClearMoves').addEventListener('click', limparGolpes);
 }
 
 // Aplicar filtros
-function aplicarFiltros() {
+function aplicarFiltrosSmeargle() {
     const nome = document.getElementById('filterNome').value.toLowerCase();
     const tipo = document.getElementById('filterTipo').value;
     const acao = document.getElementById('filterAcao').value;
