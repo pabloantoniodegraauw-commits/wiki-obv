@@ -349,7 +349,7 @@ function buscarPokemonsCompativeis() {
     grid.innerHTML = compativeis.map(pokemon => `
         <div class="compatible-card">
             <div class="compatible-img">
-                <img src="${obterImagemPokemon(pokemon['POKEMON'])}" 
+                <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(pokemon['POKEMON'] || pokemon['EV'], pokemon['POKEMON']) : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'}" 
                      alt="${pokemon['POKEMON']}"
                      onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
             </div>
@@ -359,15 +359,6 @@ function buscarPokemonsCompativeis() {
             </div>
         </div>
     `).join('');
-}
-
-// Obter imagem do Pokémon
-function obterImagemPokemon(nome) {
-    const nomeFormatado = nome.toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]/g, "-");
-    return `https://img.pokemondb.net/sprites/home/normal/${nomeFormatado}.png`;
 }
 
 // Configurar eventos
