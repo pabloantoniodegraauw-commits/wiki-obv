@@ -116,9 +116,10 @@ function extrairGolpesSmeargle(pokemons) {
             const coluna = `M${i}`;
             const celula = pokemon[coluna];
             
-            if (celula && i === 1) { // Apenas M1 aparece no seletor
-                totalM1++;
-                if (index < 3) { // Log dos primeiros 3 para debug
+            if (celula) { // Extrair TODOS os golpes (M1 até M10)
+                if (i === 1) totalM1++;
+                
+                if (index < 3 && i === 1) { // Log dos primeiros 3 para debug
                     console.log(`M1 de ${pokemon['POKEMON']}:`, celula);
                 }
                 
@@ -337,16 +338,20 @@ function buscarPokemonsCompativeis() {
         return;
     }
     
+    // Buscar pokémons que possuem QUALQUER um dos golpes selecionados
     const compativeis = smearglePokemonData.filter(pokemon => {
-        for (let i = 0; i < smeargleSelectedMoves.length; i++) {
-            const coluna = `M${i + 1}`;
-            const celula = pokemon[coluna];
-            
-            if (!celula || !celula.includes(smeargleSelectedMoves[i].nome)) {
-                return false;
+        return smeargleSelectedMoves.some(golpeSelecionado => {
+            // Verificar em TODAS as colunas M1-M10
+            for (let i = 1; i <= 10; i++) {
+                const coluna = `M${i}`;
+                const celula = pokemon[coluna];
+                
+                if (celula && celula.includes(golpeSelecionado.nome)) {
+                    return true;
+                }
             }
-        }
-        return true;
+            return false;
+        });
     });
     
     if (compativeis.length === 0) {
@@ -400,7 +405,7 @@ function aplicarFiltrosSmeargle() {
                (!categoria || golpe.categoria === categoria);
     });
     
-    renderizarGolpes(filtrados);
+    renderizarGolpesSmeargle(filtrados);
 }
 
 // Registrar inicializador
