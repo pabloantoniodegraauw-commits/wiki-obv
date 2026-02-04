@@ -324,7 +324,7 @@ function limparGolpes() {
     `;
 }
 
-// Buscar Pokémons compatíveis
+// Buscar Pokémons compatíveis (mostra o Pokémon de origem de cada golpe)
 function buscarPokemonsCompativeis() {
     const grid = document.getElementById('compatibleGrid');
     
@@ -338,44 +338,46 @@ function buscarPokemonsCompativeis() {
         return;
     }
     
-    // Buscar pokémons com a SEQUÊNCIA EXATA de golpes
-    const compativeis = smearglePokemonData.filter(pokemon => {
-        // Verificar se o pokémon tem TODOS os golpes na sequência correta
-        for (let i = 0; i < smeargleSelectedMoves.length; i++) {
-            const coluna = `M${i + 1}`; // M1, M2, M3...
-            const celula = pokemon[coluna];
-            
-            // Se não tem a célula OU não contém o nome do golpe
-            if (!celula || !celula.includes(smeargleSelectedMoves[i].nome)) {
-                return false;
-            }
+    // Mostrar o Pokémon de origem de cada golpe selecionado na ordem
+    grid.innerHTML = smeargleSelectedMoves.map((golpe, index) => {
+        // Buscar o pokémon completo na base de dados
+        const pokemon = smearglePokemonData.find(p => 
+            (p['POKEMON'] || '').toLowerCase() === golpe.origem.toLowerCase() ||
+            (p['EV'] || '').toLowerCase() === golpe.origem.toLowerCase()
+        );
+        
+        if (!pokemon) {
+            return `
+                <div class="compatible-card">
+                    <div class="compatible-img">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png" 
+                             alt="${golpe.origem}">
+                    </div>
+                    <div class="compatible-name">${golpe.origem}</div>
+                    <div class="compatible-move">
+                        <i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}
+                    </div>
+                </div>
+            `;
         }
-        return true;
-    });
-    
-    if (compativeis.length === 0) {
-        grid.innerHTML = `
-            <div class="no-results">
-                <i class="fas fa-times-circle"></i>
-                <p>Nenhum Pokémon possui essa sequência de golpes</p>
+        
+        return `
+            <div class="compatible-card">
+                <div class="compatible-img">
+                    <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(pokemon['EV'] || pokemon['POKEMON'], pokemon['POKEMON']) : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'}" 
+                         alt="${pokemon['POKEMON']}"
+                         onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                </div>
+                <div class="compatible-name">${pokemon['EV'] || pokemon['POKEMON']}</div>
+                <div class="compatible-move">
+                    <i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}
+                </div>
+                <div class="compatible-location">
+                    <i class="fas fa-map-marker-alt"></i> ${pokemon['LOCALIZAÇÃO'] || 'Não informado'}
+                </div>
             </div>
         `;
-        return;
-    }
-    
-    grid.innerHTML = compativeis.map(pokemon => `
-        <div class="compatible-card">
-            <div class="compatible-img">
-                <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(pokemon['POKEMON'] || pokemon['EV'], pokemon['POKEMON']) : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'}" 
-                     alt="${pokemon['POKEMON']}"
-                     onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
-            </div>
-            <div class="compatible-name">${pokemon['POKEMON']}</div>
-            <div class="compatible-location">
-                <i class="fas fa-map-marker-alt"></i> ${pokemon['LOCALIZAÇÃO'] || 'Não informado'}
-            </div>
-        </div>
-    `).join('');
+    }).join('');
 }
 
 // Configurar eventos
