@@ -338,20 +338,19 @@ function buscarPokemonsCompativeis() {
         return;
     }
     
-    // Buscar pokémons que possuem QUALQUER um dos golpes selecionados
+    // Buscar pokémons com a SEQUÊNCIA EXATA de golpes
     const compativeis = smearglePokemonData.filter(pokemon => {
-        return smeargleSelectedMoves.some(golpeSelecionado => {
-            // Verificar em TODAS as colunas M1-M10
-            for (let i = 1; i <= 10; i++) {
-                const coluna = `M${i}`;
-                const celula = pokemon[coluna];
-                
-                if (celula && celula.includes(golpeSelecionado.nome)) {
-                    return true;
-                }
+        // Verificar se o pokémon tem TODOS os golpes na sequência correta
+        for (let i = 0; i < smeargleSelectedMoves.length; i++) {
+            const coluna = `M${i + 1}`; // M1, M2, M3...
+            const celula = pokemon[coluna];
+            
+            // Se não tem a célula OU não contém o nome do golpe
+            if (!celula || !celula.includes(smeargleSelectedMoves[i].nome)) {
+                return false;
             }
-            return false;
-        });
+        }
+        return true;
     });
     
     if (compativeis.length === 0) {
