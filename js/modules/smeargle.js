@@ -51,7 +51,19 @@ async function carregarDadosSmeargle() {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const dados = await response.json();
+        const textoResposta = await response.text();
+        
+        // Parse do JSON
+        let resultado;
+        try {
+            resultado = JSON.parse(textoResposta);
+        } catch (e) {
+            throw new Error('Resposta não é JSON válido');
+        }
+        
+        // Verificar se a resposta tem formato paginado ou array direto
+        const dados = resultado.data || resultado;
+        
         console.log('📦 Dados recebidos:', dados.length, 'linhas');
         console.log('📊 Primeira linha:', dados[0]);
         
