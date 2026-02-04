@@ -123,10 +123,10 @@ function extrairGolpesSmeargle(pokemons) {
                     console.log(`M1 de ${pokemon['POKEMON']}:`, celula);
                 }
                 
-                const golpe = parseMove(celula, pokemon['POKEMON']);
+                const golpe = parseMove(celula, pokemon['POKEMON'], coluna);
                 if (golpe) {
                     golpesValidos++;
-                    const key = golpe.nome.toLowerCase();
+                    const key = golpe.nome.toLowerCase() + '_' + coluna;
                     if (!golpesMap.has(key)) {
                         golpesMap.set(key, golpe);
                     }
@@ -144,7 +144,7 @@ function extrairGolpesSmeargle(pokemons) {
 }
 
 // Parse do formato: "Giga Impact / pulo / Normal / Físico"
-function parseMove(cell, pokemonOrigem) {
+function parseMove(cell, pokemonOrigem, local) {
     if (!cell || typeof cell !== 'string') return null;
     
     const partes = cell.split('/').map(v => v.trim());
@@ -155,7 +155,8 @@ function parseMove(cell, pokemonOrigem) {
         acao: partes[1],
         tipo: partes[2],
         categoria: partes[3],
-        origem: pokemonOrigem
+        origem: pokemonOrigem,
+        local: local || 'M1'
     };
 }
 
@@ -387,6 +388,7 @@ function configurarEventosSmeargle() {
     document.getElementById('filterTipo').addEventListener('change', aplicarFiltrosSmeargle);
     document.getElementById('filterAcao').addEventListener('change', aplicarFiltrosSmeargle);
     document.getElementById('filterCategoria').addEventListener('change', aplicarFiltrosSmeargle);
+    document.getElementById('filterLocal').addEventListener('change', aplicarFiltrosSmeargle);
     
     // Limpar tudo
     document.getElementById('btnClearMoves').addEventListener('click', limparGolpes);
@@ -398,12 +400,14 @@ function aplicarFiltrosSmeargle() {
     const tipo = document.getElementById('filterTipo').value;
     const acao = document.getElementById('filterAcao').value;
     const categoria = document.getElementById('filterCategoria').value;
+    const local = document.getElementById('filterLocal').value;
     
     const filtrados = smeargleMovesData.filter(golpe => {
         return (!nome || golpe.nome.toLowerCase().includes(nome)) &&
                (!tipo || golpe.tipo === tipo) &&
                (!acao || golpe.acao === acao) &&
-               (!categoria || golpe.categoria === categoria);
+               (!categoria || golpe.categoria === categoria) &&
+               (!local || golpe.local === local);
     });
     
     renderizarGolpesSmeargle(filtrados);
