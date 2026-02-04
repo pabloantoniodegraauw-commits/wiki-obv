@@ -52,17 +52,30 @@ async function carregarDadosSmeargle() {
         }
         
         const textoResposta = await response.text();
+        console.log('📄 Texto recebido (primeiros 200 chars):', textoResposta.substring(0, 200));
         
         // Parse do JSON
         let resultado;
         try {
             resultado = JSON.parse(textoResposta);
+            console.log('✅ JSON parseado. Tipo:', typeof resultado);
+            console.log('📋 Propriedades:', Object.keys(resultado));
         } catch (e) {
-            throw new Error('Resposta não é JSON válido');
+            throw new Error('Resposta não é JSON válido: ' + e.message);
         }
         
         // Verificar se a resposta tem formato paginado ou array direto
-        const dados = resultado.data || resultado;
+        let dados;
+        if (Array.isArray(resultado)) {
+            dados = resultado;
+            console.log('📦 Formato: Array direto');
+        } else if (resultado.data && Array.isArray(resultado.data)) {
+            dados = resultado.data;
+            console.log('📦 Formato: Objeto com data[]');
+        } else {
+            console.error('❌ Formato não reconhecido:', resultado);
+            throw new Error('Formato de resposta não reconhecido');
+        }
         
         console.log('📦 Dados recebidos:', dados.length, 'linhas');
         console.log('📊 Primeira linha:', dados[0]);
