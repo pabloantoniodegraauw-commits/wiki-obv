@@ -3,9 +3,9 @@
 // URL do Google Sheets
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycby6b3h2WWcSKYEK_U2RS9WvEODGTYV_GEVcQThaBVEKGRcFGuStBRqEpkTA1KQKtjvAFw/exec";
 
-let todosPokemons = [];
-let todosGolpes = [];
-let golpesSelecionados = [];
+let smearglePokemonData = [];
+let smeargleMovesData = [];
+let smeargleSelectedMoves = [];
 
 // Ícones por tipo
 const TIPO_ICONS = {
@@ -55,15 +55,15 @@ async function carregarDados() {
         console.log('📦 Dados recebidos:', dados.length, 'linhas');
         console.log('📊 Primeira linha:', dados[0]);
         
-        todosPokemons = dados;
+        smearglePokemonData = dados;
         extrairGolpes(dados);
         popularFiltros();
-        renderizarGolpes(todosGolpes);
+        renderizarGolpes(smeargleMovesData);
         
         configurarEventos();
         
-        console.log('✅ Dados carregados:', todosPokemons.length, 'Pokémons');
-        console.log('✅ Golpes únicos:', todosGolpes.length);
+        console.log('✅ Dados carregados:', smearglePokemonData.length, 'Pokémons');
+        console.log('✅ Golpes únicos:', smeargleMovesData.length);
         
     } catch (erro) {
         console.error('❌ Erro ao carregar dados:', erro);
@@ -113,7 +113,7 @@ function extrairGolpes(pokemons) {
     console.log('✅ Golpes válidos:', golpesValidos);
     console.log('🎯 Golpes únicos:', golpesMap.size);
     
-    todosGolpes = Array.from(golpesMap.values())
+    smeargleMovesData = Array.from(golpesMap.values())
         .sort((a, b) => a.nome.localeCompare(b.nome));
 }
 
@@ -139,7 +139,7 @@ function popularFiltros() {
     const acoes = new Set();
     const categorias = new Set();
     
-    todosGolpes.forEach(golpe => {
+    smeargleMovesData.forEach(golpe => {
         tipos.add(golpe.tipo);
         acoes.add(golpe.acao);
         categorias.add(golpe.categoria);
@@ -200,7 +200,7 @@ function renderizarGolpes(golpes) {
 
 // Selecionar golpe
 window.selecionarGolpe = function(element) {
-    if (golpesSelecionados.length >= 9) {
+    if (smeargleSelectedMoves.length >= 9) {
         alert('⚠️ Máximo de 9 golpes atingido!');
         return;
     }
@@ -208,12 +208,12 @@ window.selecionarGolpe = function(element) {
     const golpe = JSON.parse(element.dataset.move);
     
     // Evitar duplicatas
-    if (golpesSelecionados.some(g => g.nome === golpe.nome)) {
+    if (smeargleSelectedMoves.some(g => g.nome === golpe.nome)) {
         alert('⚠️ Este golpe já foi selecionado!');
         return;
     }
     
-    golpesSelecionados.push(golpe);
+    smeargleSelectedMoves.push(golpe);
     atualizarCardSmeargle();
     buscarPokemonsCompativeis();
     
@@ -233,10 +233,10 @@ function atualizarCardSmeargle() {
     const movesCount = document.getElementById('movesCount');
     
     // Contar golpes
-    movesCount.textContent = golpesSelecionados.length;
+    movesCount.textContent = smeargleSelectedMoves.length;
     
     // Calcular tipo dominante
-    const tipoDom = tipoDominante(golpesSelecionados);
+    const tipoDom = tipoDominante(smeargleSelectedMoves);
     
     // Aplicar estilo dinâmico
     card.className = `smeargle-card type-${tipoDom.toLowerCase()}`;
@@ -248,10 +248,10 @@ function atualizarCardSmeargle() {
     typeBadge.innerHTML = `<span class="type-badge type-${tipoDom.toLowerCase()}">${tipoDom}</span>`;
     
     // Atualizar lista de golpes
-    if (golpesSelecionados.length === 0) {
+    if (smeargleSelectedMoves.length === 0) {
         movesList.innerHTML = '<div class="no-moves-yet">Nenhum golpe selecionado</div>';
     } else {
-        movesList.innerHTML = golpesSelecionados.map((golpe, index) => `
+        movesList.innerHTML = smeargleSelectedMoves.map((golpe, index) => `
             <div class="selected-move-item">
                 <span class="move-number">${index + 1}</span>
                 <span class="move-info">
@@ -281,14 +281,14 @@ function tipoDominante(moves) {
 
 // Remover golpe
 window.removerGolpe = function(index) {
-    golpesSelecionados.splice(index, 1);
+    smeargleSelectedMoves.splice(index, 1);
     atualizarCardSmeargle();
     buscarPokemonsCompativeis();
 };
 
 // Limpar todos os golpes
 function limparGolpes() {
-    golpesSelecionados = [];
+    smeargleSelectedMoves = [];
     atualizarCardSmeargle();
     document.getElementById('compatibleGrid').innerHTML = `
         <div class="no-selection">
@@ -302,7 +302,7 @@ function limparGolpes() {
 function buscarPokemonsCompativeis() {
     const grid = document.getElementById('compatibleGrid');
     
-    if (golpesSelecionados.length === 0) {
+    if (smeargleSelectedMoves.length === 0) {
         grid.innerHTML = `
             <div class="no-selection">
                 <i class="fas fa-hand-pointer"></i>
@@ -312,12 +312,12 @@ function buscarPokemonsCompativeis() {
         return;
     }
     
-    const compativeis = todosPokemons.filter(pokemon => {
-        for (let i = 0; i < golpesSelecionados.length; i++) {
+    const compativeis = smearglePokemonData.filter(pokemon => {
+        for (let i = 0; i < smeargleSelectedMoves.length; i++) {
             const coluna = `M${i + 1}`;
             const celula = pokemon[coluna];
             
-            if (!celula || !celula.includes(golpesSelecionados[i].nome)) {
+            if (!celula || !celula.includes(smeargleSelectedMoves[i].nome)) {
                 return false;
             }
         }
@@ -377,7 +377,7 @@ function aplicarFiltros() {
     const acao = document.getElementById('filterAcao').value;
     const categoria = document.getElementById('filterCategoria').value;
     
-    const filtrados = todosGolpes.filter(golpe => {
+    const filtrados = smeargleMovesData.filter(golpe => {
         return (!nome || golpe.nome.toLowerCase().includes(nome)) &&
                (!tipo || golpe.tipo === tipo) &&
                (!acao || golpe.acao === acao) &&
