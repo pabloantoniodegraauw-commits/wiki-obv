@@ -36,9 +36,24 @@ function initSmeargle() {
 
 // Carregar dados do Google Sheets
 async function carregarDados() {
+    const grid = document.getElementById('movesGrid');
+    
+    if (!grid) {
+        console.error('❌ Elemento movesGrid não encontrado!');
+        return;
+    }
+    
     try {
+        console.log('📡 Fazendo fetch da URL:', SHEETS_URL);
         const response = await fetch(SHEETS_URL);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         const dados = await response.json();
+        console.log('📦 Dados recebidos:', dados.length, 'linhas');
+        console.log('📊 Primeira linha:', dados[0]);
         
         todosPokemons = dados;
         extrairGolpes(dados);
@@ -52,10 +67,11 @@ async function carregarDados() {
         
     } catch (erro) {
         console.error('❌ Erro ao carregar dados:', erro);
-        document.getElementById('movesGrid').innerHTML = `
+        grid.innerHTML = `
             <div class="error">
                 <i class="fas fa-exclamation-triangle"></i>
-                <p>Erro ao carregar dados. Verifique a conexão.</p>
+                <p>Erro ao carregar dados: ${erro.message}</p>
+                <p style="font-size:0.9em;color:#a0e7ff;">Verifique o console (F12) para mais detalhes</p>
             </div>
         `;
     }
@@ -65,14 +81,25 @@ async function carregarDados() {
 function extrairGolpes(pokemons) {
     const golpesMap = new Map();
     
-    pokemons.forEach(pokemon => {
+    console.log('🔍 Extraindo golpes de', pokemons.length, 'pokémons...');
+    
+    let totalM1 = 0;
+    let golpesValidos = 0;
+    
+    pokemons.forEach((pokemon, index) => {
         for (let i = 1; i <= 10; i++) {
             const coluna = `M${i}`;
             const celula = pokemon[coluna];
             
             if (celula && i === 1) { // Apenas M1 aparece no seletor
+                totalM1++;
+                if (index < 3) { // Log dos primeiros 3 para debug
+                    console.log(`M1 de ${pokemon['POKEMON']}:`, celula);
+                }
+                
                 const golpe = parseMove(celula, pokemon['POKEMON']);
                 if (golpe) {
+                    golpesValidos++;
                     const key = golpe.nome.toLowerCase();
                     if (!golpesMap.has(key)) {
                         golpesMap.set(key, golpe);
@@ -81,6 +108,10 @@ function extrairGolpes(pokemons) {
             }
         }
     });
+    
+    console.log('📊 Total M1 encontrados:', totalM1);
+    console.log('✅ Golpes válidos:', golpesValidos);
+    console.log('🎯 Golpes únicos:', golpesMap.size);
     
     todosGolpes = Array.from(golpesMap.values())
         .sort((a, b) => a.nome.localeCompare(b.nome));
