@@ -1150,3 +1150,551 @@ footer {
         max-width: 90px;
     }
 }
+
+/* 🎨 SMEARGLE BUILDER - ESTILOS COMPLETOS */
+
+.smeargle-container {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+/* Card do Smeargle (Esquerda) */
+.smeargle-card-wrapper {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+}
+
+.smeargle-card {
+    background: linear-gradient(145deg, rgba(30, 60, 114, 0.7), rgba(15, 30, 60, 0.9));
+    border-radius: 20px;
+    padding: 25px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    transition: all 0.5s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.smeargle-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    animation: shimmer 8s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.smeargle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.smeargle-number {
+    color: #88d3ff;
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.smeargle-type-icon {
+    font-size: 1.5em;
+    color: #ffd700;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.smeargle-img-container {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 4px solid rgba(255, 215, 0, 0.3);
+    position: relative;
+    z-index: 1;
+}
+
+.smeargle-img {
+    width: 140px;
+    height: 140px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.3));
+    transition: transform 0.3s ease;
+}
+
+.smeargle-card:hover .smeargle-img {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.smeargle-name {
+    color: #ffd700;
+    font-size: 2em;
+    margin: 15px 0;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    position: relative;
+    z-index: 1;
+}
+
+.smeargle-type-badge {
+    margin: 15px 0;
+    position: relative;
+    z-index: 1;
+}
+
+.smeargle-moves-selected {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 15px;
+    padding: 15px;
+    margin: 20px 0;
+    max-height: 400px;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+}
+
+.moves-selected-title {
+    color: #ffd700;
+    font-weight: bold;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1em;
+}
+
+.moves-selected-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.no-moves-yet {
+    color: rgba(255, 255, 255, 0.5);
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+}
+
+.selected-move-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    border-radius: 10px;
+    border-left: 3px solid #ffd700;
+    transition: all 0.3s;
+}
+
+.selected-move-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.move-number {
+    background: #ffd700;
+    color: #1a2980;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.move-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.move-info strong {
+    color: #fff;
+    font-size: 0.95em;
+}
+
+.move-info small {
+    color: #a0e7ff;
+    font-size: 0.8em;
+}
+
+.btn-remove-move {
+    background: rgba(255, 100, 100, 0.2);
+    border: 1px solid rgba(255, 100, 100, 0.5);
+    color: #ff6464;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-remove-move:hover {
+    background: rgba(255, 100, 100, 0.4);
+    transform: scale(1.1);
+}
+
+.btn-clear-moves {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 100, 100, 0.2);
+    border: 2px solid rgba(255, 100, 100, 0.5);
+    color: #ff6464;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95em;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.btn-clear-moves:hover {
+    background: rgba(255, 100, 100, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 100, 100, 0.3);
+}
+
+/* Estilos dinâmicos por tipo */
+.smeargle-card.type-fire {
+    background: linear-gradient(145deg, rgba(240, 128, 48, 0.3), rgba(221, 102, 16, 0.5));
+    border-color: #F08030;
+}
+
+.smeargle-card.type-water {
+    background: linear-gradient(145deg, rgba(104, 144, 240, 0.3), rgba(56, 108, 235, 0.5));
+    border-color: #6890F0;
+}
+
+.smeargle-card.type-electric {
+    background: linear-gradient(145deg, rgba(248, 208, 48, 0.3), rgba(240, 193, 8, 0.5));
+    border-color: #F8D030;
+}
+
+.smeargle-card.type-grass {
+    background: linear-gradient(145deg, rgba(120, 200, 80, 0.3), rgba(92, 169, 53, 0.5));
+    border-color: #78C850;
+}
+
+.smeargle-card.type-dark {
+    background: linear-gradient(145deg, rgba(112, 88, 72, 0.3), rgba(81, 63, 52, 0.5));
+    border-color: #705848;
+}
+
+.smeargle-card.type-psychic {
+    background: linear-gradient(145deg, rgba(248, 88, 136, 0.3), rgba(246, 28, 93, 0.5));
+    border-color: #F85888;
+}
+
+.smeargle-card.type-fighting {
+    background: linear-gradient(145deg, rgba(192, 48, 40, 0.3), rgba(157, 39, 33, 0.5));
+    border-color: #C03028;
+}
+
+.smeargle-card.type-dragon {
+    background: linear-gradient(145deg, rgba(112, 56, 248, 0.3), rgba(76, 8, 239, 0.5));
+    border-color: #7038F8;
+}
+
+/* Painel de Golpes (Direita) */
+.smeargle-moves-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 25px;
+}
+
+.moves-panel-header h2 {
+    color: #ffd700;
+    font-size: 1.8em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.moves-hint {
+    color: #a0e7ff;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Filtros */
+.moves-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 20px;
+    border-radius: 15px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-group label {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.95em;
+    transition: all 0.3s;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Grid de Golpes */
+.moves-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.move-card {
+    background: linear-gradient(145deg, rgba(30, 60, 114, 0.7), rgba(15, 30, 60, 0.9));
+    border-radius: 12px;
+    padding: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.move-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 215, 0, 0.5);
+}
+
+.move-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.move-card:hover::before {
+    left: 100%;
+}
+
+.move-tipo-icon {
+    font-size: 2em;
+    margin-bottom: 10px;
+    color: #ffd700;
+}
+
+.move-name {
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+.move-details {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.move-tipo,
+.move-categoria {
+    background: rgba(255, 215, 0, 0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.move-acao {
+    color: #a0e7ff;
+    font-size: 0.85em;
+    margin-bottom: 5px;
+}
+
+.move-origem {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8em;
+    font-style: italic;
+}
+
+@keyframes pulseSelect {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.95); box-shadow: 0 0 30px rgba(255, 215, 0, 0.6); }
+}
+
+/* Seção de Pokémons Compatíveis */
+.compatible-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 30px;
+    margin-top: 30px;
+}
+
+.compatible-header h2 {
+    color: #ffd700;
+    font-size: 1.8em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.compatible-hint {
+    color: #a0e7ff;
+    margin-bottom: 25px;
+}
+
+.compatible-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.compatible-card {
+    background: linear-gradient(145deg, rgba(30, 60, 114, 0.7), rgba(15, 30, 60, 0.9));
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    transition: all 0.3s;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.compatible-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 215, 0, 0.3);
+}
+
+.compatible-img {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.compatible-img img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+}
+
+.compatible-name {
+    color: #ffd700;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.compatible-location {
+    color: #a0e7ff;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.no-selection {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.no-selection i {
+    font-size: 4em;
+    margin-bottom: 15px;
+    opacity: 0.3;
+}
+
+.no-selection p {
+    font-size: 1.1em;
+}
+
+/* Responsivo */
+@media (max-width: 1024px) {
+    .smeargle-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .smeargle-card-wrapper {
+        position: relative;
+        top: 0;
+    }
+    
+    .moves-filters {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .moves-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .compatible-grid {
+        grid-template-columns: 1fr;
+    }
+}
