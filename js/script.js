@@ -293,6 +293,10 @@
                         ${nomePrincipal}
                     </h3>
                     ${nomeBase ? `<div class="pokemon-base">Forma base: ${nomeBase}</div>` : ''}
+                    <div class="pokemon-types">
+                        <span class="type-badge type-${tipo1.toLowerCase()}">${tipo1}</span>
+                        ${tipo2 ? `<span class="type-badge type-${tipo2.toLowerCase()}">${tipo2}</span>` : ''}
+                    </div>
                     <div class="pokemon-stats">
                         <div class="stat">
                             <div class="stat-value">${hp}</div>

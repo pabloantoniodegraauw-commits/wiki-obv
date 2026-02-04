@@ -450,6 +450,45 @@ h1 {
     text-transform: capitalize;
 }
 
+.pokemon-types {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 10px 0 15px 0;
+    flex-wrap: wrap;
+}
+
+.type-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Cores dos tipos Pokémon */
+.type-normal { background: linear-gradient(135deg, #A8A878, #8A8A59); color: #fff; }
+.type-fire, .type-fogo { background: linear-gradient(135deg, #F08030, #DD6610); color: #fff; }
+.type-water, .type-água, .type-agua { background: linear-gradient(135deg, #6890F0, #386CEB); color: #fff; }
+.type-electric, .type-elétrico, .type-eletrico { background: linear-gradient(135deg, #F8D030, #F0C108); color: #333; }
+.type-grass, .type-planta, .type-grama { background: linear-gradient(135deg, #78C850, #5CA935); color: #fff; }
+.type-ice, .type-gelo { background: linear-gradient(135deg, #98D8D8, #69C6C6); color: #333; }
+.type-fighting, .type-lutador { background: linear-gradient(135deg, #C03028, #9D2721); color: #fff; }
+.type-poison, .type-veneno { background: linear-gradient(135deg, #A040A0, #803380); color: #fff; }
+.type-ground, .type-terra { background: linear-gradient(135deg, #E0C068, #D4A82F); color: #333; }
+.type-flying, .type-voador { background: linear-gradient(135deg, #A890F0, #9180C4); color: #fff; }
+.type-psychic, .type-psíquico, .type-psiquico { background: linear-gradient(135deg, #F85888, #F61C5D); color: #fff; }
+.type-bug, .type-inseto { background: linear-gradient(135deg, #A8B820, #8D9A1B); color: #fff; }
+.type-rock, .type-pedra { background: linear-gradient(135deg, #B8A038, #9B8628); color: #fff; }
+.type-ghost, .type-fantasma { background: linear-gradient(135deg, #705898, #554374); color: #fff; }
+.type-dragon, .type-dragão, .type-dragao { background: linear-gradient(135deg, #7038F8, #4C08EF); color: #fff; }
+.type-dark, .type-sombrio { background: linear-gradient(135deg, #705848, #513F34); color: #fff; }
+.type-steel, .type-aço, .type-aco { background: linear-gradient(135deg, #B8B8D0, #9797BA); color: #333; }
+.type-fairy, .type-fada { background: linear-gradient(135deg, #EE99AC, #EC6D9A); color: #fff; }
+
 .tm-name {
     color: #ffd700;
     font-size: 1.6em;
