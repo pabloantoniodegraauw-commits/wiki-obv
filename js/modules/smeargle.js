@@ -1,7 +1,7 @@
 // 🎨 Módulo Smeargle Builder - WIKI OBV
 
 // URL do Google Sheets
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycby6b3h2WWcSKYEK_U2RS9WvEODGTYV_GEVcQThaBVEKGRcFGuStBRqEpkTA1KQKtjvAFw/exec";
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec";
 
 let smearglePokemonData = [];
 let smeargleMovesData = [];
