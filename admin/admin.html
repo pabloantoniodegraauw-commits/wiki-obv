@@ -426,34 +426,15 @@ function fazerLogout() {
 }
 </script>
 
-<!-- Navegação de abas igual ao index.html -->
+<!-- Botão voltar para Pokédex -->
 <div style="margin-top: 60px; margin-bottom: 24px; display: flex; gap: 12px; justify-content: center;">
   <a href="../index.html" class="tab-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
     <i class="fas fa-arrow-left"></i> Voltar para Pokédex
   </a>
 </div>
-<main id="page-content" class="tab-content active">
-  <!-- Conteúdo da administração será carregado aqui via SPA -->
-</main>
-<script>
-// SPA: usar navigation.js para navegação dinâmica igual ao index.html
-document.addEventListener('DOMContentLoaded', () => {
-  const tabButtons = document.querySelectorAll('.tabs-nav .tab-btn');
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const page = btn.getAttribute('data-page');
-      if (page === 'admin') return; // já está na admin
-      loadPage(page); // usa navigation.js
-    });
-  });
-  // Carregar admin por padrão
-  document.getElementById('page-content').innerHTML = document.querySelector('.admin-container').outerHTML;
-});
-</script>
 
-<script src="../js/modules/navigation.js"></script>
-
-<div class="admin-container" style="display:none;">
+<!-- Conteúdo do dashboard admin -->
+<div class="admin-container">
   <h1 class="section-title">Administração</h1>
 
   <!-- DASHBOARD DE ESTATÍSTICAS -->

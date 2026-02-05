@@ -150,62 +150,66 @@
                 // Mostrar loading
                 const container = document.getElementById('pokemonContainer');
                 container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando Pokémons...</p></div>';
-                
+
                 console.log('⏳ Iniciando carregamento (paginado)...');
                 const inicio = Date.now();
-                
+
                 // Carregar primeira página
                 paginaAtual = 1;
                 console.log('🚀 Carregando página 1...');
+                console.log('🌐 URL usada para fetch:', `${URL_DADOS}&page=1&limit=100`);
                 const resposta = await fetch(`${URL_DADOS}&page=1&limit=100`);
+                console.log('🔎 Status da resposta:', resposta.status, resposta.statusText);
                 const textoResposta = await resposta.text();
-                
+                console.log('📦 Conteúdo da resposta:', textoResposta.slice(0, 300));
+
                 // Verificar se é JSON válido
                 let resultado;
                 try {
                     resultado = JSON.parse(textoResposta);
-                    console.log('✅ Apps Script OK!');
-                } catch {
+                    console.log('✅ Apps Script OK! JSON válido:', resultado);
+                } catch (e) {
+                    console.error('❌ Erro ao processar resposta do servidor:', e, textoResposta);
                     throw new Error('Erro ao processar resposta do servidor');
                 }
-                
+
                 todosPokemons = resultado.data;
                 temMaisPaginas = resultado.hasMore;
-                
+
                 const tempoDecorrido = Date.now() - inicio;
                 console.log(`📥 Primeira página carregada em ${tempoDecorrido}ms:`, todosPokemons.length, 'de', resultado.total);
-                
+
                 // Se tem dados locais editados, aplicar as edições sobre os dados da planilha
                 const dadosLocais = localStorage.getItem('pokemons_editados');
                 if (dadosLocais && usuarioLogado) {
                     const editados = JSON.parse(dadosLocais);
                     console.log('💾 Mesclando', editados.length, 'edições locais');
-                    
+
                     // Mesclar edições locais com dados atualizados da planilha
                     editados.forEach(editado => {
                         const nomeEV = normalizarNome(editado.EV || '');
                         const nomePokemon = normalizarNome(editado.POKEMON || '');
                         const nomeEditado = nomeEV || nomePokemon;
-                        
+
                         const index = todosPokemons.findIndex(p => {
                             const nomeEVOriginal = normalizarNome(p.EV || '');
                             const nomePokemonOriginal = normalizarNome(p.POKEMON || '');
                             const nomeOriginal = nomeEVOriginal || nomePokemonOriginal;
                             return nomeOriginal === nomeEditado;
                         });
-                        
+
                         if (index !== -1) {
                             todosPokemons[index] = { ...todosPokemons[index], ...editado };
                         }
                     });
-                    
+
                     console.log('✓ Dados mesclados com edições locais');
                 }
-                
+
                 document.getElementById('pokemonCount').textContent = resultado.total;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
                 renderizarPokemons(todosPokemons);
-                
+
                 // Configurar infinite scroll após primeiro carregamento
                 if (temMaisPaginas) {
                     configurarInfiniteScroll();
@@ -213,7 +217,8 @@
             } catch (erro) {
                 const container = document.getElementById('pokemonContainer');
                 if (!container) return; // Sair se o elemento não existir
-                
+
+                console.error('❌ Erro no carregamento dos dados:', erro);
                 container.innerHTML = `
                     <div class="error">
                         <h3><i class="fas fa-exclamation-triangle"></i> Erro</h3>
