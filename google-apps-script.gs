@@ -28,10 +28,14 @@ const SESSION_EXPIRATION = 8 * 60 * 60 * 1000;
 /**
  * Responder requisições OPTIONS (preflight CORS)
  */
-function doOptions() {
+function doOptions(e) {
   return ContentService
     .createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT);
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
+    .setHeader('Access-Control-Max-Age', '86400');
 }
 
 /**
@@ -125,17 +129,23 @@ function doPost(e) {
       return result;
     }
     
-    // Se é objeto simples, converter para ContentService
+    // Se é objeto simples, converter para ContentService com CORS
     return ContentService
       .createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader('Access-Control-Allow-Origin', '*')
+      .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+      .setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: error.toString()
     }))
-    .setMimeType(ContentService.MimeType.JSON);
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
 }
 
@@ -190,20 +200,32 @@ function doGet(e) {
         limit: limit,
         total: total,
         hasMore: hasMore
-      })).setMimeType(ContentService.MimeType.JSON);
+      }))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeader('Access-Control-Allow-Origin', '*')
+      .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+      .setHeader('Access-Control-Allow-Headers', 'Content-Type');
     }
     
     // Resposta padrão
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: 'Ação não reconhecida'
-    })).setMimeType(ContentService.MimeType.JSON);
+    }))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
     
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: error.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
+    }))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
 }
 
@@ -714,10 +736,12 @@ function addCorsHeaders(response) {
  * Criar resposta com CORS habilitado
  */
 function createCorsResponse(content) {
-  // Retorna JSON simples; CORS será gerenciado pelo Apps Script
   return ContentService
     .createTextOutput(JSON.stringify(content))
-    .setMimeType(ContentService.MimeType.JSON);
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeader('Access-Control-Allow-Origin', '*')
+    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 /* ============================================
