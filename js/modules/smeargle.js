@@ -1,3 +1,10 @@
+// Formata a string de localizações para exibir cada uma em uma linha com bullet (apenas na aba Smeargle)
+function formatarLocalizacoesSmeargle(localizacoes) {
+    if (!localizacoes) return 'Não informado';
+    // Quebra por barra e remove espaços extras
+    const lista = localizacoes.split('/').map(function(l) { return l.trim(); }).filter(Boolean);
+    return lista.map(function(loc) { return '• ' + loc; }).join('<br>');
+}
 // 🎨 Módulo Smeargle Builder - WIKI OBV
 
 // URL do Google Sheets - IMPORTANTE: Usar "acao" (sem "ti") conforme esperado pelo Apps Script
