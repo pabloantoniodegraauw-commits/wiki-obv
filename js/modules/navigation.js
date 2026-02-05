@@ -19,6 +19,11 @@ async function loadPage(pageName) {
             </div>
         `;
         
+        // Caso especial para admin: redirecionar para admin/admin.html
+        if (pageName === 'admin') {
+            window.location.href = 'admin/admin.html';
+            return;
+        }
         // Fetch da página - caminho absoluto para funcionar em qualquer subdiretório
         const base = window.location.pathname.includes('/admin/') ? '/wiki-obv/' : '';
         const response = await fetch(`${base}pages/${pageName}.html`);
