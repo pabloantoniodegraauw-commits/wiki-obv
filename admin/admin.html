@@ -37,17 +37,26 @@
   </script>
 
   <link rel="stylesheet" href="../css/global.css" />
+  <link rel="stylesheet" href="../css/style.css" />
   <style>
+    /* Sobrescrever body do style.css para admin */
     body {
-      background: linear-gradient(135deg, #0a0f1e 0%, #1a1f3a 100%);
+      background: url('../assets/fundo-site.png') center center / cover no-repeat fixed;
+      color: #fff;
       min-height: 100vh;
-      color: #ffffff;
+      padding: 20px;
+      padding-top: 80px; /* Espaço para header fixo */
     }
 
     .admin-container {
-      padding: 24px;
       max-width: 1400px;
       margin: 0 auto;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 30px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
     }
 
     .tabs {
@@ -90,14 +99,16 @@
 
     table {
       width: 100%;
-      background: rgba(20, 25, 50, 0.5);
+      background: rgba(255, 255, 255, 0.05);
       border-radius: 12px;
       overflow: hidden;
       border-collapse: collapse;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     thead {
-      background: rgba(20, 25, 50, 0.8);
+      background: rgba(255, 255, 255, 0.08);
     }
 
     th, td {
@@ -231,7 +242,7 @@
     }
 
     .stat-card {
-      background: rgba(20, 25, 50, 0.5);
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 12px;
       padding: 20px;
       display: flex;
@@ -239,6 +250,7 @@
       gap: 16px;
       border: 1px solid rgba(155, 188, 255, 0.2);
       transition: all 0.2s;
+      backdrop-filter: blur(10px);
     }
 
     .stat-card:hover {
@@ -307,16 +319,17 @@
       padding: 10px 16px;
       border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       color: white;
       font-size: 14px;
       transition: all 0.2s;
+      backdrop-filter: blur(10px);
     }
 
     .search-input:focus {
       outline: none;
       border-color: #9bbcff;
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.12);
     }
 
     .search-input::placeholder {
@@ -327,11 +340,12 @@
       padding: 10px 16px;
       border-radius: 8px;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.08);
       color: white;
       font-size: 14px;
       cursor: pointer;
       transition: all 0.2s;
+      backdrop-filter: blur(10px);
     }
 
     .filter-select:focus {
@@ -340,7 +354,7 @@
     }
 
     .filter-select option {
-      background: #1a1f3a;
+      background: rgba(20, 25, 50, 0.95);
       color: white;
     }
 
@@ -368,11 +382,6 @@
 
     .btn-edit:hover {
       background: #0b7dda;
-    }
-
-    /* Ajuste para o header customizado */
-    body {
-      padding-top: 80px;
     }
   </style>
 </head>
@@ -598,7 +607,8 @@ function fazerLogout() {
   }
 
   .modal-content {
-    background: linear-gradient(135deg, #1a1f3a 0%, #0a0f1e 100%);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
     border-radius: 16px;
     width: 90%;
     max-width: 500px;
@@ -656,9 +666,10 @@ function fazerLogout() {
     padding: 12px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     color: white;
     font-size: 14px;
+    backdrop-filter: blur(10px);
   }
 
   .form-group input:disabled {
@@ -670,10 +681,11 @@ function fazerLogout() {
   .form-group select:focus {
     outline: none;
     border-color: #9bbcff;
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .form-group select option {
-    background: #1a1f3a;
+    background: rgba(20, 25, 50, 0.95);
     color: white;
   }
 
