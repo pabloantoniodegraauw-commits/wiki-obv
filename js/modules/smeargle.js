@@ -475,8 +475,8 @@ function buscarPokemonsCompativeis() {
 function formatarLocalizacoesSmeargle(localizacoes) {
     if (!localizacoes) return 'Não informado';
     // Quebra por barra e remove espaços extras
-    const lista = localizacoes.split('/').map(l => l.trim()).filter(Boolean);
-    return lista.map(loc => `• ${loc}`).join('<br>');
+    const lista = localizacoes.split('/').map(function(l) { return l.trim(); }).filter(Boolean);
+    return lista.map(function(loc) { return '• ' + loc; }).join('<br>');
 }
 
             </div>
@@ -503,6 +503,7 @@ function aplicarFiltrosSmeargle() {
 }
 
 // Registrar inicializador
+// Registrar inicializador da página (deve ficar no final do arquivo)
 if (typeof registerPageInitializer !== 'undefined') {
     registerPageInitializer('smeargle', initSmeargle);
     console.log('✅ Inicializador Smeargle registrado');
