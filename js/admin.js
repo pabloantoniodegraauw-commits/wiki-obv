@@ -12,35 +12,43 @@ const adminUser = JSON.parse(localStorage.getItem('user'));
 // Armazenar todos os membros para filtros
 let allMembers = [];
 
-// Sistema de tabs
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    // Desativar todos os tabs
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-    // Ativar tab clicado
-    btn.classList.add('active');
-    const tabId = btn.getAttribute('data-tab');
-    document.getElementById(`tab-${tabId}`).classList.add('active');
-
-    // Carregar dados da tab
-    if (tabId === 'membros') {
-      loadMembers();
-    } else if (tabId === 'logs') {
-      loadLogs();
-    }
+// Inicialização SPA: tudo dentro de uma função
+function initAdminPage() {
+  // Sistema de tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      const tabId = btn.getAttribute('data-tab');
+      const tabContent = document.getElementById(`tab-${tabId}`);
+      if (tabContent) tabContent.classList.add('active');
+      if (tabId === 'membros') {
+        loadMembers();
+      } else if (tabId === 'logs') {
+        loadLogs();
+      }
+    });
   });
-});
 
-// Sistema de filtros e busca
-document.getElementById('searchInput')?.addEventListener('input', applyFilters);
-document.getElementById('filterStatus')?.addEventListener('change', applyFilters);
-document.getElementById('filterRole')?.addEventListener('change', applyFilters);
-document.getElementById('btnExportCSV')?.addEventListener('click', exportToCSV);
+  // Sistema de filtros e busca
+  document.getElementById('searchInput')?.addEventListener('input', applyFilters);
+  document.getElementById('filterStatus')?.addEventListener('change', applyFilters);
+  document.getElementById('filterRole')?.addEventListener('change', applyFilters);
+  document.getElementById('btnExportCSV')?.addEventListener('click', exportToCSV);
 
-// Carregar membros ao iniciar
-loadMembers();
+  // Carregar membros ao iniciar
+  loadMembers();
+}
+
+// SPA: se navigation.js estiver presente, registre o inicializador
+if (typeof registerPageInitializer === 'function') {
+  registerPageInitializer('admin', initAdminPage);
+} else {
+  // fallback para carregamento tradicional
+  document.addEventListener('DOMContentLoaded', initAdminPage);
+}
 
 /**
  * CARREGAR MEMBROS
