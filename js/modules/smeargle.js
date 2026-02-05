@@ -134,7 +134,8 @@ function extrairGolpesSmeargle(pokemons) {
                 const golpe = parseMove(celula, pokemon['POKEMON'], coluna);
                 if (golpe) {
                     golpesValidos++;
-                    const key = golpe.nome.toLowerCase() + '_' + coluna;
+                    // Chave única: nome do golpe + origem do Pokémon
+                    const key = golpe.nome.toLowerCase() + '_' + golpe.origem.toLowerCase();
                     if (!golpesMap.has(key)) {
                         golpesMap.set(key, golpe);
                     }
