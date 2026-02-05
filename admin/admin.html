@@ -428,12 +428,14 @@ function fazerLogout() {
 </script>
 
 
-<!-- Botão voltar para Pokédex com logo do clã -->
-<div style="margin-top: 60px; margin-bottom: 24px; display: flex; gap: 12px; justify-content: center; align-items: center;">
-  <img src="../assets/logo-obv.png" alt="Logo do Clã" style="height: 400px; width: auto; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); background: transparent; padding: 4px;" onerror="this.style.display='none'">
-  <a href="../index.html" class="tab-btn" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+<!-- Botão voltar para Pokédex no topo direito e logo centralizada -->
+<div style="margin-top: 60px; margin-bottom: 0; position: relative; min-height: 420px;">
+  <a href="../index.html" class="tab-btn" style="position: absolute; top: 0; right: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 8px; z-index: 2;">
     <i class="fas fa-arrow-left"></i> Voltar para Pokédex
   </a>
+  <div style="display: flex; justify-content: center; align-items: flex-start; width: 100%; height: 400px;">
+    <img src="../assets/logo-obv.png" alt="Logo do Clã" style="height: 400px; width: auto; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); background: transparent; padding: 4px;" onerror="this.style.display='none'">
+  </div>
 </div>
 
 <!-- Conteúdo do dashboard admin -->
