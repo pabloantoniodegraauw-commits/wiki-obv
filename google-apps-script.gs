@@ -31,11 +31,7 @@ const SESSION_EXPIRATION = 8 * 60 * 60 * 1000;
 function doOptions(e) {
   return ContentService
     .createTextOutput('')
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type')
-    .setHeader('Access-Control-Max-Age', '86400');
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /**
@@ -129,13 +125,10 @@ function doPost(e) {
       return result;
     }
     
-    // Se é objeto simples, converter para ContentService com CORS
+    // Se é objeto simples, converter para ContentService
     return ContentService
       .createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader('Access-Control-Allow-Origin', '*')
-      .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-      .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      .setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
@@ -201,10 +194,7 @@ function doGet(e) {
         total: total,
         hasMore: hasMore
       }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeader('Access-Control-Allow-Origin', '*')
-      .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-      .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+      .setMimeType(ContentService.MimeType.JSON);
     }
     
     // Resposta padrão
@@ -212,20 +202,14 @@ function doGet(e) {
       success: false,
       message: 'Ação não reconhecida'
     }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: error.toString()
     }))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
@@ -725,23 +709,12 @@ function getOrCreateSheet(planilha, nome) {
 }
 
 /**
- * Adicionar headers CORS a uma resposta
- */
-function addCorsHeaders(response) {
-  // Apps Script não suporta setHeader em ContentService; apenas retorna
-  return response;
-}
-
-/**
- * Criar resposta com CORS habilitado
+ * Criar resposta JSON padrão
  */
 function createCorsResponse(content) {
   return ContentService
     .createTextOutput(JSON.stringify(content))
-    .setMimeType(ContentService.MimeType.JSON)
-    .setHeader('Access-Control-Allow-Origin', '*')
-    .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 /* ============================================
