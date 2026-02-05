@@ -72,8 +72,27 @@ function doPost(e) {
   try {
     const planilha = SpreadsheetApp.openById(SPREADSHEET_ID);
     
-    // Parse dos dados recebidos
-    const dados = JSON.parse(e.postData.contents);
+    // Parse dos dados recebidos (aceita JSON ou form data)
+    let dados;
+    try {
+      // Tentar parsear como JSON primeiro
+      dados = JSON.parse(e.postData.contents);
+    } catch (erro) {
+      // Se falhar, assumir que é form data
+      dados = {};
+      if (e.parameter) {
+        dados = e.parameter;
+        // Se moves veio como string, fazer parse
+        if (dados.moves && typeof dados.moves === 'string') {
+          try {
+            dados.moves = JSON.parse(dados.moves);
+          } catch (e) {
+            Logger.log('Erro ao parsear moves: ' + e.toString());
+          }
+        }
+      }
+    }
+    
     const action = dados.action;
     
     Logger.log('=== doPost CHAMADO ===');

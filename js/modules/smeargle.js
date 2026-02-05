@@ -557,17 +557,17 @@ window.salvarBuildAtual = async function() {
         // Obter usuário logado (se disponível)
         const usuario = localStorage.getItem('userNickname') || 'Anônimo';
         
+        // Usar URLSearchParams para enviar como form data (evita preflight CORS)
+        const formData = new URLSearchParams({
+            action: 'salvarBuild',
+            nomeBuild: nomeBuild,
+            moves: JSON.stringify(smeargleSelectedMoves),
+            usuario: usuario
+        });
+        
         const response = await fetch(SHEETS_BASE_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'salvarBuild',
-                nomeBuild: nomeBuild,
-                moves: smeargleSelectedMoves,
-                usuario: usuario
-            })
+            body: formData
         });
         
         const result = await response.json();
