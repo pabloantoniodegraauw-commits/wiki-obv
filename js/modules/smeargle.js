@@ -648,13 +648,17 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
                     m.origem.toLowerCase() === pokemonOrigem.toLowerCase()
                 );
 
-                // Se não encontrar, buscar pelo campo EV
+                // Se não encontrar, buscar pelo campo EV do Pokémon de origem
                 if (!moveEncontrado) {
-                    moveEncontrado = smeargleMovesData.find(m =>
-                        m.nome.toLowerCase() === nomeMove.toLowerCase() &&
-                        m.categoria && m.categoria.toLowerCase() === 'ev' &&
-                        m.origem.toLowerCase() === pokemonOrigem.toLowerCase()
-                    );
+                    // Procurar todos os pokémons que tenham EV igual ao nome de origem
+                    const pokemonsEV = smearglePokemonData.filter(p => (p['EV'] || '').toLowerCase() === pokemonOrigem.toLowerCase());
+                    for (const poke of pokemonsEV) {
+                        moveEncontrado = smeargleMovesData.find(m =>
+                            m.nome.toLowerCase() === nomeMove.toLowerCase() &&
+                            m.origem.toLowerCase() === poke['POKEMON'].toLowerCase()
+                        );
+                        if (moveEncontrado) break;
+                    }
                 }
 
                 if (!moveEncontrado) {
