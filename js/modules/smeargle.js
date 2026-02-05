@@ -474,17 +474,10 @@ function buscarPokemonsCompativeis() {
                 <div class="compatible-move">
                     <i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}
                 </div>
-                <div class="compatible-location">
-                    <i class="fas fa-map-marker-alt"></i>
-                    ${formatarLocalizacoesSmeargle(pokemon['LOCALIZAÇÃO'])}
-                </div>
-// Formata a string de localizações para exibir cada uma em uma linha com bullet (apenas na aba Smeargle)
-function formatarLocalizacoesSmeargle(localizacoes) {
-    if (!localizacoes) return 'Não informado';
-    // Quebra por barra e remove espaços extras
-    const lista = localizacoes.split('/').map(function(l) { return l.trim(); }).filter(Boolean);
-    return lista.map(function(loc) { return '• ' + loc; }).join('<br>');
-}
+				<div class="compatible-location">
+					<i class="fas fa-map-marker-alt"></i>
+					${formatarLocalizacoesSmeargle(pokemon['LOCALIZAÇÃO'])}
+				</div>
 
             </div>
         `;
