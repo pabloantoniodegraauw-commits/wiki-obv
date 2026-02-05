@@ -635,6 +635,18 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
         smeargleSelectedMoves = [];
         
         // Parsear a build: "m1 - Shadow Ball - Chandelure / m2 - ..."
+        // Função para normalizar nome de origem (remove prefixos regionais e EVs)
+        function normalizarOrigem(origem) {
+            if (!origem) return '';
+            // Remove prefixos regionais e EVs
+            return origem
+                .replace(/^(Hisuian|Alolan|Galarian|Paldean|Mega|Primal|Shadow|Dark|Light|Shiny|Gigantamax|Therian|Origin|Crowned|Totem|Partner|Battle|Ash|Dawn|Dusk|Midnight|Midday|School|10%|Complete|Rainy|Snowy|Sunny|Attack|Defense|Speed|Normal|Large|Super|Small|Average|Male|Female|F)/i, '')
+                .replace(/\s*\(.*?\)/g, '') // Remove parênteses
+                .replace(/\s*EV.*$/i, '') // Remove EVs
+                .trim()
+                .toLowerCase();
+        }
+
         const moves = buildCompleta.split(' / ').map(moveStr => {
             const partes = moveStr.trim().split(' - ').map(p => p.trim());
             if (partes.length >= 3) {
@@ -642,10 +654,10 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
                 const nomeMove = partes[1];
                 const pokemonOrigem = partes[2];
                 
-                // Buscar o move nos dados
+                // Buscar o move nos dados (normalizando origem)
                 const moveEncontrado = smeargleMovesData.find(m => 
                     m.nome.toLowerCase() === nomeMove.toLowerCase() &&
-                    m.origem.toLowerCase() === pokemonOrigem.toLowerCase()
+                    normalizarOrigem(m.origem) === normalizarOrigem(pokemonOrigem)
                 );
                 if (!moveEncontrado) {
                     console.warn('[Smeargle Build] Golpe não encontrado:', {
