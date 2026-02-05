@@ -647,7 +647,13 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
                     m.nome.toLowerCase() === nomeMove.toLowerCase() &&
                     m.origem.toLowerCase() === pokemonOrigem.toLowerCase()
                 );
-                
+                if (!moveEncontrado) {
+                    console.warn('[Smeargle Build] Golpe não encontrado:', {
+                        nomeMove,
+                        pokemonOrigem,
+                        candidatos: smeargleMovesData.filter(m => m.nome.toLowerCase() === nomeMove.toLowerCase()).map(m => m.origem)
+                    });
+                }
                 return moveEncontrado;
             }
             return null;
