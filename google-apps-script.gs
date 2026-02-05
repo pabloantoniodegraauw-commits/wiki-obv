@@ -132,6 +132,9 @@ function doPost(e) {
       case 'salvarBuild':
         result = handleSalvarBuild(planilha, dados);
         break;
+      case 'excluirBuild':
+        result = handleExcluirBuild(planilha, dados);
+        break;
       default:
         // Manter código existente de Pokémon
         result = handlePokemonUpdate(planilha, dados);
@@ -1009,6 +1012,64 @@ function handleCarregarBuilds(planilha) {
       success: false,
       message: 'Erro ao carregar builds: ' + error.toString(),
       builds: []
+    };
+  }
+}
+
+/**
+ * Excluir uma build do Smeargle (apenas admin)
+ */
+function handleExcluirBuild(planilha, dados) {
+  try {
+    // SEGURANÇA: Verificar se é admin
+    const adminEmail = validateTokenAndGetEmail(dados);
+    
+    if (!adminEmail) {
+      return {
+        success: false,
+        message: 'Token de autenticação inválido ou ausente'
+      };
+    }
+    
+    // Verificar se o usuário é admin
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') {
+          isAdmin = true;
+        }
+        break;
+      }
+    }
+    
+    if (!isAdmin) {
+      return {
+        success: false,
+        message: 'Sem permissão: apenas administradores podem excluir builds'
+      };
+    }
+    
+    // Excluir a build
+    const abaBuilds = getOrCreateSheet(planilha, 'BUILDS SMEARGLE');
+    const buildIndex = parseInt(dados.buildIndex);
+    
+    // +2 porque: +1 para cabeçalho, +1 para índice baseado em 0
+    const linhaParaExcluir = buildIndex + 2;
+    
+    abaBuilds.deleteRow(linhaParaExcluir);
+    
+    return {
+      success: true,
+      message: 'Build excluída com sucesso!'
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro ao excluir build: ' + error.toString()
     };
   }
 }

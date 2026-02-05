@@ -594,15 +594,26 @@ async function carregarBuilds() {
         const response = await fetch(`${SHEETS_BASE_URL}?action=carregarBuilds`);
         const result = await response.json();
         
+        // Verificar se usuário é admin
+        const userRole = localStorage.getItem('userRole');
+        const isAdmin = userRole === 'admin';
+        
         if (result.success && result.builds.length > 0) {
-            buildsList.innerHTML = result.builds.map(build => `
-                <div class="build-item" onclick="aplicarBuild('${build.buildCompleta.replace(/'/g, "&apos;")}', '${build.nome.replace(/'/g, "&apos;")}')">
-                    <div class="build-item-header">
-                        <div class="build-item-name">${build.nome}</div>
-                        <div class="build-item-date">${formatarData(build.data)}</div>
+            buildsList.innerHTML = result.builds.map((build, index) => `
+                <div class="build-item">
+                    <div onclick="aplicarBuild('${build.buildCompleta.replace(/'/g, "&apos;")}', '${build.nome.replace(/'/g, "&apos;")}')" style="cursor: pointer; flex: 1;">
+                        <div class="build-item-header">
+                            <div class="build-item-name">${build.nome}</div>
+                            <div class="build-item-date">${formatarData(build.data)}</div>
+                        </div>
+                        <div class="build-item-content">${build.buildCompleta}</div>
+                        <div class="build-item-usuario">Por: ${build.usuario}</div>
                     </div>
-                    <div class="build-item-content">${build.buildCompleta}</div>
-                    <div class="build-item-usuario">Por: ${build.usuario}</div>
+                    ${isAdmin ? `
+                        <button class="btn-delete-build" onclick="event.stopPropagation(); excluirBuild(${index}, '${build.nome.replace(/'/g, "&apos;")}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
                 </div>
             `).join('');
         } else {
@@ -660,6 +671,48 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
     } catch (error) {
         console.error('Erro ao aplicar build:', error);
         alert('❌ Erro ao aplicar build. Verifique o console.');
+    }
+};
+
+// Excluir build (apenas admin)
+window.excluirBuild = async function(buildIndex, nomeBuild) {
+    if (!confirm(`❌ Tem certeza que deseja excluir a build "${nomeBuild}"?\n\nEsta ação não pode ser desfeita!`)) {
+        return;
+    }
+    
+    try {
+        // Obter token de autenticação e email
+        const authToken = localStorage.getItem('googleToken');
+        const adminEmail = localStorage.getItem('userEmail');
+        
+        if (!authToken || !adminEmail) {
+            alert('❌ Você precisa estar logado como admin para excluir builds!');
+            return;
+        }
+        
+        const formData = new URLSearchParams({
+            action: 'excluirBuild',
+            buildIndex: buildIndex.toString(),
+            authToken: authToken,
+            adminEmail: adminEmail
+        });
+        
+        const response = await fetch(SHEETS_BASE_URL, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Build excluída com sucesso!');
+            carregarBuilds(); // Recarregar lista
+        } else {
+            alert('❌ Erro: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Erro ao excluir build:', error);
+        alert('❌ Erro ao excluir build. Verifique o console.');
     }
 };
 
