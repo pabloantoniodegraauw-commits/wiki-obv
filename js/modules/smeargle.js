@@ -554,8 +554,10 @@ window.salvarBuildAtual = async function() {
     }
     
     try {
-        // Obter usuário logado (se disponível)
-        const usuario = localStorage.getItem('userNickname') || 'Anônimo';
+        // Obter dados do usuário do localStorage
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        const usuario = user && user.nickname ? user.nickname : 'Anônimo';
         
         // Usar URLSearchParams para enviar como form data (evita preflight CORS)
         const formData = new URLSearchParams({
@@ -595,8 +597,9 @@ async function carregarBuilds() {
         const result = await response.json();
         
         // Verificar se usuário é admin
-        const userRole = localStorage.getItem('userRole');
-        const isAdmin = userRole === 'admin';
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        const isAdmin = user && user.role === 'admin';
         
         if (result.success && result.builds.length > 0) {
             buildsList.innerHTML = result.builds.map((build, index) => `
@@ -681,11 +684,11 @@ window.excluirBuild = async function(buildIndex, nomeBuild) {
     }
     
     try {
-        // Obter token de autenticação e email
-        const authToken = localStorage.getItem('googleToken');
-        const adminEmail = localStorage.getItem('userEmail');
+        // Obter dados do usuário do localStorage
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
         
-        if (!authToken || !adminEmail) {
+        if (!user || !user.authToken || !user.email) {
             alert('❌ Você precisa estar logado como admin para excluir builds!');
             return;
         }
@@ -693,8 +696,8 @@ window.excluirBuild = async function(buildIndex, nomeBuild) {
         const formData = new URLSearchParams({
             action: 'excluirBuild',
             buildIndex: buildIndex.toString(),
-            authToken: authToken,
-            adminEmail: adminEmail
+            authToken: user.authToken,
+            adminEmail: user.email
         });
         
         const response = await fetch(SHEETS_BASE_URL, {
