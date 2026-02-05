@@ -441,8 +441,8 @@ document.querySelectorAll('.tabs-nav .tab-btn').forEach(btn => {
   btn.addEventListener('click', function() {
     const page = btn.getAttribute('data-page');
     if (page === 'admin') return; // já está na admin
-    if (page === 'pokedex') window.location.href = '/wiki-obv/index.html';
-    else window.location.href = `/wiki-obv/pages/${page}.html`;
+    if (page === 'pokedex') window.location.href = '../index.html';
+    else window.location.href = `../pages/${page}.html`;
   });
 });
 </script>
