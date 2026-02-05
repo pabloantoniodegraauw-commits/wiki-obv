@@ -651,7 +651,7 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
                 return moveEncontrado;
             }
             return null;
-        }).filter(m => m !== null);
+        }).filter(Boolean);
         
         if (moves.length === 0) {
             alert('⚠️ Nenhum golpe válido encontrado nesta build!');
