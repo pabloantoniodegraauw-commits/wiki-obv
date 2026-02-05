@@ -19,8 +19,9 @@ async function loadPage(pageName) {
             </div>
         `;
         
-        // Fetch da página - caminho relativo para GitHub Pages
-        const response = await fetch(`pages/${pageName}.html`);
+        // Fetch da página - caminho absoluto para funcionar em qualquer subdiretório
+        const base = window.location.pathname.includes('/admin/') ? '/wiki-obv/' : '';
+        const response = await fetch(`${base}pages/${pageName}.html`);
         
         console.log(`📡 Resposta HTTP: ${response.status} ${response.statusText}`);
         
