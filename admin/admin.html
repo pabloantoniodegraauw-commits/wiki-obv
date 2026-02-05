@@ -435,21 +435,28 @@ function fazerLogout() {
   <button class="tab-btn" data-page="cla"><i class="fas fa-users"></i> CLÃ</button>
   <button class="tab-btn active" data-page="admin" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;"><i class="fas fa-crown"></i> ADMIN</button>
 </div>
+<main id="page-content" class="tab-content active">
+  <!-- Conteúdo da administração será carregado aqui via SPA -->
+</main>
 <script>
-// Redirecionamento dinâmico igual ao index.html, mas admin.html só carrega admin, as outras redirecionam
-document.querySelectorAll('.tabs-nav .tab-btn').forEach(btn => {
-  btn.addEventListener('click', function() {
-    const page = btn.getAttribute('data-page');
-    if (page === 'admin') return; // já está na admin
-    if (page === 'pokedex') window.location.href = '../index.html';
-    else window.location.href = `../pages/${page}.html`;
+// SPA: usar navigation.js para navegação dinâmica igual ao index.html
+document.addEventListener('DOMContentLoaded', () => {
+  const tabButtons = document.querySelectorAll('.tabs-nav .tab-btn');
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const page = btn.getAttribute('data-page');
+      if (page === 'admin') return; // já está na admin
+      loadPage(page); // usa navigation.js
+    });
   });
+  // Carregar admin por padrão
+  document.getElementById('page-content').innerHTML = document.querySelector('.admin-container').outerHTML;
 });
 </script>
 
 <script src="../js/modules/navigation.js"></script>
 
-<div class="admin-container">
+<div class="admin-container" style="display:none;">
   <h1 class="section-title">Administração</h1>
 
   <!-- DASHBOARD DE ESTATÍSTICAS -->
