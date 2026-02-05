@@ -75,7 +75,7 @@
             </div>
             
             <div class="filter-group">
-                <label><i class="fas fa-map-marker-alt"></i> Local</label>
+                <label><i class="fas fa-map-marker-alt"></i> Posição do Move</label>
                 <select id="filterLocal">
                     <option value="">Todos</option>
                     <option value="M1">M1</option>
@@ -90,6 +90,12 @@
                     <option value="M10">M10</option>
                 </select>
             </div>
+            
+            <div class="filter-group">
+                <button class="btn-builds" id="btnBuilds" onclick="abrirModalBuilds()">
+                    <i class="fas fa-save"></i> BUILDS
+                </button>
+            </div>
         </div>
         
         <!-- Grid de Golpes -->
@@ -97,6 +103,40 @@
             <div class="loading">
                 <i class="fas fa-spinner fa-spin"></i>
                 <p>Carregando golpes...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Builds -->
+<div class="modal-builds" id="modalBuilds" style="display: none;">
+    <div class="modal-builds-content">
+        <div class="modal-builds-header">
+            <h2><i class="fas fa-save"></i> Gerenciar Builds</h2>
+            <button class="btn-close-modal" onclick="fecharModalBuilds()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Salvar Nova Build -->
+        <div class="modal-builds-section" id="sectionSalvar">
+            <h3><i class="fas fa-plus-circle"></i> Salvar Build Atual</h3>
+            <div class="save-build-form">
+                <input type="text" id="inputNomeBuild" placeholder="Nome da build (ex: SMEARGLE DARK SEM PULO)" />
+                <button class="btn-save-build" onclick="salvarBuildAtual()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+            <p class="build-preview" id="buildPreview"></p>
+        </div>
+        
+        <!-- Carregar Build Existente -->
+        <div class="modal-builds-section">
+            <h3><i class="fas fa-list"></i> Builds Salvas</h3>
+            <div class="builds-list" id="buildsList">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Carregando...
+                </div>
             </div>
         </div>
     </div>

@@ -2,6 +2,7 @@
 
 // URL do Google Sheets - IMPORTANTE: Usar "acao" (sem "ti") conforme esperado pelo Apps Script
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_todos&page=1&limit=10000";
+const SHEETS_BASE_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec";
 
 let smearglePokemonData = [];
 let smeargleMovesData = [];
@@ -203,26 +204,34 @@ function renderizarGolpesSmeargle(golpes) {
         return;
     }
     
-    grid.innerHTML = golpes.map(golpe => `
-        <div class="move-card type-${golpe.tipo.toLowerCase()}" 
-             data-move='${JSON.stringify(golpe)}'
-             onclick="selecionarGolpe(this)">
-            <div class="move-tipo-icon">
-                <i class="fas ${TIPO_ICONS[golpe.tipo] || 'fa-circle'}"></i>
+    const nomesSelecionados = smeargleSelectedMoves.map(m => m.nome.toLowerCase());
+    
+    grid.innerHTML = golpes.map(golpe => {
+        const estaSelecionado = nomesSelecionados.includes(golpe.nome.toLowerCase());
+        const classeExtra = estaSelecionado ? ' move-card-selected' : '';
+        
+        return `
+            <div class="move-card type-${golpe.tipo.toLowerCase()}${classeExtra}" 
+                 data-move='${JSON.stringify(golpe)}'
+                 onclick="selecionarGolpe(this)">
+                <div class="move-tipo-icon">
+                    <i class="fas ${TIPO_ICONS[golpe.tipo] || 'fa-circle'}"></i>
+                </div>
+                <div class="move-name">${golpe.nome}</div>
+                <div class="move-details">
+                    <span class="move-tipo">${golpe.tipo}</span>
+                    <span class="move-categoria">${golpe.categoria}</span>
+                </div>
+                <div class="move-acao">
+                    <i class="fas fa-running"></i> ${golpe.acao}
+                </div>
+                <div class="move-origem">
+                    <i class="fas fa-paw"></i> ${golpe.origem}
+                </div>
+                ${estaSelecionado ? '<div class="move-selected-badge"><i class="fas fa-check-circle"></i></div>' : ''}
             </div>
-            <div class="move-name">${golpe.nome}</div>
-            <div class="move-details">
-                <span class="move-tipo">${golpe.tipo}</span>
-                <span class="move-categoria">${golpe.categoria}</span>
-            </div>
-            <div class="move-acao">
-                <i class="fas fa-running"></i> ${golpe.acao}
-            </div>
-            <div class="move-origem">
-                <i class="fas fa-paw"></i> ${golpe.origem}
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Selecionar golpe
@@ -240,9 +249,19 @@ window.selecionarGolpe = function(element) {
         return;
     }
     
+    // VALIDAÇÃO: Verificar se o move pode ser adicionado na próxima posição
+    const proximaPosicao = smeargleSelectedMoves.length + 1;
+    if (!validarPosicaoMove(golpe, proximaPosicao)) {
+        alert(`⚠️ Este golpe só está disponível em: ${obterPosicoesDisponiveis(golpe).join(', ')}\nVocê está tentando adicionar na posição M${proximaPosicao}.`);
+        return;
+    }
+    
     smeargleSelectedMoves.push(golpe);
     atualizarCardSmeargle();
     buscarPokemonsCompativeis();
+    
+    // Reordenar grid para mostrar moves selecionados no topo
+    reordenarGridMovesOrdenado();
     
     // Feedback visual
     element.style.animation = 'none';
@@ -250,6 +269,79 @@ window.selecionarGolpe = function(element) {
         element.style.animation = 'pulseSelect 0.4s ease';
     }, 10);
 };
+
+// Validar se um move pode ser adicionado em uma posição específica
+function validarPosicaoMove(golpe, posicao) {
+    const posicaoStr = `M${posicao}`;
+    
+    // Buscar todas as posições onde este golpe aparece
+    const posicoesDisponiveis = obterPosicoesDisponiveis(golpe);
+    
+    // Verificar se a posição desejada está disponível
+    return posicoesDisponiveis.includes(posicaoStr);
+}
+
+// Obter todas as posições onde um golpe está disponível
+function obterPosicoesDisponiveis(golpe) {
+    const posicoes = new Set();
+    
+    smearglePokemonData.forEach(pokemon => {
+        for (let i = 1; i <= 10; i++) {
+            const coluna = `M${i}`;
+            const celula = pokemon[coluna];
+            
+            if (celula && typeof celula === 'string') {
+                const partes = celula.split('/').map(v => v.trim());
+                if (partes.length >= 1 && partes[0].toLowerCase() === golpe.nome.toLowerCase()) {
+                    posicoes.add(coluna);
+                }
+            }
+        }
+    });
+    
+    return Array.from(posicoes).sort();
+}
+
+// Reordenar grid para mostrar moves selecionados no topo
+function reordenarGridMovesOrdenado() {
+    const filtros = {
+        nome: document.getElementById('filterNome').value.toLowerCase(),
+        tipo: document.getElementById('filterTipo').value,
+        acao: document.getElementById('filterAcao').value,
+        categoria: document.getElementById('filterCategoria').value,
+        local: document.getElementById('filterLocal').value
+    };
+    
+    // Aplicar filtros primeiro
+    let movesFiltrados = smeargleMovesData.filter(golpe => {
+        return (!filtros.nome || golpe.nome.toLowerCase().includes(filtros.nome)) &&
+               (!filtros.tipo || golpe.tipo === filtros.tipo) &&
+               (!filtros.acao || golpe.acao === filtros.acao) &&
+               (!filtros.categoria || golpe.categoria === filtros.categoria) &&
+               (!filtros.local || golpe.local === filtros.local);
+    });
+    
+    // Separar moves selecionados e não selecionados
+    const movesSelecionados = [];
+    const movesNaoSelecionados = [];
+    
+    const nomesSelecionados = smeargleSelectedMoves.map(m => m.nome.toLowerCase());
+    
+    movesFiltrados.forEach(move => {
+        const index = nomesSelecionados.indexOf(move.nome.toLowerCase());
+        if (index !== -1) {
+            // Adicionar na ordem de seleção
+            movesSelecionados[index] = move;
+        } else {
+            movesNaoSelecionados.push(move);
+        }
+    });
+    
+    // Remover undefined do array (caso haja gaps)
+    const movesOrdenados = movesSelecionados.filter(m => m).concat(movesNaoSelecionados);
+    
+    renderizarGolpesSmeargle(movesOrdenados);
+}
 
 // Atualizar card do Smeargle
 function atualizarCardSmeargle() {
@@ -311,12 +403,14 @@ window.removerGolpe = function(index) {
     smeargleSelectedMoves.splice(index, 1);
     atualizarCardSmeargle();
     buscarPokemonsCompativeis();
+    reordenarGridMovesOrdenado();
 };
 
 // Limpar todos os golpes
 function limparGolpes() {
     smeargleSelectedMoves = [];
     atualizarCardSmeargle();
+    reordenarGridMovesOrdenado();
     document.getElementById('compatibleGrid').innerHTML = `
         <div class="no-selection">
             <i class="fas fa-hand-pointer"></i>
@@ -396,25 +490,187 @@ function configurarEventosSmeargle() {
 
 // Aplicar filtros
 function aplicarFiltrosSmeargle() {
-    const nome = document.getElementById('filterNome').value.toLowerCase();
-    const tipo = document.getElementById('filterTipo').value;
-    const acao = document.getElementById('filterAcao').value;
-    const categoria = document.getElementById('filterCategoria').value;
-    const local = document.getElementById('filterLocal').value;
-    
-    const filtrados = smeargleMovesData.filter(golpe => {
-        return (!nome || golpe.nome.toLowerCase().includes(nome)) &&
-               (!tipo || golpe.tipo === tipo) &&
-               (!acao || golpe.acao === acao) &&
-               (!categoria || golpe.categoria === categoria) &&
-               (!local || golpe.local === local);
-    });
-    
-    renderizarGolpesSmeargle(filtrados);
+    reordenarGridMovesOrdenado();
 }
 
 // Registrar inicializador
 if (typeof registerPageInitializer !== 'undefined') {
     registerPageInitializer('smeargle', initSmeargle);
     console.log('✅ Inicializador Smeargle registrado');
+}
+
+/* ============================================
+   FUNÇÕES DE GERENCIAMENTO DE BUILDS
+   ============================================ */
+
+// Abrir modal de builds
+window.abrirModalBuilds = function() {
+    const modal = document.getElementById('modalBuilds');
+    modal.style.display = 'flex';
+    
+    // Atualizar preview da build atual
+    atualizarPreviewBuild();
+    
+    // Carregar builds salvas
+    carregarBuilds();
+};
+
+// Fechar modal de builds
+window.fecharModalBuilds = function() {
+    const modal = document.getElementById('modalBuilds');
+    modal.style.display = 'none';
+};
+
+// Atualizar preview da build atual
+function atualizarPreviewBuild() {
+    const preview = document.getElementById('buildPreview');
+    
+    if (smeargleSelectedMoves.length === 0) {
+        preview.innerHTML = '<em>Nenhum golpe selecionado. Selecione golpes antes de salvar.</em>';
+        preview.style.display = 'block';
+        return;
+    }
+    
+    const buildText = smeargleSelectedMoves.map((move, index) => 
+        `m${index + 1} - ${move.nome} - ${move.origem}`
+    ).join(' / ');
+    
+    preview.innerHTML = `<strong>Preview:</strong> ${buildText}`;
+    preview.style.display = 'block';
+}
+
+// Salvar build atual
+window.salvarBuildAtual = async function() {
+    const nomeBuild = document.getElementById('inputNomeBuild').value.trim();
+    
+    if (!nomeBuild) {
+        alert('⚠️ Por favor, digite um nome para a build!');
+        return;
+    }
+    
+    if (smeargleSelectedMoves.length === 0) {
+        alert('⚠️ Selecione pelo menos um golpe antes de salvar!');
+        return;
+    }
+    
+    try {
+        // Obter usuário logado (se disponível)
+        const usuario = localStorage.getItem('userNickname') || 'Anônimo';
+        
+        const response = await fetch(SHEETS_BASE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'salvarBuild',
+                nomeBuild: nomeBuild,
+                moves: smeargleSelectedMoves,
+                usuario: usuario
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ Build salva com sucesso!');
+            document.getElementById('inputNomeBuild').value = '';
+            carregarBuilds(); // Recarregar lista
+        } else {
+            alert('❌ Erro ao salvar build: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Erro ao salvar build:', error);
+        alert('❌ Erro ao salvar build. Verifique o console.');
+    }
+};
+
+// Carregar builds salvas
+async function carregarBuilds() {
+    const buildsList = document.getElementById('buildsList');
+    buildsList.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+    
+    try {
+        const response = await fetch(`${SHEETS_BASE_URL}?action=carregarBuilds`);
+        const result = await response.json();
+        
+        if (result.success && result.builds.length > 0) {
+            buildsList.innerHTML = result.builds.map(build => `
+                <div class="build-item" onclick="aplicarBuild('${build.buildCompleta.replace(/'/g, "&apos;")}', '${build.nome.replace(/'/g, "&apos;")}')">
+                    <div class="build-item-header">
+                        <div class="build-item-name">${build.nome}</div>
+                        <div class="build-item-date">${formatarData(build.data)}</div>
+                    </div>
+                    <div class="build-item-content">${build.buildCompleta}</div>
+                    <div class="build-item-usuario">Por: ${build.usuario}</div>
+                </div>
+            `).join('');
+        } else {
+            buildsList.innerHTML = '<p style="color: rgba(255,255,255,0.6); text-align: center; padding: 20px;">Nenhuma build salva ainda.</p>';
+        }
+    } catch (error) {
+        console.error('Erro ao carregar builds:', error);
+        buildsList.innerHTML = '<p style="color: #ff6464; text-align: center; padding: 20px;">Erro ao carregar builds.</p>';
+    }
+}
+
+// Aplicar uma build selecionada
+window.aplicarBuild = function(buildCompleta, nomeBuild) {
+    try {
+        // Limpar seleção atual
+        smeargleSelectedMoves = [];
+        
+        // Parsear a build: "m1 - Shadow Ball - Chandelure / m2 - ..."
+        const moves = buildCompleta.split(' / ').map(moveStr => {
+            const partes = moveStr.trim().split(' - ').map(p => p.trim());
+            if (partes.length >= 3) {
+                // Encontrar o move completo nos dados
+                const nomeMove = partes[1];
+                const pokemonOrigem = partes[2];
+                
+                // Buscar o move nos dados
+                const moveEncontrado = smeargleMovesData.find(m => 
+                    m.nome.toLowerCase() === nomeMove.toLowerCase() &&
+                    m.origem.toLowerCase() === pokemonOrigem.toLowerCase()
+                );
+                
+                return moveEncontrado;
+            }
+            return null;
+        }).filter(m => m !== null);
+        
+        if (moves.length === 0) {
+            alert('⚠️ Nenhum golpe válido encontrado nesta build!');
+            return;
+        }
+        
+        // Aplicar os moves
+        smeargleSelectedMoves = moves;
+        
+        // Atualizar interface
+        atualizarCardSmeargle();
+        buscarPokemonsCompativeis();
+        reordenarGridMovesOrdenado();
+        
+        // Fechar modal
+        fecharModalBuilds();
+        
+        alert(`✅ Build "${nomeBuild}" aplicada com sucesso!\n${moves.length} golpes carregados.`);
+        
+    } catch (error) {
+        console.error('Erro ao aplicar build:', error);
+        alert('❌ Erro ao aplicar build. Verifique o console.');
+    }
+};
+
+// Formatar data
+function formatarData(data) {
+    if (!data) return 'Data desconhecida';
+    
+    try {
+        const d = new Date(data);
+        return d.toLocaleDateString('pt-BR');
+    } catch {
+        return 'Data inválida';
+    }
 }

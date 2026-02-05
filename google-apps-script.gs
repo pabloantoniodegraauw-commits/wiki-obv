@@ -110,6 +110,9 @@ function doPost(e) {
       case 'atualizarSugestao':
         result = handleAtualizarSugestao(planilha, dados);
         break;
+      case 'salvarBuild':
+        result = handleSalvarBuild(planilha, dados);
+        break;
       default:
         // Manter código existente de Pokémon
         result = handlePokemonUpdate(planilha, dados);
@@ -153,6 +156,8 @@ function doGet(e) {
         return createCorsResponse(getLogs(planilha));
       case 'countAdmins':
         return createCorsResponse(countAdmins(planilha));
+      case 'carregarBuilds':
+        return createCorsResponse(handleCarregarBuilds(planilha));
     }
     
     // Sistema de Pokémon (código existente)
@@ -908,3 +913,90 @@ function handlePokemonUpdate(planilha, dados) {
     };
   }
 }
+
+/* ============================================
+   FUNÇÕES DE BUILDS SMEARGLE
+   ============================================ */
+
+/**
+ * Salvar uma build do Smeargle
+ */
+function handleSalvarBuild(planilha, dados) {
+  try {
+    const abaBuilds = getOrCreateSheet(planilha, 'BUILDS SMEARGLE');
+    
+    // Verificar se é a primeira vez (criar cabeçalho)
+    const dadosAba = abaBuilds.getDataRange().getValues();
+    if (dadosAba.length === 0 || dadosAba[0][0] !== 'NOME DA BUILD') {
+      abaBuilds.clear();
+      abaBuilds.appendRow(['NOME DA BUILD', 'BUILD COMPLETA', 'DATA', 'USUARIO']);
+    }
+    
+    // Formatar a build no formato: m1 - Move - Pokemon / m2 - Move - Pokemon ...
+    const buildFormatada = dados.moves.map((move, index) => {
+      return `m${index + 1} - ${move.nome} - ${move.origem}`;
+    }).join(' / ');
+    
+    const nomeBuild = dados.nomeBuild || 'Build sem nome';
+    const usuario = dados.usuario || 'Anônimo';
+    
+    // Adicionar a build
+    abaBuilds.appendRow([
+      nomeBuild,
+      buildFormatada,
+      new Date(),
+      usuario
+    ]);
+    
+    return {
+      success: true,
+      message: 'Build salva com sucesso!'
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro ao salvar build: ' + error.toString()
+    };
+  }
+}
+
+/**
+ * Carregar todas as builds salvas
+ */
+function handleCarregarBuilds(planilha) {
+  try {
+    const abaBuilds = getOrCreateSheet(planilha, 'BUILDS SMEARGLE');
+    const dados = abaBuilds.getDataRange().getValues();
+    
+    // Se não tem dados ou só tem cabeçalho
+    if (dados.length <= 1) {
+      return {
+        success: true,
+        builds: []
+      };
+    }
+    
+    // Converter para array de objetos (pular cabeçalho)
+    const builds = dados.slice(1).map((linha, index) => ({
+      id: index,
+      nome: linha[0],
+      buildCompleta: linha[1],
+      data: linha[2],
+      usuario: linha[3]
+    }));
+    
+    return {
+      success: true,
+      builds: builds
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro ao carregar builds: ' + error.toString(),
+      builds: []
+    };
+  }
+}
+
