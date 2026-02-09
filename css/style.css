@@ -250,23 +250,27 @@ h1 {
 }
 
 .filter-btn[data-categoria="todos"] {
-    background: #333;
+    background: #444;
 }
 
-.filter-btn[data-categoria="boss"] {
+.filter-btn[data-categoria="Boss"] {
     background: #dc143c;
 }
 
-.filter-btn[data-categoria="event"] {
+.filter-btn[data-categoria="Event"] {
     background: #1e90ff;
 }
 
-.filter-btn[data-categoria="spawn"] {
+.filter-btn[data-categoria="Spawn"] {
     background: #28a745;
 }
 
-.filter-btn[data-categoria="craft"] {
+.filter-btn[data-categoria="Craft"] {
     background: #9370db;
+}
+
+.filter-btn[data-categoria="Desconhecido"] {
+    background: #ff8c00;
 }
 
 .filter-btn:hover {
