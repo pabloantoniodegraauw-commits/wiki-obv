@@ -892,7 +892,8 @@
                 card.className = 'tm-card';
                 const pokeLower = (tm.pokemon || '').toLowerCase().replace(/ /g, '-');
                 card.dataset.poke = pokeLower;
-                card.dataset.cat = (tm.categoria || '').toLowerCase();
+                const catRaw = (tm.categoria || '').toString().trim().toLowerCase();
+                card.dataset.cat = catRaw;
 
                 // Número formatado: TM02, TM15, TM120 etc.
                 const numFormatado = tm.tipo === 'HM'
@@ -903,15 +904,28 @@
                 const tipagem = (tm.tipagem || 'Normal').replace(/ /g, '_');
                 const discoSrc = `IMAGENS/imagens-itens/tipagens de tm/${tipagem}_type_tm_disk.png`;
 
-                // Imagem sticker do Pokémon
-                const stickerSrc = `IMAGENS/imagens-pokemon/stickers-pokemon/${tm.pokemon}.png`;
-                const fallbackImg = `this.style.display='none'`;
+                // Imagem sticker: depende da categoria (ORIGEM DO TM2)
+                let stickerSrc;
+                let stickerAlt = tm.pokemon;
+                if (catRaw === 'craft') {
+                    stickerSrc = 'IMAGENS/imagens-pokemon/stickers-pokemon/craft.png';
+                    stickerAlt = 'Craft';
+                } else if (catRaw === 'desconhecido') {
+                    stickerSrc = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
+                    stickerAlt = 'Desconhecido';
+                } else if (catRaw === 'event' || catRaw === 'evento') {
+                    stickerSrc = 'IMAGENS/imagens-pokemon/stickers-pokemon/eventos.png';
+                    stickerAlt = 'Evento';
+                } else {
+                    stickerSrc = `IMAGENS/imagens-pokemon/stickers-pokemon/${tm.pokemon}.png`;
+                }
+                const fallbackImg = `this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'`;
 
                 card.innerHTML = `
                     <img src="${discoSrc}" alt="${numFormatado}" class="tm-disk-image" onerror="this.src='IMAGENS/imagens-itens/tipagens de tm/Normal_type_tm_disk.png'">
                     <div class="tm-number-text">${numFormatado}</div>
                     <div class="tm-name">${tm.nome}</div>
-                    <img src="${stickerSrc}" alt="${tm.pokemon}" class="tm-pokemon-image" onerror="${fallbackImg}">
+                    <img src="${stickerSrc}" alt="${stickerAlt}" class="tm-pokemon-image" onerror="${fallbackImg}">
                     <div class="tm-pokemon-name">${tm.pokemon}</div>
                 `;
                 container.appendChild(card);
