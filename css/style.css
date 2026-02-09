@@ -437,6 +437,7 @@ h1 {
     object-fit: contain;
     padding: 15px;
     transition: transform 0.5s;
+    background: transparent !important;
 }
 
 .pokemon-card:hover .pokemon-img {

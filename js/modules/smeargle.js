@@ -467,9 +467,9 @@ function buscarPokemonsCompativeis() {
         return `
             <div class="compatible-card">
                 <div class="compatible-img">
-                    <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(pokemon['EV'] || pokemon['POKEMON'], pokemon['POKEMON']) : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'}" 
-                         alt="${pokemon['POKEMON']}"
-                         onerror="this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                    <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(pokemon['EV'] || pokemon['POKEMON'], pokemon['POKEMON']) : 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'}" 
+                        alt="${pokemon['POKEMON']}"
+                        onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
                 </div>
                 <div class="compatible-name">${pokemon['EV'] || pokemon['POKEMON']}</div>
                 <div class="compatible-move">

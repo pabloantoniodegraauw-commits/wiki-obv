@@ -291,7 +291,7 @@
                 card.innerHTML = `
                     ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                     <div class="img-container">
-                        <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                        <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
                     </div>
                     ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
                     <h3 class="pokemon-name">
@@ -431,7 +431,7 @@
                     card.innerHTML = `
                         ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                         <div class="img-container">
-                            <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png'">
+                            <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
                         </div>
                         ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
                         <h3 class="pokemon-name">
@@ -513,45 +513,41 @@
         }
         
         function obterImagemPokemon(nomePrincipal, nomeBase, forceStickers = false) {
+            // Remove "Boss " do início, se houver
             if (nomePrincipal) {
                 nomePrincipal = nomePrincipal.replace(/^Boss\s+/i, '').trim();
             }
             if (nomeBase) {
                 nomeBase = nomeBase.replace(/^Boss\s+/i, '').trim();
             }
-            
-            // Formatar nome para URL
-            const nomeFallback = (nomeBase || nomePrincipal)
-                .toLowerCase()
-                .replace(/'/g, '')
-                .replace(/\./g, '')
-                .replace(/♀/g, '-f')
-                .replace(/♂/g, '-m')
-                .replace(/[^a-z0-9-]/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '');
-            
-            // Se forceStickers ativo ou usarStickers ativo, usar stickers da wiki
+
+            // Se forceStickers ativo ou usarStickers ativo, usar stickers da wiki (mantém compatibilidade)
             if (forceStickers || usarStickers) {
-                return `https://wiki.pokememories.com/images/pokemons/${nomeFallback}.png`;
+                // Mantém o comportamento antigo para stickers
+                const nomeSticker = (nomeBase || nomePrincipal)
+                    .replace(/[^\w\d-]/g, '-')
+                    .replace(/\s+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '');
+                return `https://wiki.pokememories.com/images/pokemons/${nomeSticker}.png`;
             }
-            
-            // Tentar usar mapeamento especial primeiro
-            if (mapeamentoImagens[nomePrincipal]) {
-                const nomeDB = mapeamentoImagens[nomePrincipal];
-                return `https://img.pokemondb.net/sprites/scarlet-violet/icon/avif/${nomeDB}.avif`;
-            }
-            
+
+            // Novo: buscar imagem local na pasta IMAGENS/imagens-pokemon/sprite-pokemon/
+            // O nome do arquivo é exatamente o nome do Pokémon (com EV, se houver), com .png
+            let nomeArquivo = nomePrincipal;
             if (nomeBase && nomeBase !== nomePrincipal) {
-                const combinacao = `${nomeBase} ${nomePrincipal}`;
-                if (mapeamentoImagens[combinacao]) {
-                    const nomeDB = mapeamentoImagens[combinacao];
-                    return `https://img.pokemondb.net/sprites/scarlet-violet/icon/avif/${nomeDB}.avif`;
-                }
+                nomeArquivo = nomeBase;
             }
-            
-            // Fallback para pokemondb
-            return `https://img.pokemondb.net/sprites/scarlet-violet/icon/avif/${nomeFallback}.avif`;
+            // Se houver EV, usa o nome do EV, senão o nome principal
+            if (nomeBase && nomeBase !== '' && nomeBase !== nomePrincipal) {
+                nomeArquivo = nomeBase;
+            }
+            // Remove espaços extras
+            nomeArquivo = nomeArquivo.trim();
+            // Substitui caracteres proibidos para nome de arquivo (mas mantém o padrão do usuário)
+            // Exemplo: "Abomasnow-Mega-Abomasnow.png"
+            // Não altera o nome, apenas adiciona .png
+            return `IMAGENS/imagens-pokemon/sprite-pokemon/${nomeArquivo}.png`;
         }
         
         function alternarTipoImagem() {
