@@ -216,6 +216,35 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
     }
     
+    // Obter TMs da aba "TMs"
+    if (acao === 'obter_tms') {
+      const abaTMs = planilha.getSheetByName('TMs');
+      if (!abaTMs) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          message: 'Aba TMs não encontrada'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const dados = abaTMs.getDataRange().getValues();
+      const cabecalho = dados[0];
+      const linhas = dados.slice(1);
+      
+      const tms = linhas.map(linha => {
+        const obj = {};
+        cabecalho.forEach((coluna, index) => {
+          obj[coluna] = linha[index];
+        });
+        return obj;
+      }).filter(tm => tm['NUMERO DO TM'] && tm['NOME DO TM']); // Filtrar linhas vazias
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: tms,
+        total: tms.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     // Resposta padrão
     return ContentService.createTextOutput(JSON.stringify({
       success: false,

@@ -684,136 +684,38 @@
             return obterImagemPokemon(primeiroNome, '', true);
         }
         
-        function carregarTMs() {
-            todosTMs = [
-                { numero: 'TM02', nome: 'Dragon Claw', pokemon: 'Dragonite', categoria: 'spawn' },
-                { numero: 'TM03', nome: 'Psyshock', pokemon: 'Exeggutor', categoria: 'spawn' },
-                { numero: 'TM04', nome: 'Calm Mind', pokemon: 'Alakazam', categoria: 'spawn' },
-                { numero: 'TM06', nome: 'Toxic', pokemon: 'Muk', categoria: 'spawn' },
-                { numero: 'TM07', nome: 'Hail', pokemon: 'Walrein', categoria: 'spawn' },
-                { numero: 'TM08', nome: 'Bulk Up', pokemon: 'Machamp', categoria: 'spawn' },
-                { numero: 'TM09', nome: 'Venoshock', pokemon: 'Seviper', categoria: 'spawn' },
-                { numero: 'TM10', nome: 'Hidden Power', pokemon: 'Reuniclus', categoria: 'spawn' },
-                { numero: 'TM11', nome: 'Sunny Day', pokemon: 'Magmar', categoria: 'spawn' },
-                { numero: 'TM13', nome: 'Ice Beam', pokemon: 'Cloyster', categoria: 'spawn' },
-                { numero: 'TM14', nome: 'Blizzard', pokemon: 'Regice', categoria: 'spawn' },
-                { numero: 'TM15', nome: 'Hyper Beam', pokemon: 'Snorlax', categoria: 'spawn' },
-                { numero: 'TM16', nome: 'Light Screen', pokemon: 'Girafarig', categoria: 'spawn' },
-                { numero: 'TM17', nome: 'Protect', pokemon: 'Bastiodon', categoria: 'spawn' },
-                { numero: 'TM18', nome: 'Rain Dance', pokemon: 'Ludicolo', categoria: 'spawn' },
-                { numero: 'TM19', nome: 'Roost', pokemon: 'Pidgeot', categoria: 'spawn' },
-                { numero: 'TM20', nome: 'Safeguard', pokemon: 'Shuckle', categoria: 'spawn' },
-                { numero: 'TM21', nome: 'Frustration', pokemon: 'Buneary', categoria: 'spawn' },
-                { numero: 'TM22', nome: 'Solar Beam', pokemon: 'Venusaur', categoria: 'spawn' },
-                { numero: 'TM23', nome: 'Smack Down', pokemon: 'Rhydon', categoria: 'spawn' },
-                { numero: 'TM24', nome: 'Thunderbolt', pokemon: 'Electabuzz', categoria: 'spawn' },
-                { numero: 'TM25', nome: 'Thunder', pokemon: 'Minun', categoria: 'spawn' },
-                { numero: 'TM26', nome: 'Earthquake', pokemon: 'Regirock', categoria: 'spawn' },
-                { numero: 'TM27', nome: 'Return', pokemon: 'Lopunny', categoria: 'spawn' },
-                { numero: 'TM28', nome: 'Leech Life', pokemon: 'Victreebel', categoria: 'spawn' },
-                { numero: 'TM29', nome: 'Psychic', pokemon: 'Hypno', categoria: 'spawn' },
-                { numero: 'TM30', nome: 'Shadow Ball', pokemon: 'Gengar', categoria: 'spawn' },
-                { numero: 'TM31', nome: 'Brick Break', pokemon: 'Hitmonlee', categoria: 'spawn' },
-                { numero: 'TM33', nome: 'Reflect', pokemon: 'Wobbuffet', categoria: 'spawn' },
-                { numero: 'TM34', nome: 'Sludge Wave', pokemon: 'Garbodor', categoria: 'spawn' },
-                { numero: 'TM35', nome: 'Flamethrower', pokemon: 'Emboar', categoria: 'spawn' },
-                { numero: 'TM36', nome: 'Sludge Bomb', pokemon: 'Scolipede', categoria: 'spawn' },
-                { numero: 'TM37', nome: 'Sandstorm', pokemon: 'Boldore', categoria: 'spawn' },
-                { numero: 'TM38', nome: 'Fire Blast', pokemon: 'Heatmor', categoria: 'spawn' },
-                { numero: 'TM39', nome: 'Rock Tomb', pokemon: 'Gurdurr', categoria: 'spawn' },
-                { numero: 'TM40', nome: 'Aerial Ace', pokemon: 'Braviary', categoria: 'spawn' },
-                { numero: 'TM41', nome: 'Torment', pokemon: 'Krookodile', categoria: 'spawn' },
-                { numero: 'TM42', nome: 'Facade', pokemon: 'Scraggy', categoria: 'spawn' },
-                { numero: 'TM43', nome: 'Flame Charge', pokemon: 'Rapidash', categoria: 'spawn' },
-                { numero: 'TM44', nome: 'Rest', pokemon: 'Desconhecido', categoria: 'spawn' },
-                { numero: 'TM45', nome: 'Knock Off', pokemon: 'Evento Halloween', categoria: 'event' },
-                { numero: 'TM46', nome: 'Avalanche', pokemon: 'Avalugg', categoria: 'spawn' },
-                { numero: 'TM47', nome: 'Low Sweep', pokemon: 'Sawk', categoria: 'spawn' },
-                { numero: 'TM48', nome: 'Round', pokemon: 'Jigglypuff', categoria: 'spawn' },
-                { numero: 'TM49', nome: 'Echoed Voice', pokemon: 'Minccino', categoria: 'spawn' },
-                { numero: 'TM50', nome: 'Overheat', pokemon: 'Typhlosion', categoria: 'spawn' },
-                { numero: 'TM51', nome: 'Steel Wing', pokemon: 'Boss Dialga', categoria: 'boss' },
-                { numero: 'TM52', nome: 'Focus Blast', pokemon: 'Cassino Roleta', categoria: 'spawn' },
-                { numero: 'TM53', nome: 'Energy Ball', pokemon: 'Cradily', categoria: 'spawn' },
-                { numero: 'TM55', nome: 'Scald', pokemon: 'Kingdra', categoria: 'spawn' },
-                { numero: 'TM59', nome: 'Brutal Swing', pokemon: 'Drapion', categoria: 'spawn' },
-                { numero: 'TM60', nome: 'Drain Punch', pokemon: 'Pangoro', categoria: 'spawn' },
-                { numero: 'TM61', nome: 'Water Pulse', pokemon: 'Poliwag', categoria: 'spawn' },
-                { numero: 'TM62', nome: 'Acrobatics', pokemon: 'Evento Halloween', categoria: 'event' },
-                { numero: 'TM65', nome: 'Shadow Claw', pokemon: 'Sableye', categoria: 'spawn' },
-                { numero: 'TM66', nome: 'Payback', pokemon: 'Shiftry', categoria: 'spawn' },
-                { numero: 'TM67', nome: 'Smart Strike', pokemon: 'Donphan', categoria: 'spawn' },
-                { numero: 'TM68', nome: 'Giga Impact', pokemon: 'Tauros', categoria: 'spawn' },
-                { numero: 'TM69', nome: 'Rock Polish', pokemon: 'Golem', categoria: 'spawn' },
-                { numero: 'TM71', nome: 'Stone Edge', pokemon: 'Ursaring', categoria: 'spawn' },
-                { numero: 'TM72', nome: 'Volt Switch', pokemon: 'Emolga', categoria: 'spawn' },
-                { numero: 'TM73', nome: 'Thunder Wave', pokemon: 'Raichu', categoria: 'spawn' },
-                { numero: 'TM74', nome: 'Gyro Ball', pokemon: 'Hitmontop', categoria: 'spawn' },
-                { numero: 'TM75', nome: 'Swords Dance', pokemon: 'Bisharp', categoria: 'spawn' },
-                { numero: 'TM76', nome: 'Rock Blast', pokemon: 'Barbaracle', categoria: 'spawn' },
-                { numero: 'TM78', nome: 'Bulldoze', pokemon: 'Hippowdon', categoria: 'spawn' },
-                { numero: 'TM80', nome: 'Rock Slide', pokemon: 'Sudowoodo', categoria: 'spawn' },
-                { numero: 'TM84', nome: 'Poison Jab', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM85', nome: 'Dream Eater', pokemon: 'Evento Dia das Crianças', categoria: 'event' },
-                { numero: 'TM86', nome: 'Grass Knot', pokemon: 'Shiny Celebi', categoria: 'spawn' },
-                { numero: 'TM87', nome: 'Draining Kiss', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM89', nome: 'Misty Terrain', pokemon: 'Evento Temporada 1', categoria: 'event' },
-                { numero: 'TM91', nome: 'Flash Cannon', pokemon: 'Boss Heatran', categoria: 'boss' },
-                { numero: 'TM93', nome: 'Wild Charge', pokemon: 'Manectric', categoria: 'spawn' },
-                { numero: 'TM94', nome: 'Surf', pokemon: 'Lapras', categoria: 'spawn' },
-                { numero: 'TM95', nome: 'Snarl', pokemon: 'Mightyena', categoria: 'spawn' },
-                { numero: 'TM97', nome: 'Dark Pulse', pokemon: 'Tyranitar', categoria: 'spawn' },
-                { numero: 'TM98', nome: 'Waterfall', pokemon: 'Feraligatr', categoria: 'spawn' },
-                { numero: 'TM99', nome: 'Dazzling Gleam', pokemon: 'Clefable', categoria: 'spawn' },
-                { numero: 'TM100', nome: 'Will-O-Wisp', pokemon: 'Ho-Oh', categoria: 'spawn' },
-                { numero: 'TM101', nome: 'Charm', pokemon: 'Evento Dia das Mães', categoria: 'event' },
-                { numero: 'TM102', nome: 'Ancient Power', pokemon: 'Aerodactyl', categoria: 'spawn' },
-                { numero: 'TM103', nome: 'Psywave', pokemon: 'Shiny Celebi', categoria: 'spawn' },
-                { numero: 'TM104', nome: 'Assurance', pokemon: 'Boss Darkrai', categoria: 'boss' },
-                { numero: 'TM105', nome: 'Confusion', pokemon: 'Evento Dia das Crianças', categoria: 'event' },
-                { numero: 'TM106', nome: 'Phantom Force', pokemon: 'Evento Halloween', categoria: 'event' },
-                { numero: 'TM107', nome: 'Hurricane', pokemon: 'Boss Ho-Oh', categoria: 'boss' },
-                { numero: 'TM108', nome: 'Dragon Breath', pokemon: 'Boss Palkia', categoria: 'boss' },
-                { numero: 'TM109', nome: 'Outrage', pokemon: 'Boss Giratina', categoria: 'boss' },
-                { numero: 'TM110', nome: 'Dragon Pulse', pokemon: 'Boss Dialga', categoria: 'boss' },
-                { numero: 'TM111', nome: 'Hydro Pump', pokemon: 'Boss Palkia', categoria: 'boss' },
-                { numero: 'TM112', nome: 'Hex', pokemon: 'Boss Giratina', categoria: 'boss' },
-                { numero: 'TM113', nome: 'Iron Head', pokemon: 'Boss Cobalion', categoria: 'boss' },
-                { numero: 'TM114', nome: 'Magical Leaf', pokemon: 'Boss Virizion', categoria: 'boss' },
-                { numero: 'TM115', nome: 'Stealth Rock', pokemon: 'Boss Terrakion', categoria: 'boss' },
-                { numero: 'TM116', nome: 'Metronome', pokemon: 'Evento Aniversário', categoria: 'event' },
-                { numero: 'TM117', nome: 'Incinerate', pokemon: 'Boss Heatran', categoria: 'boss' },
-                { numero: 'TM118', nome: 'Zen Headbutt', pokemon: 'Evento Páscoa', categoria: 'event' },
-                { numero: 'TM119', nome: 'Dive', pokemon: 'Boss Phione/Manaphy', categoria: 'boss' },
-                { numero: 'TM120', nome: 'Air Cutter', pokemon: 'Boss Shaymin Sky', categoria: 'boss' },
-                { numero: 'TM121', nome: 'Hyper Voice', pokemon: 'Evento Dia das Mães', categoria: 'event' },
-                { numero: 'TM122', nome: 'Fire Spin', pokemon: 'Evento São João', categoria: 'event' },
-                { numero: 'TM123', nome: 'Liquidation', pokemon: 'Evento São João', categoria: 'event' },
-                { numero: 'TM124', nome: 'Icy Wind', pokemon: 'Evento Temporada 1', categoria: 'event' },
-                { numero: 'TM125', nome: 'Disarming Voice', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM126', nome: 'Psybeam', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM127', nome: 'Play Rough', pokemon: 'Aromatisse', categoria: 'spawn' },
-                { numero: 'TM128', nome: 'X-Scissor', pokemon: 'Scizor', categoria: 'spawn' },
-                { numero: 'TM129', nome: 'Dragon Tail', pokemon: 'Goodra', categoria: 'spawn' },
-                { numero: 'TM130', nome: 'Electro Ball', pokemon: 'Dedenne', categoria: 'spawn' },
-                { numero: 'TM131', nome: 'Giga Drain', pokemon: 'Chesnaught', categoria: 'spawn' },
-                { numero: 'TM132', nome: 'Metal Claw', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM133', nome: 'Night Shade', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM134', nome: 'Reversal', pokemon: 'Evento São João', categoria: 'event' },
-                { numero: 'TM135', nome: 'Heat Wave', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM136', nome: 'Beat Up', pokemon: 'Evento Temporada 2', categoria: 'event' },
-                { numero: 'TM159', nome: 'Leaf Storm', pokemon: 'Boss Shaymin Sky', categoria: 'boss' },
-                { numero: 'TM164', nome: 'Brave Bird', pokemon: 'Talonflame', categoria: 'spawn' },
-                { numero: 'TM167', nome: 'Close Combat', pokemon: 'Hariyama', categoria: 'spawn' },
-                { numero: 'TM186', nome: 'High Horsepower', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM192', nome: 'Focus Punch', pokemon: 'Conkeldurr', categoria: 'spawn' },
-                { numero: 'TM198', nome: 'Poltergeist', pokemon: 'Evento Temporada 2', categoria: 'event' },
-                { numero: 'TM199', nome: 'Lash Out', pokemon: 'Malamar', categoria: 'spawn' },
-                { numero: 'TM206', nome: 'Petal Blizzard', pokemon: 'Craft', categoria: 'craft' },
-                { numero: 'TM208', nome: 'Whirlpool', pokemon: 'Craft', categoria: 'craft' }
-            ];
-            renderizarTMs(todosTMs);
-            configurarBuscaTMs();
+        async function carregarTMs() {
+            const container = document.getElementById('tmsContainer');
+            if (!container) return;
+
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando TMs...</p></div>';
+
+            try {
+                const SHEETS_TMS_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_tms";
+                const response = await fetch(SHEETS_TMS_URL);
+                const resultado = await response.json();
+
+                if (resultado.success && resultado.data && resultado.data.length > 0) {
+                    todosTMs = resultado.data.map(tm => ({
+                        tipo: (tm['TIPO DE ITEM'] || 'TM'),
+                        numero: String(tm['NUMERO DO TM'] || ''),
+                        nome: (tm['NOME DO TM'] || ''),
+                        tipagem: (tm['TIPAGEM DO TM'] || 'Normal'),
+                        pokemon: (tm['ORIGEM DO TM'] || ''),
+                        categoria: (tm['ORIGEM DO TM2'] || 'Spawn')
+                    }));
+                    console.log('✅ TMs carregados da planilha:', todosTMs.length);
+                } else {
+                    console.warn('⚠️ Nenhum TM encontrado na planilha, usando dados locais');
+                    todosTMs = [];
+                }
+
+                renderizarTMs(todosTMs);
+                configurarBuscaTMs();
+            } catch (erro) {
+                console.error('❌ Erro ao carregar TMs da planilha:', erro);
+                container.innerHTML = '<div class="error"><i class="fas fa-exclamation-triangle"></i><p>Erro ao carregar TMs</p></div>';
+            }
         }
 
         function carregarTasks() {
@@ -976,46 +878,41 @@
 
         function renderizarTMs(dados) {
             const container = document.getElementById('tmsContainer');
-            if (!container) return; // Sair se o elemento não existir
+            if (!container) return;
             
             container.innerHTML = '';
 
-            if (dados.length === 0) {
+            if (!dados || dados.length === 0) {
                 container.innerHTML = '<div class="no-results"><p>Nenhum TM encontrado</p></div>';
                 return;
             }
 
             dados.forEach((tm) => {
-                const imagemUrl = obterImagemPokemon(tm.pokemon, '', true); // Forçar stickers
                 const card = document.createElement('div');
                 card.className = 'tm-card';
-                card.dataset.categoria = tm.categoria;
-                
-                let tipoIcon = '⚡';
-                if (tm.categoria === 'boss') tipoIcon = '👑';
-                else if (tm.categoria === 'event') tipoIcon = '🎉';
-                else if (tm.categoria === 'spawn') tipoIcon = '✓';
-                else if (tm.categoria === 'craft') tipoIcon = '🔧';
-                
-                let imagemHtml;
-                if (tm.categoria === 'craft') {
-                    imagemHtml = `<div class="tm-pokemon-placeholder"><i class="fas fa-cog"></i></div>`;
-                } else if (tm.categoria === 'event') {
-                    imagemHtml = `<img src="https://wiki.pokememories.com/images/pokemons/eventos.png" alt="Evento" class="tm-pokemon-image">`;
-                } else {
-                    imagemHtml = `<img src="${imagemUrl}" alt="${tm.pokemon}" class="tm-pokemon-image">`;
-                }
+                const pokeLower = (tm.pokemon || '').toLowerCase().replace(/ /g, '-');
+                card.dataset.poke = pokeLower;
+                card.dataset.cat = (tm.categoria || '').toLowerCase();
+
+                // Número formatado: TM02, TM15, TM120 etc.
+                const numFormatado = tm.tipo === 'HM'
+                    ? `HM${String(tm.numero).padStart(2, '0')}`
+                    : `TM${String(tm.numero).padStart(2, '0')}`;
+
+                // Imagem do disco de tipagem
+                const tipagem = (tm.tipagem || 'Normal').replace(/ /g, '_');
+                const discoSrc = `IMAGENS/imagens-itens/tipagens de tm/${tipagem}_type_tm_disk.png`;
+
+                // Imagem sticker do Pokémon
+                const stickerSrc = `IMAGENS/imagens-pokemon/stickers-pokemon/${tm.pokemon}.png`;
+                const fallbackImg = `this.style.display='none'`;
 
                 card.innerHTML = `
-                    <div class="tm-number">
-                        <span class="tm-type-icon">${tipoIcon}</span>
-                        <span class="tm-number-text">${tm.numero}</span>
-                    </div>
-                    <h3 class="tm-name">${tm.nome}</h3>
-                    <div class="tm-footer">
-                        ${imagemHtml}
-                        <div class="tm-pokemon-name">${tm.pokemon}</div>
-                    </div>
+                    <img src="${discoSrc}" alt="${numFormatado}" class="tm-disk-image" onerror="this.src='IMAGENS/imagens-itens/tipagens de tm/Normal_type_tm_disk.png'">
+                    <div class="tm-number-text">${numFormatado}</div>
+                    <div class="tm-name">${tm.nome}</div>
+                    <img src="${stickerSrc}" alt="${tm.pokemon}" class="tm-pokemon-image" onerror="${fallbackImg}">
+                    <div class="tm-pokemon-name">${tm.pokemon}</div>
                 `;
                 container.appendChild(card);
             });
@@ -1200,17 +1097,15 @@
             const container = document.getElementById('tmsContainer');
             const filterBtns = document.querySelectorAll('.filter-btn');
             
-            // Verificar se os elementos existem
             if (!input || !container) return;
             
             let filtroCategoria = 'todos';
             
-            // Configurar botões de filtro
             filterBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     filterBtns.forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
-                    filtroCategoria = this.dataset.categoria;
+                    filtroCategoria = this.dataset.categoria.toLowerCase();
                     aplicarFiltros();
                 });
             });
@@ -1220,15 +1115,18 @@
                 const cards = container.querySelectorAll('.tm-card');
                 let encontrados = 0;
                 
+                // Remover mensagens anteriores
+                container.querySelectorAll('.no-results').forEach(m => m.remove());
+                
                 cards.forEach(card => {
                     const textoBusca = card.textContent.toLowerCase();
-                    const categoria = card.dataset.categoria;
+                    const categoria = card.dataset.cat || '';
                     
                     const correspondeTexto = textoBusca.includes(termo) || termo === '';
                     const correspondeCategoria = filtroCategoria === 'todos' || categoria === filtroCategoria;
                     
                     if (correspondeTexto && correspondeCategoria) {
-                        card.style.display = 'block';
+                        card.style.display = '';
                         encontrados++;
                     } else {
                         card.style.display = 'none';
@@ -1236,7 +1134,6 @@
                 });
                 
                 if (encontrados === 0) {
-                    container.querySelectorAll('.no-results').forEach(m => m.remove());
                     const mensagem = document.createElement('div');
                     mensagem.className = 'no-results';
                     mensagem.innerHTML = `<p>Nenhum TM encontrado</p>`;
@@ -1293,7 +1190,6 @@
             }
             if (document.getElementById('tmsContainer')) {
                 carregarTMs();
-                configurarBuscaTMs();
             }
             if (document.getElementById('tasksContainer')) {
                 carregarTasks();
