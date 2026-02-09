@@ -468,12 +468,12 @@ function buscarPokemonsCompativeis() {
             <div class="compatible-card">
                 <div class="compatible-img">
                     <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(
-                        pokemon['EV'] ? `${pokemon['POKEMON']}-${pokemon['EV']}` : pokemon['POKEMON'],
+                        pokemon['EV'] ? pokemon['EV'].replace(/ /g, '-') : pokemon['POKEMON'],
                         pokemon['POKEMON']) : 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'}" 
                         alt="${pokemon['POKEMON']}"
                         onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
                 </div>
-                <div class="compatible-name">${pokemon['EV'] ? `${pokemon['POKEMON']}-${pokemon['EV']}` : pokemon['POKEMON']}</div>
+                <div class="compatible-name">${pokemon['EV'] || pokemon['POKEMON']}</div>
                 <div class="compatible-move">
                     <i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}
                 </div>

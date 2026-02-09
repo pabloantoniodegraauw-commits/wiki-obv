@@ -521,32 +521,26 @@
                 nomeBase = nomeBase.replace(/^Boss\s+/i, '').trim();
             }
 
-            // Se forceStickers ativo ou usarStickers ativo, usar stickers da wiki (mantém compatibilidade)
+            // Se forceStickers ativo ou usarStickers ativo, usar stickers locais
+            // Stickers são salvos apenas com o nome do POKEMON (sem EV)
             if (forceStickers || usarStickers) {
-                // Mantém o comportamento antigo para stickers
-                const nomeSticker = (nomeBase || nomePrincipal)
-                    .replace(/[^\w\d-]/g, '-')
-                    .replace(/\s+/g, '-')
-                    .replace(/-+/g, '-')
-                    .replace(/^-|-$/g, '');
-                return `https://wiki.pokememories.com/images/pokemons/${nomeSticker}.png`;
+                // Usa nomeBase (nome base do Pokémon, sem EV) se disponível, senão nomePrincipal
+                const nomeSticker = (nomeBase || nomePrincipal).trim();
+                return `IMAGENS/imagens-pokemon/stickers-pokemon/${nomeSticker}.png`;
             }
 
-            // Novo: buscar imagem local na pasta IMAGENS/imagens-pokemon/sprite-pokemon/
-            // O nome do arquivo é exatamente o nome do Pokémon (com EV, se houver), com .png
-            let nomeArquivo = nomePrincipal;
-            if (nomeBase && nomeBase !== nomePrincipal) {
-                nomeArquivo = nomeBase;
-            }
-            // Se houver EV, usa o nome do EV, senão o nome principal
+            // Buscar imagem local na pasta IMAGENS/imagens-pokemon/sprite-pokemon/
+            // Formato: POKEMON.png (sem EV) ou POKEMON-EV.png (com EV)
+            // Exemplos: Charizard.png, Charizard-Mega-Charizard-Y.png, Charizard-Shiny-Charizard.png
+            let nomeArquivo;
             if (nomeBase && nomeBase !== '' && nomeBase !== nomePrincipal) {
-                nomeArquivo = nomeBase;
+                // Tem EV: formato é POKEMON-EV (espaços viram hífens)
+                nomeArquivo = `${nomeBase}-${nomePrincipal.replace(/ /g, '-')}`;
+            } else {
+                // Sem EV: apenas o nome principal
+                nomeArquivo = nomePrincipal;
             }
-            // Remove espaços extras
             nomeArquivo = nomeArquivo.trim();
-            // Substitui caracteres proibidos para nome de arquivo (mas mantém o padrão do usuário)
-            // Exemplo: "Abomasnow-Mega-Abomasnow.png"
-            // Não altera o nome, apenas adiciona .png
             return `IMAGENS/imagens-pokemon/sprite-pokemon/${nomeArquivo}.png`;
         }
         
