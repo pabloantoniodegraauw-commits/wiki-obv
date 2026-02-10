@@ -2159,6 +2159,41 @@ footer {
     border-left: 3px solid;
 }
 
+.modal-suggestion-item.suggestion-with-delete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.modal-suggestion-item .suggestion-text {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.suggestion-delete-btn {
+    background: rgba(255, 75, 75, 0.15);
+    border: 1px solid rgba(255, 75, 75, 0.3);
+    color: #ff4b4b;
+    border-radius: 6px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.suggestion-delete-btn:hover {
+    background: rgba(255, 75, 75, 0.35);
+    border-color: #ff4b4b;
+    color: #fff;
+    transform: scale(1.05);
+}
+
 .modal-suggestion-item.loc {
     border-color: #00d4ff;
 }

@@ -1611,9 +1611,15 @@
                         ? 'HM' + String(tm.numero).padStart(2, '0')
                         : 'TM' + String(tm.numero).padStart(2, '0');
                     sugestoesTMsHTML += `
-                        <div class="modal-suggestion-item tm">
-                            <span class="suggestion-type tm">TM</span>
-                            <strong>${numFormatado} ${tm.nome}</strong> — ${tm.sugestao}
+                        <div class="modal-suggestion-item tm suggestion-with-delete">
+                            <span class="suggestion-text">
+                                <span class="suggestion-type tm">TM</span>
+                                <strong>${numFormatado} ${tm.nome}</strong> — ${tm.sugestao}
+                            </span>
+                            <button class="suggestion-delete-btn" onclick="apagarSugestaoTM('${String(tm.numero).replace(/'/g, "\\'")}')" 
+                                title="Apagar sugestão do ${numFormatado}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </div>`;
                 }
             });
@@ -1690,7 +1696,13 @@
                                     <i class="fas fa-map-marker-alt"></i> Localização
                                 </div>
                                 ${sugestaoLoc 
-                                    ? `<div class="modal-suggestion-item loc">${sugestaoLoc}</div>` 
+                                    ? `<div class="modal-suggestion-item loc suggestion-with-delete">
+                                        <span class="suggestion-text">${sugestaoLoc}</span>
+                                        <button class="suggestion-delete-btn" onclick="apagarSugestaoLocalizacao('${nomePrincipal.replace(/'/g, "\\'")}')"
+                                            title="Apagar sugestão de localização">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                      </div>` 
                                     : `<div class="modal-no-suggestion">Nenhuma sugestão de localização</div>`
                                 }
                             </div>
@@ -2836,4 +2848,76 @@
             // Atualizar contador
             const countEl = document.getElementById('pokemonCount');
             if (countEl) countEl.textContent = pokemonsFiltrados.length;
+        };
+
+        // ⭐ Apagar sugestão de localização (admin)
+        window.apagarSugestaoLocalizacao = async function(nomePokemon) {
+            if (!confirm(`Apagar a sugestão de localização de "${nomePokemon}"?`)) return;
+            
+            try {
+                const authToken = localStorage.getItem('auth_token') || '';
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'atualizarSugestao',
+                        nomePokemon: nomePokemon,
+                        sugestao: '',
+                        authToken: authToken
+                    })
+                });
+                const result = await response.json();
+                if (result.sucesso || result.success) {
+                    // Atualizar a UI: remover o item da sugestão e colocar "Nenhuma sugestão"
+                    const modal = document.querySelector('[style*=fixed]');
+                    if (modal) {
+                        const locContainer = modal.querySelector('.modal-suggestion-item.loc');
+                        if (locContainer) {
+                            locContainer.outerHTML = '<div class="modal-no-suggestion">Sugestão apagada ✓</div>';
+                        }
+                    }
+                    alert('Sugestão de localização apagada com sucesso!');
+                } else {
+                    alert('Erro: ' + (result.mensagem || result.message || 'Erro desconhecido'));
+                }
+            } catch (erro) {
+                alert('Erro ao apagar sugestão: ' + erro.message);
+            }
+        };
+
+        // ⭐ Apagar sugestão de TM (admin)
+        window.apagarSugestaoTM = async function(tmNumero) {
+            if (!confirm(`Apagar a sugestão do TM${tmNumero}?`)) return;
+            
+            try {
+                const authToken = localStorage.getItem('auth_token') || '';
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'limparSugestaoTM',
+                        tmNumero: tmNumero,
+                        authToken: authToken
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    // Remover o item da sugestão na UI
+                    const modal = document.querySelector('[style*=fixed]');
+                    if (modal) {
+                        const tmItems = modal.querySelectorAll('.modal-suggestion-item.tm');
+                        tmItems.forEach(item => {
+                            const numFormatado = 'TM' + String(tmNumero).padStart(2, '0');
+                            if (item.textContent.includes(numFormatado)) {
+                                item.outerHTML = '<div class="modal-no-suggestion">Sugestão do ' + numFormatado + ' apagada ✓</div>';
+                            }
+                        });
+                    }
+                    alert('Sugestão do TM' + tmNumero + ' apagada com sucesso!');
+                } else {
+                    alert('Erro: ' + (result.message || 'Erro desconhecido'));
+                }
+            } catch (erro) {
+                alert('Erro ao apagar sugestão: ' + erro.message);
+            }
         };

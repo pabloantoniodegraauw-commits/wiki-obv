@@ -132,6 +132,9 @@ function doPost(e) {
       case 'atualizarSugestaoTM':
         result = handleAtualizarSugestaoTM(planilha, dados);
         break;
+      case 'limparSugestaoTM':
+        result = handleLimparSugestaoTM(planilha, dados);
+        break;
       case 'atualizarAtack':
         result = handleAtualizarAtack(planilha, dados);
         break;
@@ -906,6 +909,62 @@ function handleAtualizarSugestaoTM(planilha, dados) {
       }
     }
     
+    return { success: false, message: 'TM não encontrado: TM' + tmNumero };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Limpar sugestão de TM (apenas admin)
+ */
+function handleLimparSugestaoTM(planilha, dados) {
+  try {
+    // SEGURANÇA: Verificar se é admin
+    const adminEmail = validateTokenAndGetEmail(dados);
+    if (!adminEmail) {
+      return { success: false, message: 'Token de autenticação inválido ou ausente' };
+    }
+
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') isAdmin = true;
+        break;
+      }
+    }
+    if (!isAdmin) {
+      return { success: false, message: 'Sem permissão: apenas administradores podem limpar sugestões' };
+    }
+
+    const abaTMs = planilha.getSheetByName('TMs');
+    if (!abaTMs) {
+      return { success: false, message: 'Aba TMs não encontrada' };
+    }
+
+    const todosOsDados = abaTMs.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+
+    const colNumero = cabecalho.indexOf('NUMERO DO TM');
+    const colSugestao = cabecalho.indexOf('SUGESTÃO DE POKEMON') !== -1 
+      ? cabecalho.indexOf('SUGESTÃO DE POKEMON') 
+      : cabecalho.indexOf('SUGESTÃO DE TM/POKEMON');
+
+    if (colNumero === -1 || colSugestao === -1) {
+      return { success: false, message: 'Colunas não encontradas na aba TMs' };
+    }
+
+    const tmNumero = String(dados.tmNumero).trim();
+
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if (String(todosOsDados[i][colNumero]).trim() === tmNumero) {
+        abaTMs.getRange(i + 1, colSugestao + 1).setValue('');
+        return { success: true, message: 'Sugestão do TM' + tmNumero + ' limpa com sucesso!' };
+      }
+    }
+
     return { success: false, message: 'TM não encontrado: TM' + tmNumero };
   } catch (erro) {
     return { success: false, message: 'Erro: ' + erro.toString() };
