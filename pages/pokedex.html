@@ -3,6 +3,88 @@
     <p class="search-hint">
         <i class="fas fa-lightbulb"></i> EV como nome principal • Tipos em PT/EN • Imagens do Pokémon Database
     </p>
+
+    <!-- FILTROS AVANÇADOS -->
+    <div class="pokedex-filters">
+        <button class="pokedex-filter-toggle" id="toggleFilters" onclick="toggleFiltrosPokedex()">
+            <i class="fas fa-filter"></i> Filtros Avançados
+        </button>
+        <div class="pokedex-filters-panel" id="filtersPanel" style="display:none;">
+            <!-- Geração -->
+            <div class="filter-group">
+                <label class="filter-label"><i class="fas fa-layer-group"></i> Geração</label>
+                <select id="filterGen" class="filter-select" onchange="aplicarFiltrosPokedex()">
+                    <option value="">Todas</option>
+                    <option value="1">Gen 1</option>
+                    <option value="2">Gen 2</option>
+                    <option value="3">Gen 3</option>
+                    <option value="4">Gen 4</option>
+                    <option value="5">Gen 5</option>
+                    <option value="6">Gen 6</option>
+                    <option value="7">Gen 7</option>
+                    <option value="8">Gen 8</option>
+                    <option value="9">Gen 9</option>
+                </select>
+            </div>
+
+            <!-- Tipagem -->
+            <div class="filter-group">
+                <label class="filter-label"><i class="fas fa-fire"></i> Tipagem</label>
+                <select id="filterType" class="filter-select" onchange="aplicarFiltrosPokedex()">
+                    <option value="">Todas</option>
+                    <option value="normal">Normal</option>
+                    <option value="fire">Fire</option>
+                    <option value="water">Water</option>
+                    <option value="grass">Grass</option>
+                    <option value="electric">Electric</option>
+                    <option value="ice">Ice</option>
+                    <option value="fighting">Fighting</option>
+                    <option value="poison">Poison</option>
+                    <option value="ground">Ground</option>
+                    <option value="flying">Flying</option>
+                    <option value="psychic">Psychic</option>
+                    <option value="bug">Bug</option>
+                    <option value="rock">Rock</option>
+                    <option value="ghost">Ghost</option>
+                    <option value="dragon">Dragon</option>
+                    <option value="dark">Dark</option>
+                    <option value="steel">Steel</option>
+                    <option value="fairy">Fairy</option>
+                </select>
+            </div>
+
+            <!-- Forma EV -->
+            <div class="filter-group">
+                <label class="filter-label"><i class="fas fa-dna"></i> Forma / EV</label>
+                <select id="filterEV" class="filter-select" onchange="aplicarFiltrosPokedex()">
+                    <option value="">Todas</option>
+                    <option value="mega">Mega</option>
+                    <option value="shiny">Shiny</option>
+                    <option value="alolan">Alolan</option>
+                    <option value="galarian">Galarian</option>
+                    <option value="hisuian">Hisuian</option>
+                    <option value="paldean">Paldean</option>
+                    <option value="boss">Boss</option>
+                    <option value="sem_ev">Sem EV (Base)</option>
+                    <option value="com_ev">Com EV</option>
+                </select>
+            </div>
+
+            <!-- Sugestões do Clã -->
+            <div class="filter-group">
+                <label class="filter-label"><i class="fas fa-lightbulb"></i> Sugestões do Clã</label>
+                <select id="filterSugestao" class="filter-select" onchange="aplicarFiltrosPokedex()">
+                    <option value="">Todos</option>
+                    <option value="com_sugestao">Com Sugestões</option>
+                    <option value="sem_sugestao">Sem Sugestões</option>
+                </select>
+            </div>
+
+            <button class="filter-clear-btn" onclick="limparFiltrosPokedex()">
+                <i class="fas fa-times"></i> Limpar Filtros
+            </button>
+        </div>
+    </div>
 </div>
 
 <div id="pokemonContainer" class="pokemon-grid">

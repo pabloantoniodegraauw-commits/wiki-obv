@@ -1560,16 +1560,66 @@
             const localizacao = card.querySelector('.pokemon-location div:last-child')?.textContent.trim() || '';
             const tms = card.querySelector('.tms-content')?.textContent.trim() || '';
             
-            const modal = criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms);
-            document.body.appendChild(modal);
+            // Carregar atacks antes de abrir o modal
+            carregarDadosAtacks().then(() => {
+                const modal = criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms, pokemonData);
+                document.body.appendChild(modal);
+            });
         }
         
-        function criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms) {
+        function criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms, pokemonData) {
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
             
+            // Obter moves atuais do pokémon (M1-M10 da planilha)
+            let movesHTML = '';
+            const atackDatalistOptions = todosAtacks.map(a => `<option value="${(a['ATACK'] || a.ATACK || '')}">`).join('');
+            
+            for (let i = 1; i <= 10; i++) {
+                const slotKey = `M${i}`;
+                // Tentar encontrar o valor do slot nos dados do pokémon
+                let currentMove = '';
+                if (pokemonData) {
+                    currentMove = (pokemonData[slotKey] || pokemonData[`m${i}`] || '').toString().trim();
+                }
+                movesHTML += `
+                    <div class="modal-atack-row">
+                        <span class="modal-atack-slot">M${i}</span>
+                        <input type="text" 
+                            id="edit-m${i}" 
+                            value="${currentMove}" 
+                            list="datalistAtacks"
+                            placeholder="Selecione o atack..." 
+                            class="modal-atack-input"
+                            autocomplete="off">
+                    </div>`;
+            }
+
+            // Obter sugestões dos membros
+            const sugestaoLoc = pokemonData ? obterSugestaoLocalizacao(pokemonData) : '';
+            const nomePrincipal = pokemonData ? ((pokemonData.EV || pokemonData.POKEMON || '').toString().trim()) : nomeReal;
+            
+            // Sugestões de TMs
+            const sugestoesTMs = obterSugestoesTMsParaPokemon(nomePrincipal);
+            const tmsDoPokemon = obterTMsDoPokemon(nomePrincipal);
+            
+            let sugestoesTMsHTML = '';
+            // TMs com sugestões da comunidade
+            [...tmsDoPokemon, ...sugestoesTMs].forEach(tm => {
+                if (tm.sugestao) {
+                    const numFormatado = tm.tipo === 'HM' 
+                        ? 'HM' + String(tm.numero).padStart(2, '0')
+                        : 'TM' + String(tm.numero).padStart(2, '0');
+                    sugestoesTMsHTML += `
+                        <div class="modal-suggestion-item tm">
+                            <span class="suggestion-type tm">TM</span>
+                            <strong>${numFormatado} ${tm.nome}</strong> — ${tm.sugestao}
+                        </div>`;
+                }
+            });
+
             overlay.innerHTML = `
-                <div style="background: linear-gradient(145deg, #1a2980, #0f3460); border-radius: 20px; padding: 30px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid #ffd700;" data-nome-real="${nomeReal}">
+                <div style="background: linear-gradient(145deg, #1a2980, #0f3460); border-radius: 20px; padding: 30px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid #ffd700;" data-nome-real="${nomeReal}">
                     <h2 style="color: #ffd700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
                         <i class="fas fa-edit"></i> Editando: ${nomeDisplay}
                     </h2>
@@ -1616,6 +1666,54 @@
                             <label style="color: #88d3ff; display: block; margin-bottom: 5px;">Localização:</label>
                             <textarea id="edit-local" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ffd700; background: rgba(0,0,0,0.3); color: #fff; font-size: 14px; min-height: 60px;">${localizacao}</textarea>
                         </div>
+
+                        <!-- SEÇÃO: EDIÇÃO DE ATACKS M1-M10 -->
+                        <div class="modal-section">
+                            <div class="modal-section-title">
+                                <i class="fas fa-fist-raised"></i> Atacks (M1 - M10)
+                            </div>
+                            <datalist id="datalistAtacks">
+                                ${atackDatalistOptions}
+                            </datalist>
+                            ${movesHTML}
+                        </div>
+
+                        <!-- SEÇÃO: SUGESTÕES DOS MEMBROS -->
+                        <div class="modal-suggestion-box">
+                            <div class="modal-suggestion-title">
+                                <i class="fas fa-users"></i> Sugestões dos Membros
+                            </div>
+
+                            <!-- Localização -->
+                            <div style="margin-bottom: 10px;">
+                                <div style="color: #00d4ff; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <i class="fas fa-map-marker-alt"></i> Localização
+                                </div>
+                                ${sugestaoLoc 
+                                    ? `<div class="modal-suggestion-item loc">${sugestaoLoc}</div>` 
+                                    : `<div class="modal-no-suggestion">Nenhuma sugestão de localização</div>`
+                                }
+                            </div>
+
+                            <!-- TMs -->
+                            <div style="margin-bottom: 10px;">
+                                <div style="color: #a29bfe; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <i class="fas fa-compact-disc"></i> TMs
+                                </div>
+                                ${sugestoesTMsHTML 
+                                    ? sugestoesTMsHTML 
+                                    : `<div class="modal-no-suggestion">Nenhuma sugestão de TM</div>`
+                                }
+                            </div>
+
+                            <!-- Atacks sugeridos -->
+                            <div>
+                                <div style="color: #ff6b6b; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    <i class="fas fa-fist-raised"></i> Atacks
+                                </div>
+                                <div id="sugestoesAtacksContainer" class="modal-no-suggestion">Carregando...</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-top: 25px; justify-content: flex-end;">
@@ -1632,6 +1730,26 @@
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) overlay.remove();
             });
+
+            // Carregar sugestões de atacks dos membros (verificar se moves foram atribuídos por membros)
+            setTimeout(() => {
+                const atacksSugeridos = [];
+                if (pokemonData) {
+                    for (let i = 1; i <= 10; i++) {
+                        const move = (pokemonData[`M${i}`] || pokemonData[`m${i}`] || '').toString().trim();
+                        if (move) {
+                            atacksSugeridos.push(`<div class="modal-suggestion-item atack"><span class="suggestion-type atack">M${i}</span> ${move}</div>`);
+                        }
+                    }
+                }
+                const containerSugestoes = overlay.querySelector('#sugestoesAtacksContainer');
+                if (containerSugestoes) {
+                    containerSugestoes.innerHTML = atacksSugeridos.length > 0 
+                        ? atacksSugeridos.join('') 
+                        : '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Nenhum atack registrado</span>';
+                    containerSugestoes.className = '';
+                }
+            }, 100);
             
             return overlay;
         }
@@ -1650,6 +1768,16 @@
                 speed: document.getElementById('edit-speed').value,
                 localizacao: document.getElementById('edit-local').value
             };
+
+            // Coletar atacks M1-M10
+            const atacksMudados = [];
+            for (let i = 1; i <= 10; i++) {
+                const el = document.getElementById(`edit-m${i}`);
+                if (el) {
+                    const novoAtack = el.value.trim();
+                    atacksMudados.push({ slot: `m${i}`, nome: novoAtack });
+                }
+            }
             
             // Buscar Pokémon no array local pela coluna EV ou POKEMON
             console.log('🔍 Buscando Pokémon:', nomeOriginal);
@@ -1756,6 +1884,33 @@
                     const tempoDecorrido = Date.now() - inicio;
                     console.log(`✅ Requisição enviada em ${tempoDecorrido}ms`);
                     console.log('ℹ️ Status da resposta:', resposta.type, resposta.status);
+
+                    // 🎯 Salvar atacks M1-M10 (enviar cada um que mudou)
+                    if (atacksMudados && atacksMudados.length > 0) {
+                        console.log('🎯 Salvando atacks M1-M10...');
+                        const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        for (const atack of atacksMudados) {
+                            if (atack.nome !== undefined) {
+                                try {
+                                    await fetch(APPS_SCRIPT_URL, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'text/plain' },
+                                        body: JSON.stringify({
+                                            action: 'atualizarAtack',
+                                            nomePokemon: nomeOriginal,
+                                            slot: atack.slot,
+                                            nomeAtack: atack.nome,
+                                            email: adminUser.email,
+                                            authToken: adminUser.authToken
+                                        })
+                                    });
+                                    console.log(`✅ ${atack.slot} salvo: ${atack.nome}`);
+                                } catch (e) {
+                                    console.warn(`⚠️ Erro ao salvar ${atack.slot}:`, e);
+                                }
+                            }
+                        }
+                    }
                     
                     // Fechar modal e recarregar página
                     document.querySelector('[style*=fixed]').remove();
@@ -2567,3 +2722,118 @@
         window.renderizarPokemons = renderizarPokemons;
         window.configurarBuscaInstantanea = configurarBuscaInstantanea;
         window.todosPokemons = todosPokemons;
+
+        // ============================================
+        // 🔍 FILTROS AVANÇADOS DA POKÉDEX
+        // ============================================
+
+        window.toggleFiltrosPokedex = function() {
+            const panel = document.getElementById('filtersPanel');
+            const btn = document.getElementById('toggleFilters');
+            if (!panel) return;
+            if (panel.style.display === 'none') {
+                panel.style.display = 'flex';
+                btn.classList.add('active');
+            } else {
+                panel.style.display = 'none';
+                btn.classList.remove('active');
+            }
+        };
+
+        window.limparFiltrosPokedex = function() {
+            document.getElementById('filterGen').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterEV').value = '';
+            document.getElementById('filterSugestao').value = '';
+            aplicarFiltrosPokedex();
+        };
+
+        window.aplicarFiltrosPokedex = async function() {
+            const container = document.getElementById('pokemonContainer');
+            if (!container) return;
+
+            const genFiltro = (document.getElementById('filterGen') || {}).value || '';
+            const typeFiltro = ((document.getElementById('filterType') || {}).value || '').toLowerCase();
+            const evFiltro = ((document.getElementById('filterEV') || {}).value || '').toLowerCase();
+            const sugestaoFiltro = ((document.getElementById('filterSugestao') || {}).value || '').toLowerCase();
+
+            const temFiltroAtivo = genFiltro || typeFiltro || evFiltro || sugestaoFiltro;
+
+            // Se algum filtro ativo e dados incompletos, carregar tudo
+            if (temFiltroAtivo && !dadosCompletosCarregados) {
+                container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando todos os Pokémons para filtrar...</p></div>';
+                try {
+                    const resposta = await fetch(`${URL_DADOS}&page=1&limit=9999`);
+                    const resultado = await resposta.json();
+                    todosPokemonsCompleto = resultado.data;
+                    dadosCompletosCarregados = true;
+                    todosPokemons = todosPokemonsCompleto;
+                    temMaisPaginas = false;
+                } catch (e) {
+                    console.error('Erro ao carregar dados para filtro:', e);
+                    return;
+                }
+            }
+
+            // Se nenhum filtro, re-renderizar tudo
+            if (!temFiltroAtivo) {
+                renderizarPokemons(todosPokemons);
+                return;
+            }
+
+            const pokemonsFiltrados = todosPokemons.filter(pokemon => {
+                // FILTRO DE GERAÇÃO
+                if (genFiltro) {
+                    const gen = String(pokemon['GEN'] || '').trim();
+                    if (gen !== genFiltro) return false;
+                }
+
+                // FILTRO DE TIPAGEM
+                if (typeFiltro) {
+                    const type1 = (pokemon['Type 1'] || '').toLowerCase().trim();
+                    const type2 = (pokemon['Type 2'] || '').toLowerCase().trim();
+                    if (type1 !== typeFiltro && type2 !== typeFiltro) return false;
+                }
+
+                // FILTRO DE FORMA/EV
+                if (evFiltro) {
+                    const ev = (pokemon['EV'] || '').toString().toLowerCase().trim();
+                    const hasEV = ev !== '';
+
+                    if (evFiltro === 'sem_ev') {
+                        if (hasEV) return false;
+                    } else if (evFiltro === 'com_ev') {
+                        if (!hasEV) return false;
+                    } else if (evFiltro === 'mega') {
+                        if (!ev.includes('mega')) return false;
+                    } else if (evFiltro === 'shiny') {
+                        if (!ev.includes('shiny')) return false;
+                    } else if (evFiltro === 'alolan') {
+                        if (!ev.includes('alol')) return false;
+                    } else if (evFiltro === 'galarian') {
+                        if (!ev.includes('galar')) return false;
+                    } else if (evFiltro === 'hisuian') {
+                        if (!ev.includes('hisu')) return false;
+                    } else if (evFiltro === 'paldean') {
+                        if (!ev.includes('palde')) return false;
+                    } else if (evFiltro === 'boss') {
+                        if (!ev.includes('boss')) return false;
+                    }
+                }
+
+                // FILTRO DE SUGESTÃO
+                if (sugestaoFiltro) {
+                    const sugestao = obterSugestaoLocalizacao(pokemon).toString().trim();
+                    if (sugestaoFiltro === 'com_sugestao' && !sugestao) return false;
+                    if (sugestaoFiltro === 'sem_sugestao' && sugestao) return false;
+                }
+
+                return true;
+            });
+
+            renderizarPokemons(pokemonsFiltrados);
+
+            // Atualizar contador
+            const countEl = document.getElementById('pokemonCount');
+            if (countEl) countEl.textContent = pokemonsFiltrados.length;
+        };
