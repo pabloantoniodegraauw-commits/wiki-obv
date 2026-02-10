@@ -1609,6 +1609,9 @@
                             placeholder="Selecione o atack..." 
                             class="modal-atack-input"
                             autocomplete="off">
+                        <button class="modal-clear-btn" onclick="this.parentElement.querySelector('input').value='';" title="Limpar atack">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>`;
             }
 
@@ -1638,6 +1641,9 @@
                                 data-tm-numero-original="${tm.numero}"
                                 placeholder="Selecione o TM..." 
                                 autocomplete="off">
+                            <button class="modal-clear-btn" onclick="this.parentElement.querySelector('input').value='';" title="Limpar TM">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>`;
                 });
             }
@@ -2044,22 +2050,55 @@
                         }
                     }
 
-                    // Fechar modal IMEDIATAMENTE (não esperar as requests)
-                    const overlay = document.querySelector('[style*=fixed]');
-                    if (overlay) overlay.remove();
-
-                    // Aguardar todas as requests em background
-                    Promise.all(promessas).then(() => {
+                    // Aguardar TODAS as requests antes de fechar
+                    try {
+                        await Promise.all(promessas);
                         const tempoDecorrido = Date.now() - inicio;
                         console.log(`✅ Todas as alterações salvas em ${tempoDecorrido}ms`);
-                    }).catch(err => {
+                        
+                        // Mostrar mensagem de sucesso no modal
+                        const modalContent = document.querySelector('[style*=fixed] div[data-nome-real]');
+                        if (modalContent) {
+                            const successMsg = document.createElement('div');
+                            successMsg.className = 'modal-success-msg';
+                            successMsg.innerHTML = '<i class="fas fa-check-circle"></i> Alterações salvas com sucesso!';
+                            modalContent.appendChild(successMsg);
+                        }
+                        
+                        // Fechar modal após breve delay
+                        setTimeout(() => {
+                            const overlay = document.querySelector('[style*=fixed]');
+                            if (overlay) overlay.remove();
+                        }, 1500);
+                    } catch (err) {
                         console.error('⚠️ Erro parcial ao salvar:', err);
-                    });
+                        // Mesmo com erro parcial, mostrar aviso e fechar
+                        const modalContent = document.querySelector('[style*=fixed] div[data-nome-real]');
+                        if (modalContent) {
+                            const warnMsg = document.createElement('div');
+                            warnMsg.className = 'modal-success-msg';
+                            warnMsg.style.background = 'rgba(255, 165, 0, 0.15)';
+                            warnMsg.style.borderColor = 'rgba(255, 165, 0, 0.4)';
+                            warnMsg.style.color = '#ffa500';
+                            warnMsg.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Salvo com avisos (verifique o console)';
+                            modalContent.appendChild(warnMsg);
+                        }
+                        setTimeout(() => {
+                            const overlay = document.querySelector('[style*=fixed]');
+                            if (overlay) overlay.remove();
+                        }, 2000);
+                    }
                     
                 } catch (erro) {
                     console.error('❌ Erro ao salvar no Google Sheets:', erro);
-                    const overlay = document.querySelector('[style*=fixed]');
-                    if (overlay) overlay.remove();
+                    alert('❌ Erro ao salvar: ' + erro.message);
+                    // Reabilitar botão salvar
+                    const btnSalvar2 = document.querySelector('[style*=fixed] button[style*="background:"]');
+                    if (btnSalvar2) {
+                        btnSalvar2.disabled = false;
+                        btnSalvar2.innerHTML = '<i class="fas fa-save"></i> Salvar';
+                        btnSalvar2.style.opacity = '1';
+                    }
                 }
             } else {
                 const overlay = document.querySelector('[style*=fixed]');

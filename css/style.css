@@ -2131,6 +2131,51 @@ footer {
     color: rgba(255, 255, 255, 0.4);
 }
 
+/* Botão X para limpar atack/TM */
+.modal-clear-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 75, 75, 0.3);
+    background: rgba(255, 75, 75, 0.1);
+    color: #ff6b6b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+.modal-clear-btn:hover {
+    background: rgba(255, 75, 75, 0.3);
+    border-color: #ff6b6b;
+    transform: scale(1.1);
+}
+
+/* Mensagem de sucesso ao salvar */
+.modal-success-msg {
+    margin-top: 20px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: rgba(0, 200, 83, 0.15);
+    border: 1px solid rgba(0, 200, 83, 0.4);
+    color: #00e676;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    animation: fadeInSuccess 0.4s ease;
+}
+
+@keyframes fadeInSuccess {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .modal-suggestion-box {
     background: rgba(255, 215, 0, 0.08);
     border-radius: 10px;
