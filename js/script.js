@@ -286,6 +286,8 @@
                 
                 // ⭐ TMs da aba TMs (cross-reference) ⭐
                 const tmsDoPokemons = obterTMsDoPokemon(nomePrincipal);
+                // ⭐ Sugestões de TMs da comunidade (onde sugeriram este Pokémon)
+                const sugestoesTMs = obterSugestoesTMsParaPokemon(nomePrincipal);
                 
                 const card = document.createElement('div');
                 card.className = 'pokemon-card';
@@ -353,6 +355,7 @@
                             ${gerarTMsHTML(tmsDoPokemons)}
                         </div>
                     </div>
+                    ${gerarSugestoesTMsHTML(sugestoesTMs)}
                     <button class="btn-sugerir" onclick="abrirModalSugestaoUnificado('${nomeParaBusca.replace(/'/g, "\\'")}')">
                         <i class="fas fa-lightbulb"></i> Sugerir
                     </button>`;
@@ -411,6 +414,7 @@
                     const tipo2 = pokemon['Type 2'] || '';
                     const evolucao = pokemon['EV'] || '';
                     const localizacao = pokemon['LOCALIZAÇÃO'] || 'Não informado';
+                    const sugestaoLocalizacao = pokemon['SUGESTÃO LOCALIZAÇÃO'] || '';
                     const hp = pokemon['HP'] || '0';
                     const ataque = pokemon['Attack'] || '0';
                     const defesa = pokemon['Defense'] || '0';
@@ -422,6 +426,26 @@
                     const nomeParaBusca = evolucao || nomePokemon;
                     const imagemUrl = obterImagemPokemon(nomePrincipal, nomeBase);
                     const tmsDoPokemons = obterTMsDoPokemon(nomePrincipal);
+                    const sugestoesTMs = obterSugestoesTMsParaPokemon(nomePrincipal);
+                    
+                    // 📍 PROCESSAR LOCALIZAÇÃO COM FORMATAÇÃO
+                    let localizacaoHTML = '';
+                    if (localizacao && localizacao !== 'Não informado') {
+                        const locais = localizacao.split(' / ');
+                        let total = 0;
+                        localizacaoHTML = '<div style="line-height: 1.8;">';
+                        locais.forEach(local => {
+                            const match = local.match(/(\d+)un/);
+                            if (match) total += parseInt(match[1]);
+                            localizacaoHTML += `• ${local}<br>`;
+                        });
+                        if (total > 0) {
+                            localizacaoHTML += `<br><strong style="color: #ffd700;">Total: ${total}un</strong>`;
+                        }
+                        localizacaoHTML += '</div>';
+                    } else {
+                        localizacaoHTML = 'Não informado';
+                    }
                     
                     const card = document.createElement('div');
                     card.className = 'pokemon-card';
@@ -436,6 +460,10 @@
                             ${nomePrincipal}
                         </h3>
                         ${nomeBase ? `<div class="pokemon-base">Forma base: ${nomeBase}</div>` : ''}
+                        <div class="pokemon-types">
+                            <span class="type-badge type-${tipo1.toLowerCase()}">${tipo1}</span>
+                            ${tipo2 ? `<span class="type-badge type-${tipo2.toLowerCase()}">${tipo2}</span>` : ''}
+                        </div>
                         <div class="pokemon-stats">
                             <div class="stat">
                                 <div class="stat-value">${hp}</div>
@@ -459,16 +487,24 @@
                             </div>
                             <div class="stat">
                                 <div class="stat-value">${velocidade}</div>
-                                <div class="stat-label">Speed</div>
+                                <div class="stat-label">Velocidade</div>
                             </div>
                         </div>
-                        <div class="pokemon-types">
-                            <span class="type ${tipo1.toLowerCase()}">${tipo1}</span>
-                            ${tipo2 ? `<span class="type ${tipo2.toLowerCase()}">${tipo2}</span>` : ''}
-                        </div>
                         <div class="pokemon-location">
-                            <i class="fas fa-map-marker-alt"></i> ${localizacao}
+                            <div class="location-title">
+                                <i class="fas fa-map-marker-alt"></i> Localização
+                            </div>
+                            ${localizacaoHTML}
                         </div>
+                        ${sugestaoLocalizacao ? `
+                        <div class="pokemon-suggestion">
+                            <div class="suggestion-title">
+                                <i class="fas fa-lightbulb"></i> Sugestão da Comunidade
+                            </div>
+                            <div>${sugestaoLocalizacao}</div>
+                        </div>
+                        ` : ''}
+                        <!-- ⭐ SEÇÃO: TMs / Moves (da aba TMs) ⭐ -->
                         <div class="pokemon-tms">
                             <div class="tms-title">
                                 <i class="fas fa-compact-disc"></i> TMs / Moves
@@ -477,6 +513,7 @@
                                 ${gerarTMsHTML(tmsDoPokemons)}
                             </div>
                         </div>
+                        ${gerarSugestoesTMsHTML(sugestoesTMs)}
                         <button class="btn-sugerir" onclick="abrirModalSugestaoUnificado('${nomeParaBusca.replace(/'/g, "\\'")}')"> 
                             <i class="fas fa-lightbulb"></i> Sugerir
                         </button>
@@ -709,7 +746,7 @@
                         tipagem: (tm['TIPAGEM DO TM'] || 'Normal'),
                         pokemon: (tm['ORIGEM DO TM'] || ''),
                         categoria: (tm['ORIGEM DO TM2'] || 'Spawn'),
-                        sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || '')
+                        sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || tm['SUGESTÃO DE POKEMON'] || '')
                     }));
                     console.log('✅ TMs carregados da planilha:', todosTMs.length);
                 } else {
@@ -739,7 +776,7 @@
                         tipagem: (tm['TIPAGEM DO TM'] || 'Normal'),
                         pokemon: (tm['ORIGEM DO TM'] || ''),
                         categoria: (tm['ORIGEM DO TM2'] || 'Spawn'),
-                        sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || '')
+                        sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || tm['SUGESTÃO DE POKEMON'] || '')
                     }));
                     console.log('✅ TMs carregados para Pokédex:', todosTMs.length);
                 }
@@ -756,6 +793,39 @@
                 const origemNorm = normalizarNome(tm.pokemon);
                 return origemNorm === nomeNorm;
             });
+        }
+
+        // ⭐ Buscar TMs onde a comunidade sugeriu que este Pokémon dropa (cross-reference na coluna de sugestão)
+        function obterSugestoesTMsParaPokemon(nomePokemon) {
+            if (!todosTMs || todosTMs.length === 0) return [];
+            const nomeNorm = normalizarNome(nomePokemon);
+            return todosTMs.filter(tm => {
+                if (!tm.sugestao) return false;
+                // Já aparece via obterTMsDoPokemon (ORIGEM DO TM)? Pular para não duplicar
+                const origemNorm = normalizarNome(tm.pokemon);
+                if (origemNorm === nomeNorm) return false;
+                // Verificar se o nome do Pokémon aparece na sugestão
+                const sugestaoNorm = normalizarNome(tm.sugestao);
+                return sugestaoNorm.includes(nomeNorm);
+            });
+        }
+
+        // ⭐ Gerar HTML das sugestões de TMs da comunidade para o card
+        function gerarSugestoesTMsHTML(sugestoesTMs) {
+            if (!sugestoesTMs || sugestoesTMs.length === 0) return '';
+            var html = '<div class="pokemon-suggestion" style="margin-top:10px;">';
+            html += '<div class="suggestion-title"><i class="fas fa-lightbulb"></i> Sugestões de TMs (Comunidade)</div>';
+            sugestoesTMs.forEach(function(tm) {
+                var numFormatado = tm.tipo === 'HM' 
+                    ? 'HM' + String(tm.numero).padStart(2, '0')
+                    : 'TM' + String(tm.numero).padStart(2, '0');
+                html += '<div style="padding:4px 0;font-size:0.9em;color:#a8e6cf;">';
+                html += '<strong style="color:#ffd700;">' + numFormatado + '</strong> ' + tm.nome;
+                html += ' <span style="font-style:italic;opacity:0.8;"> — ' + tm.sugestao + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            return html;
         }
 
         // ⭐ Gerar HTML dos TMs para o card da Pokédex
