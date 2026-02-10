@@ -44,7 +44,7 @@
             // ESPECIAIS
             'Phione/Manaphy': 'manaphy',
             'Shiny Gloom': 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png',
-            'shinygloom': 'https://wiki.pokememories.com/images/pokemons/shinygloom.png',
+            'shinygloom': 'IMAGENS/imagens-pokemon/stickers-pokemon/Gloom.png',
             
             // GALARIAN (usa -galarian)
             'Galarian Meowth': 'meowth-galarian',
@@ -635,30 +635,36 @@
         }
         
         function obterImagemTarefa(nome) {
-            // Lista de itens que parecem pokémon nas tasks
+            // Fallback local para itens sem imagem própria
+            const fallbackLocal = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
+            
+            // Mapeamento de itens especiais para imagens locais
             const itensEspeciais = {
-                'waterstone': 'https://wiki.pokememories.com/images/pokemons/waterstone.png',
-                'screws': 'https://wiki.pokememories.com/images/pokemons/screws.png',
-                'bottleofpoison': 'https://wiki.pokememories.com/images/pokemons/bottleofpoison.png',
-                'venomstone': 'https://wiki.pokememories.com/images/pokemons/venomstone.png',
-                'flour': 'https://wiki.pokememories.com/images/pokemons/flour.png',
-                'seeds': 'https://wiki.pokememories.com/images/pokemons/seeds.png',
-                'firestone': 'https://wiki.pokememories.com/images/pokemons/firestone.png',
-                'smallstone': 'https://wiki.pokememories.com/images/pokemons/smallstone.png',
-                'dragonstone': 'https://wiki.pokememories.com/images/pokemons/dragonstone.png',
-                'watergem': 'https://wiki.pokememories.com/images/pokemons/watergem.png',
-                'brokenstone': 'https://wiki.pokememories.com/images/pokemons/brokenstone.png',
-                'futureorb': 'https://wiki.pokememories.com/images/pokemons/futureorb.png',
-                'sugarcane': 'https://wiki.pokememories.com/images/pokemons/sugarcane.png',
-                'shinygloom': 'https://wiki.pokememories.com/images/pokemons/gloom.png',
-                'hordeleaderpoliwrath': 'https://wiki.pokememories.com/images/pokemons/hordeleaderpoliwrath.png',
-                'shinygyarados': 'https://wiki.pokememories.com/images/pokemons/pokebola.png',
-                'essencesoffire': 'https://wiki.pokememories.com/images/pokemons/essencesoffire.png'
+                'watergem': 'IMAGENS/imagens-itens/helditem/Water Gem.png',
+                'firegem': 'IMAGENS/imagens-itens/helditem/Fire Gem.png',
+                'grassgem': 'IMAGENS/imagens-itens/helditem/Grass Gem.png',
+                'shinygloom': 'IMAGENS/imagens-pokemon/stickers-pokemon/Gloom.png',
+                'hordeleaderpoliwrath': 'IMAGENS/imagens-pokemon/stickers-pokemon/Poliwrath.png',
+                'shinygyarados': 'IMAGENS/imagens-pokemon/stickers-pokemon/Gyarados.png',
+                // Itens sem imagem local - usa pokebola como placeholder
+                'waterstone': fallbackLocal,
+                'screws': fallbackLocal,
+                'bottleofpoison': fallbackLocal,
+                'venomstone': fallbackLocal,
+                'flour': fallbackLocal,
+                'seeds': fallbackLocal,
+                'firestone': fallbackLocal,
+                'smallstone': fallbackLocal,
+                'dragonstone': fallbackLocal,
+                'brokenstone': fallbackLocal,
+                'futureorb': fallbackLocal,
+                'sugarcane': fallbackLocal,
+                'essencesoffire': fallbackLocal
             };
             
             const nomeNormalizado = normalizarNomeItem(nome);
             
-            // Se for um item especial, retorna a URL do item
+            // Se for um item especial, retorna a imagem local
             if (itensEspeciais[nomeNormalizado]) {
                 return itensEspeciais[nomeNormalizado];
             }
@@ -668,21 +674,25 @@
         }
 
         function obterImagemItem(nome) {
+            const fallbackLocal = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
+            
             const mapeamentoEspecial = {
-                'waterstone': 'https://wiki.pokememories.com/images/pokemons/waterstone.png',
-                'xp': 'https://wiki.pokememories.com/images/tasks/xp.webp',
-                'screws': 'https://wiki.pokememories.com/images/pokemons/screws.png',
-                'bottleofpoison': 'https://wiki.pokememories.com/images/pokemons/bottleofpoison.png',
-                'venomstone': 'https://wiki.pokememories.com/images/pokemons/venomstone.png',
-                'flour': 'https://wiki.pokememories.com/images/pokemons/flour.png',
-                'seeds': 'https://wiki.pokememories.com/images/pokemons/seeds.png',
-                'firestone': 'https://wiki.pokememories.com/images/pokemons/firestone.png',
-                'smallstone': 'https://wiki.pokememories.com/images/pokemons/smallstone.png',
-                'dragonstone': 'https://wiki.pokememories.com/images/pokemons/dragonstone.png',
-                'watergem': 'https://wiki.pokememories.com/images/pokemons/watergem.png',
-                'brokenstone': 'https://wiki.pokememories.com/images/pokemons/brokenstone.png',
-                'futureorb': 'https://wiki.pokememories.com/images/pokemons/futureorb.png',
-                'sugarcane': 'https://wiki.pokememories.com/images/pokemons/sugarcane.png'
+                'watergem': 'IMAGENS/imagens-itens/helditem/Water Gem.png',
+                'firegem': 'IMAGENS/imagens-itens/helditem/Fire Gem.png',
+                'grassgem': 'IMAGENS/imagens-itens/helditem/Grass Gem.png',
+                'xp': fallbackLocal,
+                'waterstone': fallbackLocal,
+                'screws': fallbackLocal,
+                'bottleofpoison': fallbackLocal,
+                'venomstone': fallbackLocal,
+                'flour': fallbackLocal,
+                'seeds': fallbackLocal,
+                'firestone': fallbackLocal,
+                'smallstone': fallbackLocal,
+                'dragonstone': fallbackLocal,
+                'brokenstone': fallbackLocal,
+                'futureorb': fallbackLocal,
+                'sugarcane': fallbackLocal
             };
             
             const nomeNormalizado = normalizarNomeItem(nome);
@@ -691,7 +701,8 @@
                 return mapeamentoEspecial[nomeNormalizado];
             }
             
-            return `https://wiki.pokememories.com/images/itens/${nomeNormalizado}.png`;
+            // Fallback: tenta sticker do pokémon
+            return `IMAGENS/imagens-pokemon/stickers-pokemon/${nome}.png`;
         }
 
         function obterImagemMembro(nomeMembro) {
@@ -997,10 +1008,10 @@
                 let premiosHtml = '';
                 task.premios.forEach(premio => {
                     const isXP = premio.isxp;
-                    const src = isXP ? 'https://wiki.pokememories.com/images/tasks/xp.webp' : obterImagemItem(premio.item);
+                    const src = isXP ? 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png' : obterImagemItem(premio.item);
                     premiosHtml += `
                         <div class="task-reward-item">
-                            <img src="${src}" alt="${premio.item}" onerror="this.src='images/pokemons/pokebola.png'">
+                            <img src="${src}" alt="${premio.item}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'">
                             <div class="task-reward-name">${premio.item}</div>
                             <div class="task-reward-quantity">x${premio.qtd}</div>
                         </div>
@@ -1019,7 +1030,7 @@
                     <div class="task-content-left">
                         <div class="task-mission">${task.missao}</div>
                         <div class="task-pokemon-large">
-                            <img src="${imagemPokemon}" alt="${task.pokemon}" onerror="this.src='images/pokemons/pokebola.png'">
+                            <img src="${imagemPokemon}" alt="${task.pokemon}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'">
                         </div>
                         <div class="task-pokemon-large-name">${task.pokemon.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/-/g, ' ').toUpperCase()}</div>
                     </div>
@@ -1090,49 +1101,49 @@
 
         function renderizarMembrosClã() {
             const membrosLideres = [
-                { nome: 'Senhor Skant', imagem: 'https://wiki.pokememories.com/images/cm.png' },
-                { nome: 'Legenzin OBV', imagem: 'https://wiki.pokememories.com/images/cm.png' },
-                { nome: 'Xxcarlosxx', imagem: 'https://wiki.pokememories.com/images/cm.png' }
+                { nome: 'Senhor Skant', imagem: 'IMAGENS/imagens-itens/conta/conta cm.png' },
+                { nome: 'Legenzin OBV', imagem: 'IMAGENS/imagens-itens/conta/conta cm.png' },
+                { nome: 'Xxcarlosxx', imagem: 'IMAGENS/imagens-itens/conta/conta cm.png' }
             ];
             
             const membrosViceLideres = [
-                { nome: 'Jllink OBV', imagem: 'https://wiki.pokememories.com/images/gm.png' },
-                { nome: 'Nagi OBV', imagem: 'https://wiki.pokememories.com/images/gm.png' }
+                { nome: 'Jllink OBV', imagem: 'IMAGENS/imagens-itens/conta/conta gm.png' },
+                { nome: 'Nagi OBV', imagem: 'IMAGENS/imagens-itens/conta/conta gm.png' }
             ];
             
             const membrosMembro = [
-                { nome: 'Almeidaa OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'CARVAALHO OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'César OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Loucura ÓBVIA', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Davon OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Endividado OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Freitinhasz OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'IagoMoedas OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'iRusseL OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'ISAGIII OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'lkliff OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'lRamos OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Mclovinxs OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Mgzinn OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Nialk OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Nikklaus OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Pedroh OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Rettmarlley OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Rickyziin OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'SannT OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'SensuaLize OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Tksixx OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Tonhaozinn', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'MAGO ÓBVIO', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Zeta OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'zMorpheus OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'zOrpheusZ OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'zPabloze OBV', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: '[Tutora] Insana Ju', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Riczynn', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'manodosmega mega', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' },
-                { nome: 'Irmão Do Wc', imagem: 'https://wiki.pokememories.com/images/itens/flyoutfit.png' }
+                { nome: 'Almeidaa OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'CARVAALHO OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'César OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Loucura ÓBVIA', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Davon OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Endividado OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Freitinhasz OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'IagoMoedas OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'iRusseL OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'ISAGIII OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'lkliff OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'lRamos OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Mclovinxs OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Mgzinn OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Nialk OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Nikklaus OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Pedroh OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Rettmarlley OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Rickyziin OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'SannT OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'SensuaLize OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Tksixx OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Tonhaozinn', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'MAGO ÓBVIO', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Zeta OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'zMorpheus OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'zOrpheusZ OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'zPabloze OBV', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: '[Tutora] Insana Ju', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Riczynn', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'manodosmega mega', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' },
+                { nome: 'Irmão Do Wc', imagem: 'IMAGENS/imagens-itens/conta/conta help.png' }
             ];
             
             // Renderizar líderes
