@@ -1722,13 +1722,14 @@
             box: 'background:linear-gradient(135deg, #1a2980 0%, #0f3460 100%);padding:30px;border-radius:20px;max-width:650px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:2px solid rgba(255,215,0,0.3);max-height:90vh;overflow-y:auto;',
             title: 'color:#ffd700;margin:0 0 20px 0;font-size:22px;display:flex;align-items:center;gap:10px;',
             label: 'color:#ffd700;display:block;margin-bottom:8px;font-weight:600;font-size:14px;',
-            select: 'width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;margin-bottom:15px;font-family:Arial;',
+            select: 'width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;margin-bottom:15px;font-family:Arial;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%23ffd700\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;',
             input: 'width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;margin-bottom:15px;font-family:Arial;box-sizing:border-box;',
             textarea: 'width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;min-height:80px;resize:vertical;font-family:Arial;margin-bottom:15px;box-sizing:border-box;',
             btnSalvar: 'flex:1;padding:12px;background:linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:15px;transition:all 0.3s;',
             btnCancelar: 'flex:1;padding:12px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-weight:600;cursor:pointer;font-size:15px;transition:all 0.3s;',
             btnAdd: 'padding:10px 20px;background:linear-gradient(135deg, #00b894 0%, #00cec9 100%);border:none;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-size:14px;margin-top:10px;transition:all 0.3s;display:inline-flex;align-items:center;gap:6px;',
             btnOpcao: 'flex:1;padding:16px;background:rgba(255,255,255,0.08);border:2px solid rgba(255,215,0,0.3);border-radius:15px;color:#fff;font-weight:600;cursor:pointer;font-size:15px;transition:all 0.3s;display:flex;flex-direction:column;align-items:center;gap:10px;',
+            selectOptionFix: '<style>select option{color:#000;background:#fff;} input[list]::-webkit-calendar-picker-indicator{filter:invert(1);}</style>',
             subtitle: 'color:#fff;margin-bottom:20px;font-size:15px;',
             divider: 'border:none;border-top:1px solid rgba(255,215,0,0.2);margin:15px 0;'
         };
@@ -1833,6 +1834,7 @@
             
             modal.innerHTML = `
                 <div style="${modalStyles.box}">
+                    ${modalStyles.selectOptionFix}
                     <h2 style="${modalStyles.title}"><i class="fas fa-fist-raised"></i> Sugerir Atack</h2>
                     <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
                     
@@ -1899,6 +1901,7 @@
             
             modal.innerHTML = `
                 <div style="${modalStyles.box}">
+                    ${modalStyles.selectOptionFix}
                     <h2 style="${modalStyles.title}"><i class="fas fa-plus-circle"></i> Adicionar Novo Atack</h2>
                     
                     <label style="${modalStyles.label}">Nome do Atack:</label>
@@ -2052,9 +2055,12 @@
         };
 
         window.salvarSugestaoTMExistente = async function(nomePokemon, botao) {
-            const tmNumero = document.getElementById('tmSelecionado').value;
+            const tmTexto = document.getElementById('tmSelecionado').value.trim();
+            // Extrair número do TM do texto selecionado (ex: "TM02 - Dragon Claw (Dragon)" -> "02")
+            const tmMatch = tmTexto.match(/^(?:TM|HM)(\d+)/i);
+            const tmNumero = tmMatch ? tmMatch[1] : '';
             const sugestao = document.getElementById('sugestaoTMInput').value.trim();
-            if (!tmNumero) { alert('Selecione um TM!'); return; }
+            if (!tmNumero) { alert('Selecione um TM válido! (Ex: TM02 - Dragon Claw)'); return; }
             if (!sugestao) { alert('Digite a sugestão!'); return; }
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             botao.disabled = true;
@@ -2087,6 +2093,7 @@
 
             modal.innerHTML = `
                 <div style="${modalStyles.box}">
+                    ${modalStyles.selectOptionFix}
                     <h2 style="${modalStyles.title}"><i class="fas fa-plus-circle"></i> Adicionar Novo TM</h2>
                     
                     <label style="${modalStyles.label}">Tipo de Item:</label>
@@ -2115,7 +2122,10 @@
                     </select>
                     
                     <label style="${modalStyles.label}">Sugestão de Pokémon:</label>
-                    <input id="novoTMSugestao" type="text" placeholder="Ex: Pokémon que dropa este TM..." style="${modalStyles.input}">
+                    <input id="novoTMSugestao" type="text" list="listaPokemonsNovoTM" placeholder="Digite o nome do Pokémon..." style="${modalStyles.input}" autocomplete="off">
+                    <datalist id="listaPokemonsNovoTM">
+                        ${todosPokemons.map(function(p) { const nome = (p['EV'] || p['POKEMON'] || '').toString().trim(); return nome ? '<option value="' + nome + '">' : ''; }).filter(Boolean).join('')}
+                    </datalist>
                     
                     <div style="display:flex;gap:10px;">
                         <button onclick="salvarNovoTM('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
