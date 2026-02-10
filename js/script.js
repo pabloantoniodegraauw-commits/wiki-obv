@@ -1614,11 +1614,6 @@
                             <label style="color: #88d3ff; display: block; margin-bottom: 5px;">Localização:</label>
                             <textarea id="edit-local" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ffd700; background: rgba(0,0,0,0.3); color: #fff; font-size: 14px; min-height: 60px;">${localizacao}</textarea>
                         </div>
-                        
-                        <div>
-                            <label style="color: #88d3ff; display: block; margin-bottom: 5px;">TMs:</label>
-                            <textarea id="edit-tms" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ffd700; background: rgba(0,0,0,0.3); color: #fff; font-size: 14px; min-height: 60px;">${tms}</textarea>
-                        </div>
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-top: 25px; justify-content: flex-end;">
@@ -1651,8 +1646,7 @@
                 spatk: document.getElementById('edit-spatk').value,
                 spdef: document.getElementById('edit-spdef').value,
                 speed: document.getElementById('edit-speed').value,
-                localizacao: document.getElementById('edit-local').value,
-                tms: document.getElementById('edit-tms').value
+                localizacao: document.getElementById('edit-local').value
             };
             
             // Buscar Pokémon no array local pela coluna EV ou POKEMON
@@ -1707,9 +1701,7 @@
                 'Sp.Attack': dados.spatk,
                 'Sp.Defense': dados.spdef,
                 Speed: dados.speed,
-                'LOCALIZAÇÃO': dados.localizacao,
-                TM: dados.tms.split(' - ')[0] || todosPokemons[index].TM || '',
-                'Nome do TM': dados.tms.split(' - ')[1] || todosPokemons[index]['Nome do TM'] || ''
+                'LOCALIZAÇÃO': dados.localizacao
             };
             
             // Salvar no localStorage

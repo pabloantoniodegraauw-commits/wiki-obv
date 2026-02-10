@@ -1107,9 +1107,11 @@ function handlePokemonUpdate(planilha, dados) {
         const temEV = todosOsDadosLinha[3] && todosOsDadosLinha[3].toString().trim() !== ''; // Coluna D (índice 3)
         
         // Atualizar a linha encontrada
-        // Estrutura ATUALIZADA da planilha (com nova coluna F):
-        // A: PS | B: GEN | C: POKEMON | D: EV | E: LOCALIZAÇÃO | F: SUGESTÃO LOCALIZAÇÃO | G: TM | H: Nome do TM | I: Categoria
-        // J: Type 1 | K: Type 2 | L: HP | M: Attack | N: Defense | O: Sp.Attack | P: Sp.Defense | Q: Speed
+        // Estrutura REAL da planilha POKEDEX:
+        // A(1): PS | B(2): GEN | C(3): POKEMON | D(4): EV | E(5): LOCALIZAÇÃO | F(6): SUGESTÃO LOCALIZAÇÃO
+        // G(7): Type 1 | H(8): Type 2 | I(9): HP | J(10): Attack | K(11): Defense
+        // L(12): Sp.Attack | M(13): Sp.Defense | N(14): Speed
+        // O(15)-X(24): M1-M10
         
         aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);     // A: PS
         // Coluna B (GEN) não mexemos
@@ -1117,32 +1119,21 @@ function handlePokemonUpdate(planilha, dados) {
         // Se tem EV, atualiza coluna D. Senão, atualiza coluna C
         if (temEV) {
           aba.getRange(linhaEncontrada, 4).setValue(dados.pokemon.nome);     // D: EV (evolução)
-          // Coluna C (POKEMON base) não mexemos
         } else {
           aba.getRange(linhaEncontrada, 3).setValue(dados.pokemon.nome);     // C: POKEMON
-          // Coluna D (EV) não mexemos
         }
         
         aba.getRange(linhaEncontrada, 5).setValue(dados.pokemon.localizacao); // E: LOCALIZAÇÃO
         // Coluna F (SUGESTÃO LOCALIZAÇÃO) não mexemos aqui - tem função própria
+        // Colunas G e H (Type 1, Type 2) não são editáveis pelo front por enquanto
         
-        // TMs (dividir "TM02 - Dragon Claw" em duas colunas) - AGORA COLUNA G e H
-        const tmPartes = dados.pokemon.tms.split(' - ');
-        if (tmPartes.length > 0) {
-          aba.getRange(linhaEncontrada, 7).setValue(tmPartes[0].trim()); // G: TM (era F)
-          if (tmPartes.length > 1) {
-            aba.getRange(linhaEncontrada, 8).setValue(tmPartes[1].trim()); // H: Nome do TM (era G)
-          }
-        }
-        // Coluna I (Categoria) não mexemos
-        
-        // Stats - TODAS DESLOCADAS +1
-        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.hp);        // L: HP (era K)
-        aba.getRange(linhaEncontrada, 13).setValue(dados.pokemon.atk);       // M: Attack (era L)
-        aba.getRange(linhaEncontrada, 14).setValue(dados.pokemon.def);       // N: Defense (era M)
-        aba.getRange(linhaEncontrada, 15).setValue(dados.pokemon.spatk);     // O: Sp.Attack (era N)
-        aba.getRange(linhaEncontrada, 16).setValue(dados.pokemon.spdef);     // P: Sp.Defense (era O)
-        aba.getRange(linhaEncontrada, 17).setValue(dados.pokemon.speed);     // Q: Speed (era P)
+        // Stats - COLUNAS CORRETAS
+        aba.getRange(linhaEncontrada, 9).setValue(dados.pokemon.hp);         // I: HP
+        aba.getRange(linhaEncontrada, 10).setValue(dados.pokemon.atk);       // J: Attack
+        aba.getRange(linhaEncontrada, 11).setValue(dados.pokemon.def);       // K: Defense
+        aba.getRange(linhaEncontrada, 12).setValue(dados.pokemon.spatk);     // L: Sp.Attack
+        aba.getRange(linhaEncontrada, 13).setValue(dados.pokemon.spdef);     // M: Sp.Defense
+        aba.getRange(linhaEncontrada, 14).setValue(dados.pokemon.speed);     // N: Speed
         
         return {
           sucesso: true,
