@@ -239,9 +239,29 @@
         // ⭐ Tornar carregarDados acessível globalmente
         window.carregarDados = carregarDados;
         
+        // Função auxiliar para buscar sugestão de localização independente do nome exato da coluna
+        function obterSugestaoLocalizacao(pokemon) {
+            // Tentar nomes conhecidos primeiro
+            if (pokemon['SUGESTÃO LOCALIZAÇÃO']) return pokemon['SUGESTÃO LOCALIZAÇÃO'];
+            if (pokemon['SUGESTÃO DE LOCALIZAÇÃO']) return pokemon['SUGESTÃO DE LOCALIZAÇÃO'];
+            if (pokemon['SUGESTAO LOCALIZACAO']) return pokemon['SUGESTAO LOCALIZACAO'];
+            // Busca genérica: qualquer chave que contenha SUGEST e LOCAL
+            const chave = Object.keys(pokemon).find(k => {
+                const upper = k.toUpperCase();
+                return upper.includes('SUGEST') && upper.includes('LOCAL');
+            });
+            return chave ? pokemon[chave] : '';
+        }
+
         function renderizarPokemons(dados) {
             const container = document.getElementById('pokemonContainer');
             container.innerHTML = '';
+            
+            // Log para debug: mostrar as chaves do primeiro pokémon
+            if (dados.length > 0) {
+                console.log('🔍 Chaves do primeiro pokémon:', Object.keys(dados[0]));
+                console.log('🔍 Valor sugestão:', obterSugestaoLocalizacao(dados[0]));
+            }
             
             dados.forEach((pokemon, index) => {
                 const numero = pokemon['PS'] || '';
@@ -250,7 +270,7 @@
                 const tipo2 = pokemon['Type 2'] || '';
                 const evolucao = pokemon['EV'] || '';
                 const localizacao = pokemon['LOCALIZAÇÃO'] || 'Não informado';
-                const sugestaoLocalizacao = pokemon['SUGESTÃO LOCALIZAÇÃO'] || '';
+                const sugestaoLocalizacao = obterSugestaoLocalizacao(pokemon);
                 const hp = pokemon['HP'] || '0';
                 const ataque = pokemon['Attack'] || '0';
                 const defesa = pokemon['Defense'] || '0';
@@ -414,7 +434,7 @@
                     const tipo2 = pokemon['Type 2'] || '';
                     const evolucao = pokemon['EV'] || '';
                     const localizacao = pokemon['LOCALIZAÇÃO'] || 'Não informado';
-                    const sugestaoLocalizacao = pokemon['SUGESTÃO LOCALIZAÇÃO'] || '';
+                    const sugestaoLocalizacao = obterSugestaoLocalizacao(pokemon);
                     const hp = pokemon['HP'] || '0';
                     const ataque = pokemon['Attack'] || '0';
                     const defesa = pokemon['Defense'] || '0';

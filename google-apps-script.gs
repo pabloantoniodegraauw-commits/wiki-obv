@@ -209,6 +209,20 @@ function doGet(e) {
         cabecalho.forEach((coluna, index) => {
           obj[coluna] = linha[index];
         });
+        // Normalizar coluna de sugestão de localização para nome padrão
+        if (!obj['SUGESTÃO LOCALIZAÇÃO']) {
+          for (const key of Object.keys(obj)) {
+            const upper = key.toUpperCase();
+            if (upper.includes('SUGEST') && upper.includes('LOCAL')) {
+              obj['SUGESTÃO LOCALIZAÇÃO'] = obj[key];
+              break;
+            }
+          }
+          // Se não encontrou por nome, usar coluna F (índice 5) como fallback
+          if (!obj['SUGESTÃO LOCALIZAÇÃO'] && linha[5]) {
+            obj['SUGESTÃO LOCALIZAÇÃO'] = linha[5];
+          }
+        }
         return obj;
       });
       
