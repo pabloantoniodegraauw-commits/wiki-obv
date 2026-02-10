@@ -1731,7 +1731,8 @@
             btnOpcao: 'flex:1;padding:16px;background:rgba(255,255,255,0.08);border:2px solid rgba(255,215,0,0.3);border-radius:15px;color:#fff;font-weight:600;cursor:pointer;font-size:15px;transition:all 0.3s;display:flex;flex-direction:column;align-items:center;gap:10px;',
             selectOptionFix: '<style>select option{color:#000;background:#fff;} input[list]::-webkit-calendar-picker-indicator{filter:invert(1);}</style>',
             subtitle: 'color:#fff;margin-bottom:20px;font-size:15px;',
-            divider: 'border:none;border-top:1px solid rgba(255,215,0,0.2);margin:15px 0;'
+            divider: 'border:none;border-top:1px solid rgba(255,215,0,0.2);margin:15px 0;',
+            btnFechar: '<button onclick="document.getElementById(\'modalSugestao\').remove()" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ffd700;font-size:24px;cursor:pointer;padding:5px 10px;line-height:1;z-index:10;" title="Fechar"><i class="fas fa-times"></i></button>'
         };
 
         window.abrirModalSugestaoUnificado = function(nomePokemon) {
@@ -1745,7 +1746,8 @@
             modal.id = 'modalSugestao';
             modal.style.cssText = modalStyles.overlay;
             modal.innerHTML = `
-                <div style="${modalStyles.box}">
+                <div style="${modalStyles.box};position:relative;">
+                    ${modalStyles.btnFechar}
                     <h2 style="${modalStyles.title}"><i class="fas fa-lightbulb"></i> Sugerir - ${nomePokemon}</h2>
                     <p style="${modalStyles.subtitle}">Selecione o tipo de sugestão:</p>
                     <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -1777,7 +1779,8 @@
             const modal = document.getElementById('modalSugestao');
             if (!modal) return;
             modal.innerHTML = `
-                <div style="${modalStyles.box}">
+                <div style="${modalStyles.box};position:relative;">
+                    ${modalStyles.btnFechar}
                     <h2 style="${modalStyles.title}"><i class="fas fa-map-marker-alt"></i> Sugerir Localização</h2>
                     <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
                     <label style="${modalStyles.label}">📍 Sua sugestão de localização:</label>
@@ -1833,7 +1836,8 @@
             }
             
             modal.innerHTML = `
-                <div style="${modalStyles.box}">
+                <div style="${modalStyles.box};position:relative;">
+                    ${modalStyles.btnFechar}
                     ${modalStyles.selectOptionFix}
                     <h2 style="${modalStyles.title}"><i class="fas fa-fist-raised"></i> Sugerir Atack</h2>
                     <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
@@ -1900,7 +1904,8 @@
             const tiposOptions = ['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'].map(t => '<option value="'+t+'">'+t+'</option>').join('');
             
             modal.innerHTML = `
-                <div style="${modalStyles.box}">
+                <div style="${modalStyles.box};position:relative;">
+                    ${modalStyles.btnFechar}
                     ${modalStyles.selectOptionFix}
                     <h2 style="${modalStyles.title}"><i class="fas fa-plus-circle"></i> Adicionar Novo Atack</h2>
                     
@@ -1993,7 +1998,8 @@
             await carregarDadosTMs();
             
             modal.innerHTML = `
-                <div style="${modalStyles.box}">
+                <div style="${modalStyles.box};position:relative;">
+                    ${modalStyles.btnFechar}
                     <h2 style="${modalStyles.title}"><i class="fas fa-compact-disc"></i> Sugerir TM</h2>
                     <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
                     <p style="${modalStyles.subtitle}">O TM já existe na base?</p>
@@ -2029,7 +2035,8 @@
             }).join('');
 
             modal.innerHTML = `
-                <div style="${modalStyles.box}">
+                <div style="${modalStyles.box};position:relative;">
+                    ${modalStyles.btnFechar}
                     <h2 style="${modalStyles.title}"><i class="fas fa-compact-disc"></i> Sugerir Pokémon para TM</h2>
                     <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
                     
@@ -2092,7 +2099,8 @@
             const tiposOptions = ['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'].map(t => '<option value="'+t+'">'+t+'</option>').join('');
 
             modal.innerHTML = `
-                <div style="${modalStyles.box}">
+                <div style="${modalStyles.box};position:relative;">
+                    ${modalStyles.btnFechar}
                     ${modalStyles.selectOptionFix}
                     <h2 style="${modalStyles.title}"><i class="fas fa-plus-circle"></i> Adicionar Novo TM</h2>
                     
