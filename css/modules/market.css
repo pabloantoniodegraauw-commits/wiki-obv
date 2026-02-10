@@ -1,0 +1,967 @@
+/* ============================================
+   🛒 MARKET & MURAL DE VENDAS - WIKI OBV
+   ============================================ */
+
+/* ---- Layout Principal Market ---- */
+.market-container {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+/* ---- Abas de Tipo (Pokémon / TM / Item / Conta) ---- */
+.market-type-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.market-type-tab {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95em;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.market-type-tab:hover {
+    background: rgba(255, 215, 0, 0.1);
+    border-color: rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+}
+
+.market-type-tab.active {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1));
+    border-color: #ffd700;
+    color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+/* ---- Card Dinâmico (Esquerda) ---- */
+.market-card-wrapper {
+    position: sticky;
+    top: 20px;
+    height: fit-content;
+}
+
+.market-card {
+    background: linear-gradient(145deg, rgba(30, 60, 114, 0.7), rgba(15, 30, 60, 0.9));
+    border-radius: 20px;
+    padding: 25px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    transition: all 0.5s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.market-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+    animation: shimmer 8s linear infinite;
+}
+
+.market-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.market-card-type-label {
+    color: #ffd700;
+    font-size: 0.85em;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(255, 215, 0, 0.15);
+    padding: 4px 12px;
+    border-radius: 8px;
+}
+
+.market-card-img-container {
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid rgba(255, 215, 0, 0.25);
+    position: relative;
+    z-index: 1;
+}
+
+.market-card-img {
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.25));
+    transition: transform 0.3s ease;
+}
+
+.market-card:hover .market-card-img {
+    transform: scale(1.08);
+}
+
+.market-card-name {
+    color: #ffd700;
+    font-size: 1.5em;
+    margin: 10px 0;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    position: relative;
+    z-index: 1;
+}
+
+.market-card-placeholder {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.market-card-placeholder i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    display: block;
+    opacity: 0.3;
+}
+
+/* ---- Campos do Card ---- */
+.market-card-fields {
+    text-align: left;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.market-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.market-field label {
+    color: #88d3ff;
+    font-size: 0.85em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.market-field input,
+.market-field select {
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1.5px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.3s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.market-field input:focus,
+.market-field select:focus {
+    outline: none;
+    border-color: #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+.market-field select option {
+    background: #1a2980;
+    color: #fff;
+}
+
+/* Radio/Checkbox inline */
+.market-radio-group,
+.market-checkbox-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.market-radio-option,
+.market-checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9em;
+}
+
+.market-radio-option:hover,
+.market-checkbox-option:hover {
+    border-color: rgba(255, 215, 0, 0.4);
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.market-radio-option input[type="radio"]:checked + span,
+.market-checkbox-option input[type="checkbox"]:checked + span {
+    color: #ffd700;
+}
+
+.market-radio-option input[type="radio"]:checked ~ span,
+.market-checkbox-option input[type="checkbox"]:checked ~ span {
+    color: #ffd700;
+}
+
+/* Campo condicional (aparece quando checkbox é marcado) */
+.market-conditional-field {
+    display: none;
+    margin-top: 6px;
+    animation: fadeIn 0.3s ease;
+}
+
+.market-conditional-field.visible {
+    display: block;
+}
+
+/* ---- Preços (rodapé do card) ---- */
+.market-pricing {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.market-pricing-title {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 0.95em;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.market-price-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.market-price-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.9em;
+    min-width: 100px;
+    cursor: pointer;
+}
+
+.market-price-row input[type="checkbox"] {
+    accent-color: #ffd700;
+}
+
+.market-price-row input[type="text"] {
+    flex: 1;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1.5px solid rgba(255, 215, 0, 0.2);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 0.9em;
+    display: none;
+}
+
+.market-price-row input[type="text"].visible {
+    display: block;
+}
+
+.market-price-emoji {
+    font-size: 1.2em;
+}
+
+/* ---- Botão Adicionar ao Carrinho ---- */
+.btn-add-cart {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    border: none;
+    border-radius: 12px;
+    color: #1a2980;
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.btn-add-cart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
+}
+
+.btn-add-cart:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ---- Painel Direito (Busca + Grid) ---- */
+.market-search-panel {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 25px;
+}
+
+.market-panel-header h2 {
+    color: #ffd700;
+    font-size: 1.6em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.market-hint {
+    color: #a0e7ff;
+    margin-bottom: 18px;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Filtros do Market */
+.market-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 18px;
+    border-radius: 12px;
+}
+
+.market-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.market-filter-group label {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.market-filter-group input,
+.market-filter-group select {
+    padding: 9px 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 215, 0, 0.25);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.9em;
+    transition: all 0.3s;
+}
+
+.market-filter-group input:focus,
+.market-filter-group select:focus {
+    outline: none;
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.25);
+}
+
+/* Grid de Resultados */
+.market-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 8px;
+}
+
+.market-grid-item {
+    background: linear-gradient(145deg, rgba(30, 60, 114, 0.6), rgba(15, 30, 60, 0.85));
+    border-radius: 12px;
+    padding: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    position: relative;
+}
+
+.market-grid-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 215, 0, 0.4);
+}
+
+.market-grid-item.selected {
+    border-color: #ffd700;
+    background: linear-gradient(145deg, rgba(255, 215, 0, 0.15), rgba(30, 60, 114, 0.6));
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.market-grid-item-img {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.market-grid-item-img img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.market-grid-item-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9em;
+    word-break: break-word;
+}
+
+.market-grid-item-sub {
+    color: #a0e7ff;
+    font-size: 0.78em;
+    margin-top: 4px;
+}
+
+/* ---- Carrinho ---- */
+.market-cart-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 25px;
+    margin-top: 25px;
+}
+
+.market-cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.market-cart-header h2 {
+    color: #ffd700;
+    font-size: 1.5em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.market-cart-count {
+    background: #ffd700;
+    color: #1a2980;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.85em;
+}
+
+.market-cart-empty {
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+    padding: 30px;
+    font-style: italic;
+}
+
+.market-cart-empty i {
+    font-size: 2.5em;
+    display: block;
+    margin-bottom: 12px;
+    opacity: 0.3;
+}
+
+.market-cart-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.market-cart-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px 15px;
+    border-radius: 12px;
+    border-left: 3px solid #ffd700;
+    transition: all 0.3s;
+}
+
+.market-cart-item:hover {
+    background: rgba(0, 0, 0, 0.4);
+    transform: translateX(3px);
+}
+
+.market-cart-item-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.market-cart-item-img img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.market-cart-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.market-cart-item-name {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+.market-cart-item-details {
+    color: #a0e7ff;
+    font-size: 0.8em;
+    margin-top: 2px;
+}
+
+.market-cart-item-price {
+    color: #ffd700;
+    font-size: 0.85em;
+    margin-top: 2px;
+}
+
+.market-cart-item-remove,
+.btn-remove-cart-item {
+    background: rgba(255, 100, 100, 0.2);
+    border: 1px solid rgba(255, 100, 100, 0.4);
+    color: #ff6464;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.market-cart-item-remove:hover,
+.btn-remove-cart-item:hover {
+    background: rgba(255, 100, 100, 0.4);
+    transform: scale(1.1);
+}
+
+/* ---- Botões de Ação do Carrinho ---- */
+.market-cart-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.market-cart-actions .market-field {
+    flex: 1;
+    min-width: 200px;
+}
+
+.btn-save-sale {
+    flex: 1;
+    padding: 14px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-save-sale:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(40, 167, 69, 0.4);
+}
+
+.btn-copy-sale {
+    flex: 1;
+    padding: 14px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-copy-sale:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-clear-cart {
+    padding: 14px 20px;
+    background: rgba(255, 100, 100, 0.15);
+    border: 2px solid rgba(255, 100, 100, 0.4);
+    border-radius: 12px;
+    color: #ff6464;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-clear-cart:hover {
+    background: rgba(255, 100, 100, 0.3);
+}
+
+.btn-mural-refresh {
+    padding: 9px 18px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    color: #ffd700;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-mural-refresh:hover {
+    background: rgba(255, 215, 0, 0.25);
+}
+
+/* ============================================
+   📋 MURAL DE VENDAS
+   ============================================ */
+
+.mural-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.mural-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.mural-header h2 {
+    color: #ffd700;
+    font-size: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.mural-header p {
+    color: #a0e7ff;
+    margin-top: 8px;
+}
+
+.mural-filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.mural-filters input,
+.mural-filters select {
+    padding: 9px 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 0.9em;
+    flex: 1;
+    min-width: 150px;
+}
+
+.mural-filters input:focus,
+.mural-filters select:focus {
+    outline: none;
+    border-color: #ffd700;
+}
+
+.mural-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
+}
+
+.mural-sale-card {
+    background: linear-gradient(145deg, rgba(30, 60, 114, 0.6), rgba(15, 30, 60, 0.85));
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s;
+}
+
+.mural-sale-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 215, 0, 0.2);
+}
+
+.mural-sale-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mural-sale-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mural-sale-nickname {
+    color: #ffd700;
+    font-weight: 600;
+}
+
+.mural-sale-badges {
+    display: flex;
+    gap: 5px;
+    color: #a0e7ff;
+    font-size: 0.9em;
+}
+
+.mural-sale-phone {
+    color: #a0e7ff;
+    font-size: 0.85em;
+    padding: 6px 0;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mural-sale-date {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8em;
+}
+
+.mural-sale-body {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.mural-sale-text {
+    white-space: pre-line;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9em;
+    line-height: 1.6;
+    font-family: inherit;
+    margin: 0;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.mural-sale-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-mural-copy {
+    padding: 8px 16px;
+    background: rgba(102, 126, 234, 0.2);
+    border: 1px solid rgba(102, 126, 234, 0.4);
+    border-radius: 8px;
+    color: #667eea;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-mural-copy:hover {
+    background: rgba(102, 126, 234, 0.35);
+}
+
+.btn-mural-delete {
+    padding: 8px 16px;
+    background: rgba(255, 100, 100, 0.15);
+    border: 1px solid rgba(255, 100, 100, 0.35);
+    border-radius: 8px;
+    color: #ff6464;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-mural-delete:hover {
+    background: rgba(255, 100, 100, 0.3);
+}
+
+.mural-empty {
+    text-align: center;
+    padding: 50px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.mural-empty i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    display: block;
+    opacity: 0.3;
+}
+
+/* ---- Scrollbar Custom ---- */
+.market-grid::-webkit-scrollbar,
+.mural-sale-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.market-grid::-webkit-scrollbar-track,
+.mural-sale-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.market-grid::-webkit-scrollbar-thumb,
+.mural-sale-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 3px;
+}
+
+/* ---- Feedback de copiado ---- */
+.copy-feedback {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    animation: slideUp 0.4s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ---- Responsivo ---- */
+@media (max-width: 900px) {
+    .market-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .market-card-wrapper {
+        position: static;
+    }
+    
+    .mural-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .market-type-tabs {
+        flex-direction: column;
+    }
+    
+    .market-filters {
+        grid-template-columns: 1fr;
+    }
+    
+    .market-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+    
+    .market-cart-actions {
+        flex-direction: column;
+    }
+}

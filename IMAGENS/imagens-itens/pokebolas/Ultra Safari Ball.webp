@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html class="client-nojs" lang="pt-BR" dir="ltr">
+<head>
+<meta charset="UTF-8"/>
+<title>PokeXGames</title>
+<script>document.documentElement.className="client-js";RLCONF={"wgBreakFrames":false,"wgSeparatorTransformTable":[",\t."," \t,"],"wgDigitTransformTable":["",""],"wgDefaultDateFormat":"dmy","wgMonthNames":["","janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"],"wgRequestId":"f54a03f4f826d3ed56b68106","wgCSPNonce":false,"wgCanonicalNamespace":"","wgCanonicalSpecialPageName":false,"wgNamespaceNumber":0,"wgPageName":"Página_principal","wgTitle":"Página principal","wgCurRevisionId":115457,"wgRevisionId":115457,"wgArticleId":1,"wgIsArticle":true,"wgIsRedirect":false,"wgAction":"view","wgUserName":null,"wgUserGroups":["*"],"wgCategories":[],"wgPageContentLanguage":"pt-br","wgPageContentModel":"wikitext","wgRelevantPageName":"Página_principal","wgRelevantArticleId":1,"wgIsProbablyEditable":false,"wgRelevantPageIsProbablyEditable":false,"wgRestrictionEdit":["autoconfirmed"],"wgRestrictionMove":["autoconfirmed"],"wgIsMainPage":true,
+"wgMFDisplayWikibaseDescriptions":{"search":false,"nearby":false,"watchlist":false,"tagline":false},"wgVector2022PreviewPages":[],"wgULSAcceptLanguageList":["pt-br","pt","en"],"wgULSCurrentAutonym":"português do Brasil","wgULSPosition":"personal","wgULSisCompactLinksEnabled":true};RLSTATE={"site.styles":"ready","user.styles":"ready","user":"ready","user.options":"loading","ext.slideshow.css":"ready","skins.vector.styles.legacy":"ready","ext.uls.pt":"ready"};RLPAGEMODULES=["ext.slideshow.main","site","mediawiki.page.ready","skins.vector.legacy.js","ext.SimpleTooltip","ext.uls.compactlinks","ext.uls.interface"];</script>
+<script>(RLQ=window.RLQ||[]).push(function(){mw.loader.implement("user.options@12s5i",function($,jQuery,require,module){mw.user.tokens.set({"patrolToken":"+\\","watchToken":"+\\","csrfToken":"+\\"});});});</script>
+<link rel="stylesheet" href="/load.php?lang=pt-br&amp;modules=ext.slideshow.css%7Cext.uls.pt%7Cskins.vector.styles.legacy&amp;only=styles&amp;skin=vector"/>
+<script async="" src="/load.php?lang=pt-br&amp;modules=startup&amp;only=scripts&amp;raw=1&amp;skin=vector"></script>
+<meta name="ResourceLoaderDynamicStyles" content=""/>
+<link rel="stylesheet" href="/load.php?lang=pt-br&amp;modules=site.styles&amp;only=styles&amp;skin=vector"/>
+<meta name="generator" content="MediaWiki 1.39.1"/>
+<meta name="format-detection" content="telephone=no"/>
+<meta name="viewport" content="width=1000"/>
+<link rel="icon" href="/favicon.ico"/>
+<link rel="search" type="application/opensearchdescription+xml" href="/opensearch_desc.php" title="PokeXGames (pt-br)"/>
+<link rel="EditURI" type="application/rsd+xml" href="https://wiki.pokexgames.com/api.php?action=rsd"/>
+<link rel="alternate" type="application/atom+xml" title="Feed Atom da PokeXGames" href="/index.php?title=Especial:Mudan%C3%A7as_recentes&amp;feed=atom"/>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-21840337-5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-21840337-5');
+</script>
+</head>
+<body class="mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject page-Página_principal rootpage-Página_principal skin-vector action-view skin-vector-legacy vector-feature-language-in-header-enabled vector-feature-language-in-main-page-header-disabled vector-feature-language-alert-in-sidebar-disabled vector-feature-sticky-header-disabled vector-feature-sticky-header-edit-disabled vector-feature-table-of-contents-disabled vector-feature-visual-enhancement-next-disabled"><div id="mw-page-base" class="noprint"></div>
+<div id="mw-head-base" class="noprint"></div>
+<div id="content" class="mw-body" role="main">
+	<a id="top"></a>
+	<div id="siteNotice"></div>
+	<div class="mw-indicators">
+	</div>
+	<h1 id="firstHeading" class="firstHeading mw-first-heading"><span class="mw-page-title-main">Página principal</span></h1>
+	<div id="bodyContent" class="vector-body">
+		<div id="siteSub" class="noprint">De PokeXGames</div>
+		<div id="contentSub"></div>
+		<div id="contentSub2"></div>
+		
+		<div id="jump-to-nav"></div>
+		<a class="mw-jump-link" href="#mw-head">Ir para navegação</a>
+		<a class="mw-jump-link" href="#searchInput">Ir para pesquisar</a>
+		<div id="mw-content-text" class="mw-body-content mw-content-ltr" lang="pt-BR" dir="ltr"><div class="mw-parser-output"><p><script>
+document.addEventListener('DOMContentLoaded', function () {
+  Date.prototype.getWeekNumber = function () {
+    let d = new Date(Date.UTC(this.getFullYear(), this.getMonth(), this.getDate()));
+    let dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    let yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7)
+  };
+
+  const url = window.location.origin;
+  let actualWeekNumber = new Date().getWeekNumber();
+  const today = new Date();
+
+  if(today.getDay() === 1) {
+    if(today.getHours() < 7 && today.getMinutes() < 40) actualWeekNumber--;
+  }
+
+  const bossCard = document.getElementById('boss-card');
+
+  const bosses = [    
+
+
+    {
+      name: 'Entei',
+      image: '/images/c/c4/Card_Boss-Fight-Entei.png',
+      link: "https://wiki.pokexgames.com/index.php/Boss_Fight_-_Entei"
+    },
+    {
+      name: 'Raikou',
+      image: '/images/2/28/Card_Boss-Fight-Raikou.png',
+      link: "https://wiki.pokexgames.com/index.php/Boss_Fight_-_Raikou"
+    },    
+    {
+      name: 'Suicune',
+      image: '/images/8/8b/Card_Boss-Fight-Suicune.png',
+      link: "https://wiki.pokexgames.com/index.php/Boss_Fight_-_Suicune"
+    },
+  ];
+
+  /*
+    1° Raikou
+    2° Entei
+    3° Suicune 
+  */
+  console.log(actualWeekNumber)  
+
+  bossCard.src = url + bosses[actualWeekNumber % 3].image;
+  document.getElementById("boss-link").href = bosses[actualWeekNumber % 3].link;
+  bossCard.alt = bosses[actualWeekNumber % 3].name;
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Function to calculate week number based on a specific start date
+  function getWeekNumberFromStart(date, startDate) {
+    let diffTime = date.getTime() - startDate.getTime();
+    let diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    return Math.ceil(diffDays / 7);
+  }
+
+  const url = window.location.origin;
+  const dzCard = document.getElementById('dz-card');
+  
+  // Check if dzCard exists on the page
+  if (!dzCard) {
+    console.error('Elemento dz-card não encontrado na página.');
+    return;
+  }
+  
+  const today = new Date();
+
+  // Start date for week calculation
+  const startDate = new Date('2024-10-19'); // Start of counting
+  let actualWeekNumber = getWeekNumberFromStart(today, startDate);
+
+  // Check if it's Friday after 7 AM
+  const isFridayAfter7AM = today.getDay() === 5 && today.getHours() >= 7;
+
+  // Check if it's Saturday
+  const isSaturday = today.getDay() === 6;
+
+  // Increment week number if it's Friday after 7 AM or Saturday
+  if (isFridayAfter7AM || isSaturday) {
+    actualWeekNumber++;
+  }
+
+  // Week data
+  const dzWeeks = [
+    { name: 'Sexta semana', image: '/images/2/23/Card_DZ_Sexta-Semana.png' },
+    { name: 'Sétima semana', image: '/images/f/f2/Card_DZ_S%C3%A9tima-Semana.png' },
+    { name: 'Oitava semana', image: '/images/9/97/Card_DZ_Oitava-Semana.png' },
+    { name: 'Nona semana', image: '/images/b/b3/Card_DZ_Nona-Semana.png' },
+    { name: 'Décima semana', image: '/images/3/30/Card_DZ_D%C3%A9cima-Semana.png' },
+    { name: 'Décima primeira semana', image: '/images/4/49/Card_DZ_D%C3%A9cima-Primeira-Semana.png' },
+    { name: 'Décima segunda semana', image: '/images/1/11/Card_DZ_D%C3%A9cima-Segunda-Semana.png' },
+    { name: 'Primeira semana', image: '/images/b/b2/Card_DZ_Primeira-Semana.png' },
+    { name: 'Segunda semana', image: '/images/9/97/Card_DZ_Segunda-Semana.png' },
+    { name: 'Terceira semana', image: '/images/f/fd/Card_DZ_Terceira-Semana.png' },
+    { name: 'Quarta semana', image: '/images/1/17/Card_DZ_Quarta-Semana.png' },
+    { name: 'Quinta semana', image: '/images/4/40/Card_DZ_Quinta-Semana.png' },
+  ];
+
+  // Ensure the week index is correct
+  let weekIndex = (actualWeekNumber - 1) % dzWeeks.length;
+  if (weekIndex < 0) weekIndex += dzWeeks.length; // Correct negative index
+
+  // Update the image corresponding to the week
+  dzCard.src = url + dzWeeks[weekIndex].image;
+  dzCard.alt = dzWeeks[weekIndex].name;
+});
+
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {  
+  const url = window.location.origin;
+  const date = new Date();
+  const updateTime = 7 * 60 + 40;
+  const merchantCard = document.getElementById('merchant-card');
+
+  if((date.getHours()*60+date.getMinutes()) < updateTime) date.setDate(date.getDate() - 1);
+
+  const weekDay = date.getDay();
+
+  // Indice 0 == Domingo -> Indice 6 == Sábado
+  const positions = [
+    {
+      alt : 'Merchant em Cerulean',
+      image : '/images/8/86/Card_Merchant-Cerulean.png' 
+    },
+    {
+      alt : 'Merchant em Pewter',
+      image : '/images/1/1c/Card_Merchant-Pewter.png' 
+    },
+    {
+      alt : 'Merchant em Viridian',
+      image : '/images/c/c0/Card_Merchant-Viridian.png' 
+    },
+    {
+      alt : 'Merchant em Fuchsia',
+      image : '/images/a/aa/Card_Merchant-Fuchsia.png' 
+    },
+    {
+      alt : 'Merchant em Cinnabar',
+      image : '/images/1/1c/Card_Merchant-Cinnabar.png' 
+    },
+    {
+      alt : 'Merchant em Pallet',
+      image : '/images/6/6d/Card_Merchant-Pallet.png' 
+    },
+    {
+      alt : 'Merchant em Lavender',
+      image : '/images/2/2b/Card_Merchant-Lavender.png' 
+    }
+  ];
+
+  merchantCard.src = url + positions[weekDay].image;
+  merchantCard.alt = positions[weekDay].alt;
+});
+</script>
+</p><p><div class="initialPage__container" id="">
+<div class="initialPage__contentContainer" id="">
+<div class="initialPage__mainContent" id="">
+<!--
+
+-->
+<style>
+.badge {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center; 
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.badge-img {
+  display: block; 
+  margin: 0 auto;
+  height: auto;
+}
+</style>
+
+<div class="badge initialPage__welcomeBadge" style="background-image: url('')">
+  
+  <img id="" class="initialPage__welcomeBadgeImg" src="https://wiki.pokexgames.com/images/3/39/Logo_Pagina_Inicial_-_Wiki.png">
+</div> <br /><br />
+<div class="initialPage__highlightCardContainer" id="">
+<a id="boss-link" href=" " class="badge initialPage__highlightCard hover-minimize" style="background-image: url('')">
+<!---->
+<!----><img id="boss-card" class="badge-img" src="none">
+</a>
+<a id="" href=" https://wiki.pokexgames.com/index.php/Nightmare_Merchant_(Resistance)" class="badge initialPage__highlightCard hover-minimize" style="background-image: url('')">
+<!---->
+<!----><img id="merchant-card" class="badge-img" src="none">
+</a>
+<a id="" href=" https://wiki.pokexgames.com/index.php/Spoiler_das_Masmorras" class="badge initialPage__highlightCard hover-minimize" style="background-image: url('')">
+<!---->
+<!----><img id="dz-card" class="badge-img" src="none">
+</a>
+</div>
+<div class="card none">
+<!----><div class="card-title">
+<!----><!----><span> Navegação rápida </span>
+<!----></div>
+<!----><div class="card-container fastNav__linksContainer hover-minimizeAndRotateContainer">
+<a href="Quests" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/b/bf/Quests-FastNav.png" alt="Icone do link para pagina Quests" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/2/2c/Quests-Title.png" alt="Icone do link para pagina Quests"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Nightmare_World" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/6/66/Nightmare-FastNav.png" alt="Icone do link para pagina Nightmare World" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/f/ff/Nightmare-World-Title.png" alt="Icone do link para pagina Nightmare World"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Pok%C3%A9mon" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/2/26/Pok%C3%A9mon-FastNav.png" alt="Icone do link para pagina Pokémon" />
+</div>
+<img style="margin-top:-.42rem" src="https://wiki.pokexgames.com/images/9/95/Pok%C3%A9mon-Title.png" alt="Icone do link para pagina Pokémon"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Tasks" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/3/3e/Tasks-FastNav.png" alt="Icone do link para pagina Tasks" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/1/1e/Tasks-Title.png" alt="Icone do link para pagina Tasks"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Itens_Gerais" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/thumb/4/40/Itens-FastNav.png/150px-Itens-FastNav.png" alt="Icone do link para pagina Itens" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/3/35/Itens-Title.png" alt="Icone do link para pagina Itens"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Held_Itens" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/8/8f/Held-Itens-FastNav.png" alt="Icone do link para pagina Held Itens" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/d/da/Held-Itens-Title.png" alt="Icone do link para pagina Held Itens"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Profiss%C3%B5es" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/3/3a/Profiss%C3%B5es-FastNav.png" alt="Icone do link para pagina Profissões" />
+</div>
+<img style="margin-top:-.3rem" src="https://wiki.pokexgames.com/images/6/69/Profiss%C3%B5es-Title.png" alt="Icone do link para pagina Profissões"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Cl%C3%A3s" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/4/41/Cl%C3%A3s-FastNav.png" alt="Icone do link para pagina Clãs" />
+</div>
+<img style="margin-top:-.3rem" src="https://wiki.pokexgames.com/images/9/92/Cl%C3%A3s-Title.png" alt="Icone do link para pagina Clãs"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Outland" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/c/c8/Outland-FastNav.png" alt="Icone do link para pagina Outland" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/3/3c/Outland-Title.png" alt="Icone do link para pagina Outland"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Embedded_Tower" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/a/ae/Embedded-Tower-FastNav.png" alt="Icone do link para pagina Embedded Tower" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/f/fe/Embedded-Tower-Title.png" alt="Icone do link para pagina Embedded Tower"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Dimensional_Zone" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/0/02/Dimensional-Zone-FastNav.png" alt="Icone do link para pagina Dimensional Zone" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/d/df/Dimensional-Zone-Title.png" alt="Icone do link para pagina Dimensional Zone"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Secret_Lab" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/0/07/Secret-Lab-FastNav.png" alt="Icone do link para pagina Secret Lab" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/e/e3/Secret-Lab-Title.png" alt="Icone do link para pagina Secret Lab"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Boss_Fight" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/1/15/Boss-Fight-FastNav.png" alt="Icone do link para pagina Boss Fight" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/2/2e/Boss-Fight-Title.png" alt="Icone do link para pagina Boss Fight"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Pok%C3%A9Park" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/7/7a/Pok%C3%A9-Park-FastNav.png" alt="Icone do link para pagina PokéPark" />
+</div>
+<img style="margin-top:-.42rem" src="https://wiki.pokexgames.com/images/1/1c/Pok%C3%A9-Park-Title.png" alt="Icone do link para pagina PokéPark"/>
+</a>
+<a href="https://wiki.pokexgames.com/index.php/Torneios" class="linkWithIcon__link ">
+<div class="linkWithIcon__imageContainer">
+<img src="https://wiki.pokexgames.com/images/4/48/PvP-FastNav.png" alt="Icone do link para pagina Secret Lab" />
+</div>
+<img style="" src="https://wiki.pokexgames.com/images/b/b7/PvP-Title.png" alt="Icone do link para pagina Secret Lab"/>
+</a>
+</p><p></div>
+</div>
+<div class="card none">
+<!----><div class="card-title">
+<!----><!----><span> Índice </span>
+<!----></div>
+<!----><div class="card-container none">
+</p>
+<div class="d-flex align-center initialPage&#95;_indexContent">
+<div class="mx-2 mr-2">
+<div class="center"><div class="floatnone"><img alt="Logo pxg.png" src="/images/thumb/6/67/Logo_pxg.png/36px-Logo_pxg.png" decoding="async" width="36" height="36" srcset="/images/thumb/6/67/Logo_pxg.png/54px-Logo_pxg.png 1.5x, /images/6/67/Logo_pxg.png 2x" /></div></div>
+</div>
+<div class="w-100">
+<p><b>PXG Geral</b><br />
+</p>
+<p class="initialPage&#95;_indexLinks">
+<a href="/index.php/Benef%C3%ADcios_VIP" title="Benefícios VIP">Benefícios VIP</a> &#183; <a rel="nofollow" class="external text" href="https://pokexgames.com/">Download Oficial</a> &#183; <a href="/index.php/Comandos" title="Comandos">Comandos e Atalhos</a> &#183; <a href="/index.php/Parceiros_Oficiais" title="Parceiros Oficiais">Parceiros Oficiais</a> &#183; <a href="/index.php/Criadores_de_Conteudo" title="Criadores de Conteudo">Criadores de Conteúdo</a> &#183; <a href="/index.php/Diamond_Shop" title="Diamond Shop">Diamond Shop</a> &#183; <a href="/index.php/Baixando_e_configurando_o_jogo" title="Baixando e configurando o jogo">Baixando e Configurando o Jogo</a> 
+</p>
+</div>
+</div>
+<div class="d-flex align-center initialPage&#95;_indexContent">
+<div class="mx-2 mr-2">
+<div class="center"><div class="floatnone"><img alt="Sistemas.png" src="/images/f/fa/Sistemas.png" decoding="async" width="36" height="41" /></div></div>
+</div>
+<div class="w-100">
+<p><b>Sistemas</b><br />
+</p>
+<p class="initialPage&#95;_indexLinks">
+<a href="/index.php/Sistema_de_Indica%C3%A7%C3%A3o" title="Sistema de Indicação">Sistema de Indicação</a> &#183; <a href="/index.php/Sistema_de_Catch" title="Sistema de Catch">Sistema de Captura</a> &#183; <a href="/index.php/Stream_Drops" title="Stream Drops">Stream Drops</a> &#183; <a href="/index.php/World_Trade" title="World Trade">World Trade</a> &#183; <a href="/index.php/World_Transfer" title="World Transfer">World Transfer</a> &#183; <a href="/index.php/Sistema_de_Pok%C3%A9mon_T1H" title="Sistema de Pokémon T1H">Pokémon T1H</a> &#183; <a href="/index.php/Pok%C3%A9mon_Obtidos_via_NPC" title="Pokémon Obtidos via NPC">Pokémon Obtidos via NPC</a> &#183; <a href="/index.php/Cyber_Dungeon" title="Cyber Dungeon">Cyber Dungeon</a>
+</p>
+</div>
+</div>
+<div class="d-flex align-center initialPage&#95;_indexContent">
+<div class="mx-2 mr-2">
+<div class="center"><div class="floatnone"><img alt="InfoGerais.gif" src="/images/2/24/InfoGerais.gif" decoding="async" width="36" height="39" /></div></div>
+</div>
+<div class="w-100">
+<p><b>Informações gerais</b><br />
+</p>
+<p class="initialPage&#95;_indexLinks">
+<a href="/index.php/Cl%C3%A3s" title="Clãs">Clãs</a> &#183; <a href="/index.php/Profiss%C3%B5es" title="Profissões">Profissões</a> &#183; <a href="/index.php/Mega_Evolu%C3%A7%C3%B5es" title="Mega Evoluções">Mega Evolução</a> &#183; <a href="/index.php/Velocidades" title="Velocidades">Velocidade</a> &#183; <a href="/index.php/Tempo_de_Respawn" title="Tempo de Respawn">Tempo de Respawn</a> &#183; <a href="/index.php/Experi%C3%AAncia_de_Catch" title="Experiência de Catch">Experiência de captura</a> &#183; <a href="/index.php/Tokens" title="Tokens">Tokens</a> &#183; <a href="/index.php/Experiencia" title="Experiencia">Experiência</a> 
+</p>
+</div>
+</div>
+<div class="d-flex align-center initialPage&#95;_indexContent">
+<div class="mx-2 mr-2">
+<div class="center"><div class="floatnone"><img alt="Cosmeticos.gif" src="/images/2/21/Cosmeticos.gif" decoding="async" width="36" height="39" /></div></div>
+</div>
+<div class="w-100">
+<p><b>Cosméticos</b><br />
+</p>
+<p class="initialPage&#95;_indexLinks">
+<a href="/index.php/Ball_Capsule" title="Ball Capsule">Ball Capsule</a> &#183; <a href="/index.php/Outfits" title="Outfits">Outfits</a> &#183; <a href="/index.php/C%C3%A2meras" title="Câmeras">Câmeras</a> &#183; <a href="/index.php/Moedas" title="Moedas">Moedas</a> &#183; <a href="/index.php/Mochilas" title="Mochilas">Mochilas</a> &#183; <a href="/index.php/NPC_Max_(Decora%C3%A7%C3%A3o)" title="NPC Max (Decoração)">Mobílias</a>
+</p>
+</div>
+</div>
+<div class="d-flex align-center initialPage&#95;_indexContent">
+<div class="mx-2 mr-2">
+<div class="center"><div class="floatnone"><img alt="Indice-Outros.gif" src="/images/b/be/Indice-Outros.gif" decoding="async" width="36" height="39" /></div></div>
+</div>
+<div class="w-100">
+<p><b>Outros</b><br />
+</p>
+<p class="initialPage&#95;_indexLinks"><a href="/index.php/Tutoriais" title="Tutoriais">Tutoriais</a> &#183; <a href="/index.php/Golden_Survival_Arena" title="Golden Survival Arena">Golden Arena</a> &#183; <a href="/index.php/Sistema_de_Grama_Alta" title="Sistema de Grama Alta">Grama Alta</a> &#183; <a href="/index.php/Smeargle_PT" title="Smeargle PT">Smeargle</a> &#183; <a href="/index.php/Informa%C3%A7%C3%B5es_Ditto" title="Informações Ditto">Ditto</a> &#183; <a href="/index.php/Mapas_de_Aventureiro" title="Mapas de Aventureiro">Mapas de Aventureiro</a> &#183; <a href="/index.php/Interface_de_Personaliza%C3%A7%C3%A3o_da_Pok%C3%A9_Bola" title="Interface de Personalização da Poké Bola">Personalização da Poké Bola</a></p>
+</div>
+</div>
+<div class="d-flex align-center initialPage&#95;_indexContent">
+<div class="mx-2 mr-2">
+<div class="center"><div class="floatnone"><img alt="Mystery Block.png" src="/images/thumb/f/f1/Mystery_Block.png/30px-Mystery_Block.png" decoding="async" width="30" height="30" srcset="/images/f/f1/Mystery_Block.png 1.5x" /></div></div>
+</div>
+<div class="w-100">
+<p><b>Suporte</b><br />
+</p>
+<p class="initialPage&#95;_indexLinks"><a href="/index.php/Doa%C3%A7%C3%B5es" title="Doações">Doações</a> &#183; <a href="/index.php/Sistema_de_Ticket" title="Sistema de Ticket">Sistema de Ticket</a> &#183; <a href="/index.php/Sistemas_de_Seguran%C3%A7a" title="Sistemas de Segurança">Segurança</a> &#183; <a href="/index.php/Rollback" title="Rollback">Rollback</a> &#183; <a href="/index.php/Nossa_Equipe" title="Nossa Equipe">Nossa Equipe</a> &#183; <a href="/index.php/Como_jogar_no_macOS" title="Como jogar no macOS">Como jogar no macOS</a> &#183; <a href="/index.php/Como_jogar_no_Linux" title="Como jogar no Linux">Como jogar no Linux</a></p>
+</div>
+</div>
+<p></div>
+</div>
+</div> 
+<div class="initialPage__sideContent" id=""> 
+<br /><br /><br /><br />
+</p>
+<center class="hover-minimize" style="margin-top: -2rem; margin-bottom: 2rem; margin-left: -1.8rem; margin-right: 0rem;">
+<p><a href="https://discord.com/channels/459138221914193921/459212960406044673/1459343866837864611" rel="nofollow"><img alt="MOTE TG 28.png" src="/images/thumb/a/a3/MOTE_TG_28.png/260px-MOTE_TG_28.png" decoding="async" width="260" height="252" srcset="/images/thumb/a/a3/MOTE_TG_28.png/390px-MOTE_TG_28.png 1.5x, /images/a/a3/MOTE_TG_28.png 2x" /></a>
+</p>
+</center>
+<p><div class="initialPage__socialMedia">
+<span class="socialMedia__title">Redes sociais</span>
+<div class="socialMedia__linkContainer">
+<a href="https://discord.gg/3Hxs4XT" class="socialMedia__link">
+<img src="https://wiki.pokexgames.com/images/9/90/Banner_discord.png" alt="Imagem link para o forum da pxg"/>
+</a>
+<a href="https://www.facebook.com/pokexgames" class="socialMedia__link">
+<img src="https://wiki.pokexgames.com/images/9/90/Banner_facebook.png" alt="Imagem link para o facebook da pxg"/>
+</a>
+<a href="https://forum.pokexgames.com/" class="socialMedia__link">
+<img src="https://wiki.pokexgames.com/images/f/fe/Banner_forum.png" alt="Imagem link para o discord da pxg"/>
+</a>
+<a href="https://www.instagram.com/playpokexgames/" class="socialMedia__link">
+<img src="https://wiki.pokexgames.com/images/c/c5/Banner_instagram.png" alt="Imagem link para o instagram da pxg"/>
+</a>
+</div>
+</div>
+</div>
+</div>
+</p>
+<!-- 
+NewPP limit report
+Cached time: 20260209212650
+Cache expiry: 86400
+Reduced expiry: false
+Complications: []
+CPU time usage: 0.259 seconds
+Real time usage: 0.471 seconds
+Preprocessor visited node count: 229/1000000
+Post‐expand include size: 8538/2097152 bytes
+Template argument size: 8/2097152 bytes
+Highest expansion depth: 4/100
+Expensive parser function count: 0/100
+Unstrip recursion depth: 0/20
+Unstrip post‐expand size: 0/5000000 bytes
+-->
+<!--
+Transclusion expansion time report (%,ms,calls,template)
+100.00%  237.099      1 -total
+ 81.71%  193.729      1 Predefinição:NavegacaoRapida
+  1.89%    4.487      1 Predefinição:Indice
+  1.58%    3.737      1 Predefinição:Eventos
+-->
+
+<!-- Saved in parser cache with key my_wiki:pcache:idhash:1-0!canonical and timestamp 20260209212649 and revision id 115457.
+ -->
+</div>
+<div class="printfooter" data-nosnippet="">Disponível em “<a dir="ltr" href="https://wiki.pokexgames.com/index.php?title=Página_principal&amp;oldid=115457">https://wiki.pokexgames.com/index.php?title=Página_principal&amp;oldid=115457</a>”</div></div>
+		<div id="catlinks" class="catlinks catlinks-allhidden" data-mw="interface"></div>
+	</div>
+</div>
+
+<div id="mw-navigation">
+	<h2>Menu de navegação</h2>
+	<div id="mw-head">
+		
+
+<nav id="p-personal" class="vector-menu mw-portlet mw-portlet-personal vector-user-menu-legacy" aria-labelledby="p-personal-label" role="navigation"  >
+	<h3
+		id="p-personal-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Ferramentas pessoais</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="pt-uls" class="mw-list-item active"><a class="uls-trigger" href="#"><span>português do Brasil</span></a></li><li id="pt-login" class="mw-list-item"><a href="/index.php?title=Especial:Autenticar-se&amp;returnto=P%C3%A1gina+principal" title="Você é encorajado a autenticar-se; no entanto, não é obrigatório [o]" accesskey="o"><span>Entrar</span></a></li></ul>
+		
+	</div>
+</nav>
+
+		<div id="left-navigation">
+			
+
+<nav id="p-namespaces" class="vector-menu mw-portlet mw-portlet-namespaces vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-namespaces-label" role="navigation"  >
+	<h3
+		id="p-namespaces-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Espaços nominais</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-nstab-main" class="selected mw-list-item"><a href="/index.php/P%C3%A1gina_principal" title="Ver a página de conteúdo [c]" accesskey="c"><span>Página principal</span></a></li><li id="ca-talk" class="new mw-list-item"><a href="/index.php?title=Discuss%C3%A3o:P%C3%A1gina_principal&amp;action=edit&amp;redlink=1" rel="discussion" title="Discussão sobre o conteúdo da página (página inexistente) [t]" accesskey="t"><span>Discussão</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-variants" class="vector-menu mw-portlet mw-portlet-variants emptyPortlet vector-menu-dropdown" aria-labelledby="p-variants-label" role="navigation"  >
+	<input type="checkbox"
+		id="p-variants-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-variants"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-variants-label"
+	/>
+	<label
+		id="p-variants-label"
+		 aria-label="Alterar a variante de idioma"
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">português do Brasil</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+		</div>
+		<div id="right-navigation">
+			
+
+<nav id="p-views" class="vector-menu mw-portlet mw-portlet-views vector-menu-tabs vector-menu-tabs-legacy" aria-labelledby="p-views-label" role="navigation"  >
+	<h3
+		id="p-views-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Visualizações</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="ca-view" class="selected mw-list-item"><a href="/index.php/P%C3%A1gina_principal"><span>Ler</span></a></li><li id="ca-viewsource" class="mw-list-item"><a href="/index.php?title=P%C3%A1gina_principal&amp;action=edit" title="Esta página está protegida.&#10;Você pode, no entanto, visualiar seu código-fonte. [e]" accesskey="e"><span>Ver código-fonte</span></a></li><li id="ca-history" class="mw-list-item"><a href="/index.php?title=P%C3%A1gina_principal&amp;action=history" title="Edições anteriores desta página. [h]" accesskey="h"><span>Ver histórico</span></a></li></ul>
+		
+	</div>
+</nav>
+
+			
+
+<nav id="p-cactions" class="vector-menu mw-portlet mw-portlet-cactions emptyPortlet vector-menu-dropdown" aria-labelledby="p-cactions-label" role="navigation"  title="Mais opções" >
+	<input type="checkbox"
+		id="p-cactions-checkbox"
+		role="button"
+		aria-haspopup="true"
+		data-event-name="ui.dropdown-p-cactions"
+		class="vector-menu-checkbox"
+		aria-labelledby="p-cactions-label"
+	/>
+	<label
+		id="p-cactions-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Mais</span>
+	</label>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"></ul>
+		
+	</div>
+</nav>
+
+			
+<div id="p-search" role="search" class="vector-search-box-vue  vector-search-box-show-thumbnail vector-search-box-auto-expand-width vector-search-box">
+	<div>
+			<h3 >
+				<label for="searchInput">Pesquisa</label>
+			</h3>
+		<form action="/index.php" id="searchform"
+			class="vector-search-box-form">
+			<div id="simpleSearch"
+				class="vector-search-box-inner"
+				 data-search-loc="header-navigation">
+				<input class="vector-search-box-input"
+					 type="search" name="search" placeholder="Pesquisar em PokeXGames" aria-label="Pesquisar em PokeXGames" autocapitalize="sentences" title="Pesquisar em PokeXGames [f]" accesskey="f" id="searchInput"
+				>
+				<input type="hidden" name="title" value="Especial:Busca">
+				<input id="mw-searchButton"
+					 class="searchButton mw-fallbackSearchButton" type="submit" name="fulltext" title="Procurar páginas que contenham este texto" value="Pesquisar">
+				<input id="searchButton"
+					 class="searchButton" type="submit" name="go" title="Ir a uma página com este exato nome, caso exista" value="Ir">
+			</div>
+		</form>
+	</div>
+</div>
+
+		</div>
+	</div>
+	
+
+<div id="mw-panel">
+	<div id="p-logo" role="banner">
+		<a class="mw-wiki-logo" href="/index.php/P%C3%A1gina_principal"
+			title="Acessar a página principal"></a>
+	</div>
+	
+
+<nav id="p-navigation" class="vector-menu mw-portlet mw-portlet-navigation vector-menu-portal portal" aria-labelledby="p-navigation-label" role="navigation"  >
+	<h3
+		id="p-navigation-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Navegação</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-Página-Inicial" class="mw-list-item"><a href="/index.php/P%C3%A1gina_principal"><span>Página Inicial</span></a></li><li id="n-Jogar-PokeXGames" class="mw-list-item"><a href="https://www.pokexgames.com/?utm_source=wiki&amp;utm_medium=menu&amp;utm_campaign=site_wiki#/create" rel="nofollow"><span>Jogar PokeXGames</span></a></li><li id="n-Nossa-Equipe" class="mw-list-item"><a href="/index.php/Nossa_Equipe"><span>Nossa Equipe</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+
+<nav id="p-Sistemas_de_Jogo" class="vector-menu mw-portlet mw-portlet-Sistemas_de_Jogo vector-menu-portal portal" aria-labelledby="p-Sistemas_de_Jogo-label" role="navigation"  >
+	<h3
+		id="p-Sistemas_de_Jogo-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Sistemas de Jogo</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-Clãs" class="mw-list-item"><a href="/index.php/Cl%C3%A3s"><span>Clãs</span></a></li><li id="n-Profissões" class="mw-list-item"><a href="/index.php/Profiss%C3%B5es"><span>Profissões</span></a></li><li id="n-NPCs" class="mw-list-item"><a href="/index.php/NPC%27s"><span>NPCs</span></a></li><li id="n-Itens-Gerais" class="mw-list-item"><a href="/index.php/Itens_Gerais"><span>Itens Gerais</span></a></li><li id="n-Pokélog" class="mw-list-item"><a href="/index.php/Pok%C3%A9log"><span>Pokélog</span></a></li><li id="n-Tabela-de-Boost" class="mw-list-item"><a href="/index.php/Tabela_de_Boost"><span>Tabela de Boost</span></a></li><li id="n-Doações" class="mw-list-item"><a href="/index.php/Doa%C3%A7%C3%B5es"><span>Doações</span></a></li><li id="n-Personalização-de-Perfil" class="mw-list-item"><a href="/index.php/Personaliza%C3%A7%C3%A3o_de_Perfil"><span>Personalização de Perfil</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-Conteúdo" class="vector-menu mw-portlet mw-portlet-Conteúdo vector-menu-portal portal" aria-labelledby="p-Conteúdo-label" role="navigation"  >
+	<h3
+		id="p-Conteúdo-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Conteúdo</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-Quests" class="mw-list-item"><a href="/index.php/Quests"><span>Quests</span></a></li><li id="n-Tasks" class="mw-list-item"><a href="/index.php/Tasks"><span>Tasks</span></a></li><li id="n-Missões-Diárias" class="mw-list-item"><a href="/index.php/Miss%C3%B5es_Di%C3%A1rias"><span>Missões Diárias</span></a></li><li id="n-Torneios" class="mw-list-item"><a href="/index.php/Torneios"><span>Torneios</span></a></li><li id="n-Boss-Fight" class="mw-list-item"><a href="/index.php/Boss_Fight"><span>Boss Fight</span></a></li><li id="n-Dimensional-Zone" class="mw-list-item"><a href="/index.php/Dimensional_Zone"><span>Dimensional Zone</span></a></li><li id="n-Embedded-Tower" class="mw-list-item"><a href="/index.php/Embedded_Tower"><span>Embedded Tower</span></a></li><li id="n-PokéPark" class="mw-list-item"><a href="/index.php/Pok%C3%A9Park"><span>PokéPark</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-Nightmare_World" class="vector-menu mw-portlet mw-portlet-Nightmare_World vector-menu-portal portal" aria-labelledby="p-Nightmare_World-label" role="navigation"  >
+	<h3
+		id="p-Nightmare_World-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Nightmare World</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-Informações-Gerais" class="mw-list-item"><a href="/index.php/Nightmare_World"><span>Informações Gerais</span></a></li><li id="n-Nightmare-Tasks" class="mw-list-item"><a href="/index.php/Nightmare_Tasks"><span>Nightmare Tasks</span></a></li><li id="n-Nightmare-Quests" class="mw-list-item"><a href="/index.php/Nightmare_Quests"><span>Nightmare Quests</span></a></li><li id="n-Nightmare-NPCs" class="mw-list-item"><a href="/index.php/Nightmare_NPCs"><span>Nightmare NPCs</span></a></li><li id="n-Nightmare-Diárias" class="mw-list-item"><a href="/index.php/Nightmare_Miss%C3%B5es_Di%C3%A1rias"><span>Nightmare Diárias</span></a></li><li id="n-Nightmare-Hunts" class="mw-list-item"><a href="/index.php/Nightmare_Hunts"><span>Nightmare Hunts</span></a></li><li id="n-Nightmare-Rifts" class="mw-list-item"><a href="/index.php/Nightmare_Rifts"><span>Nightmare Rifts</span></a></li><li id="n-Nightmare-Transportes" class="mw-list-item"><a href="/index.php/Nightmare_Transportes"><span>Nightmare Transportes</span></a></li><li id="n-Nightmare-Disk" class="mw-list-item"><a href="/index.php/Nightmare_Disk"><span>Nightmare Disk</span></a></li><li id="n-Secret-Lab" class="mw-list-item"><a href="/index.php/Secret_Lab"><span>Secret Lab</span></a></li><li id="n-Ultra-Lab" class="mw-list-item"><a href="/index.php/Ultra_Lab"><span>Ultra Lab</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-Johto" class="vector-menu mw-portlet mw-portlet-Johto vector-menu-portal portal" aria-labelledby="p-Johto-label" role="navigation"  >
+	<h3
+		id="p-Johto-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Johto</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-Regional-Level" class="mw-list-item"><a href="/index.php/Regional_Level"><span>Regional Level</span></a></li><li id="n-Quests" class="mw-list-item"><a href="/index.php/Johto_Quests"><span>Quests</span></a></li><li id="n-Tasks" class="mw-list-item"><a href="/index.php/Johto_Tasks"><span>Tasks</span></a></li><li id="n-Mystery-Dungeons" class="mw-list-item"><a href="/index.php/Mystery_Dungeons"><span>Mystery Dungeons</span></a></li><li id="n-MT-Silver" class="mw-list-item"><a href="/index.php/MT_Silver"><span>MT Silver</span></a></li><li id="n-Sistema-de-Dia-e-Noite" class="mw-list-item"><a href="/index.php/Sistema_de_Dia_e_Noite"><span>Sistema de Dia e Noite</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-Utilidades" class="vector-menu mw-portlet mw-portlet-Utilidades vector-menu-portal portal" aria-labelledby="p-Utilidades-label" role="navigation"  >
+	<h3
+		id="p-Utilidades-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Utilidades</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="n-Star-Signs" class="mw-list-item"><a href="/index.php/Star_Signs"><span>Star Signs</span></a></li><li id="n-Efetividades" class="mw-list-item"><a href="/index.php/Efetividades"><span>Efetividades</span></a></li><li id="n-Calculadora-de-Boost" class="mw-list-item"><a href="/index.php/Calculadora_de_Boost"><span>Calculadora de Boost</span></a></li><li id="n-Pokélog-Planner" class="mw-list-item"><a href="/index.php/Pok%C3%A9log_Planner"><span>Pokélog Planner</span></a></li><li id="n-Mapas-de-Aventureiro" class="mw-list-item"><a href="/index.php/Mapas_de_Aventureiro"><span>Mapas de Aventureiro</span></a></li><li id="n-Viagens" class="mw-list-item"><a href="/index.php/Viagens"><span>Viagens</span></a></li><li id="n-Boost-da-Master-Ball" class="mw-list-item"><a href="/index.php/Boost_da_Master_Ball"><span>Boost da Master Ball</span></a></li><li id="n-Pontuação-de-Capturas-Poképark" class="mw-list-item"><a href="/index.php/Pok%C3%A9Park#Pontuação"><span>Pontuação de Capturas Poképark</span></a></li></ul>
+		
+	</div>
+</nav>
+
+
+<nav id="p-tb" class="vector-menu mw-portlet mw-portlet-tb vector-menu-portal portal" aria-labelledby="p-tb-label" role="navigation"  >
+	<h3
+		id="p-tb-label"
+		
+		class="vector-menu-heading "
+	>
+		<span class="vector-menu-heading-label">Ferramentas</span>
+	</h3>
+	<div class="vector-menu-content">
+		
+		<ul class="vector-menu-content-list"><li id="t-whatlinkshere" class="mw-list-item"><a href="/index.php/Especial:P%C3%A1ginas_afluentes/P%C3%A1gina_principal" title="Lista de todas as páginas que possuem links para esta [j]" accesskey="j"><span>Páginas afluentes</span></a></li><li id="t-recentchangeslinked" class="mw-list-item"><a href="/index.php/Especial:Mudan%C3%A7as_relacionadas/P%C3%A1gina_principal" rel="nofollow" title="Mudanças recentes nas páginas para as quais esta possui links [k]" accesskey="k"><span>Mudanças relacionadas</span></a></li><li id="t-specialpages" class="mw-list-item"><a href="/index.php/Especial:P%C3%A1ginas_especiais" title="Lista de páginas especiais [q]" accesskey="q"><span>Páginas especiais</span></a></li><li id="t-print" class="mw-list-item"><a href="javascript:print();" rel="alternate" title="Versão para impressão desta página [p]" accesskey="p"><span>Versão para impressão</span></a></li><li id="t-permalink" class="mw-list-item"><a href="/index.php?title=P%C3%A1gina_principal&amp;oldid=115457" title="Link permanente para esta revisão desta página"><span>Link permanente</span></a></li><li id="t-info" class="mw-list-item"><a href="/index.php?title=P%C3%A1gina_principal&amp;action=info" title="Mais informações sobre esta página"><span>Informações da página</span></a></li></ul>
+		
+	</div>
+</nav>
+
+	
+</div>
+
+</div>
+
+<footer id="footer" class="mw-footer" role="contentinfo" >
+	<ul id="footer-info">
+	<li id="footer-info-lastmod"> Esta página foi modificada pela última vez em 10 de janeiro de 2026, às 01h06min.</li>
+</ul>
+
+	<ul id="footer-places">
+	<li id="footer-places-privacy"><a href="/index.php/PokeXGames:Pol%C3%ADtica_de_privacidade">Política de privacidade</a></li>
+	<li id="footer-places-about"><a href="/index.php/PokeXGames:Sobre">Sobre PokeXGames</a></li>
+	<li id="footer-places-disclaimer"><a href="/index.php/PokeXGames:Aviso_geral">Termo de responsabilidade</a></li>
+	<li id="footer-places-mobileview"><a href="https://wiki.pokexgames.com/index.php?title=P%C3%A1gina_principal&amp;mobileaction=toggle_view_mobile" class="noprint stopMobileRedirectToggle">Versão móvel</a></li>
+</ul>
+
+	<ul id="footer-icons" class="noprint">
+	<li id="footer-poweredbyico"><a href="https://www.mediawiki.org/"><img src="/resources/assets/poweredby_mediawiki_88x31.png" alt="Powered by MediaWiki" srcset="/resources/assets/poweredby_mediawiki_132x47.png 1.5x, /resources/assets/poweredby_mediawiki_176x62.png 2x" width="88" height="31" loading="lazy"/></a></li>
+</ul>
+
+</footer>
+
+<script>(RLQ=window.RLQ||[]).push(function(){mw.config.set({"wgPageParseReport":{"limitreport":{"cputime":"0.259","walltime":"0.471","ppvisitednodes":{"value":229,"limit":1000000},"postexpandincludesize":{"value":8538,"limit":2097152},"templateargumentsize":{"value":8,"limit":2097152},"expansiondepth":{"value":4,"limit":100},"expensivefunctioncount":{"value":0,"limit":100},"unstrip-depth":{"value":0,"limit":20},"unstrip-size":{"value":0,"limit":5000000},"timingprofile":["100.00%  237.099      1 -total"," 81.71%  193.729      1 Predefinição:NavegacaoRapida","  1.89%    4.487      1 Predefinição:Indice","  1.58%    3.737      1 Predefinição:Eventos"]},"cachereport":{"timestamp":"20260209212650","ttl":86400,"transientcontent":false}}});mw.config.set({"wgBackendResponseTime":501});});</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!-- 📋 ABA MURAL DE VENDAS - WIKI OBV -->
+<div class="mural-container">
+    <div class="mural-header">
+        <h2><i class="fas fa-scroll"></i> Mural de Vendas</h2>
+        <p>Vendas publicadas pelos membros do clã. Copie o texto ou entre em contato pelo telefone.</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="mural-filters">
+        <input type="text" id="muralSearchInput" placeholder="Buscar por nome, pokémon, item..."
+               oninput="filtrarMural()">
+        <select id="muralFilterTipo" onchange="filtrarMural()">
+            <option value="">Todos os tipos</option>
+            <option value="pokemon">Pokémons</option>
+            <option value="tm">TMs</option>
+            <option value="item">Itens</option>
+            <option value="conta">Contas</option>
+        </select>
+        <button class="btn-mural-refresh" onclick="carregarVendasMural()">
+            <i class="fas fa-sync-alt"></i> Atualizar
+        </button>
+    </div>
+
+    <!-- Grid de vendas -->
+    <div class="mural-grid" id="muralGrid">
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Carregando vendas...</p>
+        </div>
+    </div>
+</div>

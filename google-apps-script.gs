@@ -153,6 +153,12 @@ function doPost(e) {
       case 'excluirBuild':
         result = handleExcluirBuild(planilha, dados);
         break;
+      case 'salvarVenda':
+        result = handleSalvarVenda(planilha, dados);
+        break;
+      case 'excluirVenda':
+        result = handleExcluirVenda(planilha, dados);
+        break;
       default:
         // Manter código existente de Pokémon
         result = handlePokemonUpdate(planilha, dados);
@@ -292,6 +298,105 @@ function doGet(e) {
         success: true,
         data: atacks,
         total: atacks.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Obter Itens da aba "ITENS"
+    if (acao === 'obter_itens') {
+      const abaItens = planilha.getSheetByName('ITENS');
+      if (!abaItens) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          message: 'Aba ITENS não encontrada'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const dados = abaItens.getDataRange().getValues();
+      const cabecalho = dados[0];
+      const linhas = dados.slice(1);
+      
+      const itens = linhas.map(linha => {
+        const obj = {};
+        cabecalho.forEach((coluna, index) => {
+          obj[coluna] = linha[index];
+        });
+        return obj;
+      }).filter(item => item['NOME']);
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: itens,
+        total: itens.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Obter Natures da aba "NATURES"
+    if (acao === 'obter_natures') {
+      const abaNatures = planilha.getSheetByName('NATURES');
+      if (!abaNatures) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          message: 'Aba NATURES não encontrada'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const dados = abaNatures.getDataRange().getValues();
+      const cabecalho = dados[0];
+      const linhas = dados.slice(1);
+      
+      const natures = linhas.map(linha => {
+        const obj = {};
+        cabecalho.forEach((coluna, index) => {
+          obj[coluna] = linha[index];
+        });
+        return obj;
+      }).filter(n => {
+        // Aceitar qualquer coluna que tenha dados
+        return Object.values(n).some(v => v && v.toString().trim() !== '');
+      });
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: natures,
+        total: natures.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Obter Vendas da aba "VENDAS"
+    if (acao === 'obter_vendas') {
+      const abaVendas = planilha.getSheetByName('VENDAS');
+      if (!abaVendas) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true,
+          data: [],
+          total: 0
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const dados = abaVendas.getDataRange().getValues();
+      if (dados.length <= 1) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true,
+          data: [],
+          total: 0
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const vendas = dados.slice(1).map((linha, index) => ({
+        id: index,
+        textoVenda: linha[0],
+        dadosJSON: linha[1],
+        usuarioEmail: linha[2],
+        usuarioNickname: linha[3],
+        telefone: linha[4],
+        timestamp: linha[5],
+        status: linha[6] || 'ativa'
+      })).filter(v => v.status === 'ativa');
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: vendas,
+        total: vendas.length
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1429,6 +1534,126 @@ function handleExcluirBuild(planilha, dados) {
     return {
       success: false,
       message: 'Erro ao excluir build: ' + error.toString()
+    };
+  }
+}
+
+/* ============================================
+   FUNÇÕES DO MARKET / VENDAS
+   ============================================ */
+
+/**
+ * Salvar uma venda no Market
+ * Qualquer membro autenticado pode criar vendas
+ */
+function handleSalvarVenda(planilha, dados) {
+  try {
+    let abaVendas = planilha.getSheetByName('VENDAS');
+    if (!abaVendas) {
+      abaVendas = planilha.insertSheet('VENDAS');
+      abaVendas.appendRow(['TEXTO_VENDA', 'DADOS_JSON', 'USUARIO_EMAIL', 'USUARIO_NICKNAME', 'TELEFONE', 'TIMESTAMP', 'STATUS']);
+    }
+    
+    // Verificar se tem cabeçalho correto
+    const dadosAba = abaVendas.getDataRange().getValues();
+    if (dadosAba.length === 0 || dadosAba[0][0] !== 'TEXTO_VENDA') {
+      abaVendas.clear();
+      abaVendas.appendRow(['TEXTO_VENDA', 'DADOS_JSON', 'USUARIO_EMAIL', 'USUARIO_NICKNAME', 'TELEFONE', 'TIMESTAMP', 'STATUS']);
+    }
+    
+    const textoVenda = dados.textoVenda || '';
+    const dadosJSON = dados.dadosJSON || '{}';
+    const email = dados.email || '';
+    const nickname = dados.nickname || 'Anônimo';
+    const telefone = dados.telefone || '';
+    
+    abaVendas.appendRow([
+      textoVenda,
+      dadosJSON,
+      email,
+      nickname,
+      telefone,
+      new Date(),
+      'ativa'
+    ]);
+    
+    return {
+      success: true,
+      message: 'Venda salva com sucesso!'
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro ao salvar venda: ' + error.toString()
+    };
+  }
+}
+
+/**
+ * Excluir uma venda (admin ou dono da venda)
+ */
+function handleExcluirVenda(planilha, dados) {
+  try {
+    const userEmail = validateTokenAndGetEmail(dados);
+    
+    if (!userEmail) {
+      return {
+        success: false,
+        message: 'Token de autenticação inválido ou ausente'
+      };
+    }
+    
+    const abaVendas = planilha.getSheetByName('VENDAS');
+    if (!abaVendas) {
+      return { success: false, message: 'Aba VENDAS não encontrada' };
+    }
+    
+    const vendaIndex = parseInt(dados.vendaIndex);
+    const linhaParaExcluir = vendaIndex + 2; // +1 cabeçalho, +1 índice 0
+    
+    const todosOsDados = abaVendas.getDataRange().getValues();
+    
+    if (linhaParaExcluir > todosOsDados.length || linhaParaExcluir < 2) {
+      return { success: false, message: 'Venda não encontrada' };
+    }
+    
+    // Verificar se é admin ou dono da venda
+    const emailDono = (todosOsDados[vendaIndex + 1][2] || '').toString().toLowerCase();
+    
+    // Verificar se é admin
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === userEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') {
+          isAdmin = true;
+        }
+        break;
+      }
+    }
+    
+    // Permitir exclusão se for admin OU se for o dono
+    if (!isAdmin && userEmail.toLowerCase() !== emailDono) {
+      return {
+        success: false,
+        message: 'Sem permissão: apenas administradores ou o dono podem excluir esta venda'
+      };
+    }
+    
+    abaVendas.deleteRow(linhaParaExcluir);
+    
+    return {
+      success: true,
+      message: 'Venda excluída com sucesso!'
+    };
+    
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Erro ao excluir venda: ' + error.toString()
     };
   }
 }
