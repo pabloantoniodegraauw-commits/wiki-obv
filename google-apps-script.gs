@@ -1021,9 +1021,15 @@ function handleAtualizarOrigemTM(planilha, dados) {
         const origemAtual = (todosOsDados[i][colOrigem] || '').toString().trim();
         
         if (nomePokemon === '') {
-          // Remover este Pokémon da origem (caso seja o único ou um dos listados)
-          const origens = origemAtual.split(',').map(s => s.trim()).filter(s => s.toLowerCase() !== dados.nomePokemonRemover?.toLowerCase());
-          abaTMs.getRange(i + 1, colOrigem + 1).setValue(origens.join(', '));
+          // Remover este Pokémon da origem
+          const nomeRemover = (dados.nomePokemonRemover || '').trim().toLowerCase();
+          if (nomeRemover && origemAtual) {
+            const origens = origemAtual.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.toLowerCase() !== nomeRemover; });
+            abaTMs.getRange(i + 1, colOrigem + 1).setValue(origens.join(', '));
+          } else {
+            // Se não tem nome específico para remover, limpar toda a origem
+            abaTMs.getRange(i + 1, colOrigem + 1).setValue('');
+          }
         } else {
           // Adicionar Pokémon à origem
           if (origemAtual && !origemAtual.toLowerCase().includes(nomePokemon.toLowerCase())) {

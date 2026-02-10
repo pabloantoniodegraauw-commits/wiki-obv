@@ -1569,6 +1569,7 @@
         
         function criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms, pokemonData) {
             const overlay = document.createElement('div');
+            overlay.id = 'modalEdicaoOverlay';
             overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
             
             // Debug: verificar chaves do pokemonData
@@ -1686,7 +1687,7 @@
 
             overlay.innerHTML = `
                 <div style="background: linear-gradient(145deg, #1a2980, #0f3460); border-radius: 20px; padding: 30px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid #ffd700; position: relative;" data-nome-real="${nomeReal}">
-                    <button onclick="this.closest('[style*=fixed]').remove()" style="position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; z-index: 10;" onmouseover="this.style.background='rgba(255,75,75,0.4)';this.style.borderColor='#ff4b4b'" onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.2)'">
+                    <button onclick="document.getElementById('modalEdicaoOverlay')?.remove()" style="position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; z-index: 10;" onmouseover="this.style.background='rgba(255,75,75,0.4)';this.style.borderColor='#ff4b4b'" onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.2)'">
                         <i class="fas fa-times"></i>
                     </button>
                     <h2 style="color: #ffd700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-right: 40px;">
@@ -1803,7 +1804,7 @@
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-top: 25px; justify-content: flex-end;">
-                        <button onclick="this.closest('[style*=fixed]').remove()" style="padding: 12px 25px; background: rgba(255,255,255,0.1); border: 1px solid #888; color: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                        <button onclick="document.getElementById('modalEdicaoOverlay')?.remove()" style="padding: 12px 25px; background: rgba(255,255,255,0.1); border: 1px solid #888; color: #fff; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
                             <i class="fas fa-times"></i> Cancelar
                         </button>
                         <button onclick="salvarEdicao()" style="padding: 12px 25px; background: linear-gradient(135deg, #ffd700, #ffed4e); border: none; color: #1a2980; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
@@ -1841,7 +1842,7 @@
         }
         
         async function salvarEdicao() {
-            const nomeOriginal = document.querySelector('[style*=fixed] div[data-nome-real]').getAttribute('data-nome-real');
+            const nomeOriginal = document.querySelector('#modalEdicaoOverlay div[data-nome-real]').getAttribute('data-nome-real');
             
             const dados = {
                 nome: document.getElementById('edit-nome').value,
@@ -1867,7 +1868,7 @@
 
             // Coletar TMs alterados
             const tmsMudados = [];
-            document.querySelectorAll('[style*=fixed] .modal-tm-input').forEach(input => {
+            document.querySelectorAll('#modalEdicaoOverlay .modal-tm-input').forEach(input => {
                 const valor = input.value.trim();
                 const numOriginal = input.getAttribute('data-tm-numero-original') || '';
                 const isNew = input.classList.contains('modal-tm-new');
@@ -1889,7 +1890,7 @@
                     }
                 } else if (numOriginal && !isNew) {
                     // TM foi apagado (campo vazio) - remover associação
-                    tmsMudados.push({ numero: numOriginal, nome: '', tipo: 'remover' });
+                    tmsMudados.push({ numero: numOriginal, nome: '', tipo: 'remover', pokemonRemover: nomeOriginal });
                 }
             });
             
@@ -1971,7 +1972,7 @@
                     });
                     
                     // Desabilitar botão e mostrar loading
-                    const btnSalvar = document.querySelector('[style*=fixed] button[style*="background:#ffd700"]');
+                    const btnSalvar = document.querySelector('#modalEdicaoOverlay button[style*="background"]');
                     if (btnSalvar) {
                         btnSalvar.disabled = true;
                         btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
@@ -2038,6 +2039,7 @@
                                         action: 'atualizarOrigemTM',
                                         tmNumero: tm.numero,
                                         nomePokemon: tm.tipo === 'remover' ? '' : nomeOriginal,
+                                        nomePokemonRemover: tm.pokemonRemover || nomeOriginal,
                                         email: adminUser.email,
                                         authToken: adminUser.authToken
                                     })
@@ -2057,7 +2059,7 @@
                         console.log(`✅ Todas as alterações salvas em ${tempoDecorrido}ms`);
                         
                         // Mostrar mensagem de sucesso no modal
-                        const modalContent = document.querySelector('[style*=fixed] div[data-nome-real]');
+                        const modalContent = document.querySelector('#modalEdicaoOverlay div[data-nome-real]');
                         if (modalContent) {
                             const successMsg = document.createElement('div');
                             successMsg.className = 'modal-success-msg';
@@ -2067,13 +2069,13 @@
                         
                         // Fechar modal após breve delay
                         setTimeout(() => {
-                            const overlay = document.querySelector('[style*=fixed]');
+                            const overlay = document.getElementById('modalEdicaoOverlay');
                             if (overlay) overlay.remove();
                         }, 1500);
                     } catch (err) {
                         console.error('⚠️ Erro parcial ao salvar:', err);
                         // Mesmo com erro parcial, mostrar aviso e fechar
-                        const modalContent = document.querySelector('[style*=fixed] div[data-nome-real]');
+                        const modalContent = document.querySelector('#modalEdicaoOverlay div[data-nome-real]');
                         if (modalContent) {
                             const warnMsg = document.createElement('div');
                             warnMsg.className = 'modal-success-msg';
@@ -2084,7 +2086,7 @@
                             modalContent.appendChild(warnMsg);
                         }
                         setTimeout(() => {
-                            const overlay = document.querySelector('[style*=fixed]');
+                            const overlay = document.getElementById('modalEdicaoOverlay');
                             if (overlay) overlay.remove();
                         }, 2000);
                     }
@@ -2093,7 +2095,7 @@
                     console.error('❌ Erro ao salvar no Google Sheets:', erro);
                     alert('❌ Erro ao salvar: ' + erro.message);
                     // Reabilitar botão salvar
-                    const btnSalvar2 = document.querySelector('[style*=fixed] button[style*="background:"]');
+                    const btnSalvar2 = document.querySelector('#modalEdicaoOverlay button[style*="background"]');
                     if (btnSalvar2) {
                         btnSalvar2.disabled = false;
                         btnSalvar2.innerHTML = '<i class="fas fa-save"></i> Salvar';
@@ -2101,7 +2103,7 @@
                     }
                 }
             } else {
-                const overlay = document.querySelector('[style*=fixed]');
+                const overlay = document.getElementById('modalEdicaoOverlay');
                 if (overlay) overlay.remove();
             }
         }
@@ -3033,7 +3035,7 @@
                 const result = await response.json();
                 if (result.sucesso || result.success) {
                     // Atualizar a UI: remover o item da sugestão e colocar "Nenhuma sugestão"
-                    const modal = document.querySelector('[style*=fixed]');
+                    const modal = document.getElementById('modalEdicaoOverlay');
                     if (modal) {
                         const locContainer = modal.querySelector('.modal-suggestion-item.loc');
                         if (locContainer) {
@@ -3068,7 +3070,7 @@
                 const result = await response.json();
                 if (result.success) {
                     // Remover o item da sugestão na UI
-                    const modal = document.querySelector('[style*=fixed]');
+                    const modal = document.getElementById('modalEdicaoOverlay');
                     if (modal) {
                         const tmItems = modal.querySelectorAll('.modal-suggestion-item.tm');
                         tmItems.forEach(item => {
