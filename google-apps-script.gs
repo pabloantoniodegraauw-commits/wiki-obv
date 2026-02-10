@@ -135,6 +135,9 @@ function doPost(e) {
       case 'limparSugestaoTM':
         result = handleLimparSugestaoTM(planilha, dados);
         break;
+      case 'atualizarOrigemTM':
+        result = handleAtualizarOrigemTM(planilha, dados);
+        break;
       case 'atualizarAtack':
         result = handleAtualizarAtack(planilha, dados);
         break;
@@ -962,6 +965,75 @@ function handleLimparSugestaoTM(planilha, dados) {
       if (String(todosOsDados[i][colNumero]).trim() === tmNumero) {
         abaTMs.getRange(i + 1, colSugestao + 1).setValue('');
         return { success: true, message: 'Sugestão do TM' + tmNumero + ' limpa com sucesso!' };
+      }
+    }
+
+    return { success: false, message: 'TM não encontrado: TM' + tmNumero };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Atualizar ORIGEM DO TM (associar/desassociar Pokémon a um TM)
+ */
+function handleAtualizarOrigemTM(planilha, dados) {
+  try {
+    // SEGURANÇA: Verificar se é admin
+    const adminEmail = validateTokenAndGetEmail(dados);
+    if (!adminEmail) {
+      return { success: false, message: 'Token de autenticação inválido ou ausente' };
+    }
+
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') isAdmin = true;
+        break;
+      }
+    }
+    if (!isAdmin) {
+      return { success: false, message: 'Sem permissão: apenas administradores podem alterar TMs' };
+    }
+
+    const abaTMs = planilha.getSheetByName('TMs');
+    if (!abaTMs) {
+      return { success: false, message: 'Aba TMs não encontrada' };
+    }
+
+    const todosOsDados = abaTMs.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+
+    const colNumero = cabecalho.indexOf('NUMERO DO TM');
+    const colOrigem = cabecalho.indexOf('ORIGEM DO TM');
+
+    if (colNumero === -1 || colOrigem === -1) {
+      return { success: false, message: 'Colunas não encontradas na aba TMs' };
+    }
+
+    const tmNumero = String(dados.tmNumero).trim();
+    const nomePokemon = (dados.nomePokemon || '').trim();
+
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if (String(todosOsDados[i][colNumero]).trim() === tmNumero) {
+        const origemAtual = (todosOsDados[i][colOrigem] || '').toString().trim();
+        
+        if (nomePokemon === '') {
+          // Remover este Pokémon da origem (caso seja o único ou um dos listados)
+          const origens = origemAtual.split(',').map(s => s.trim()).filter(s => s.toLowerCase() !== dados.nomePokemonRemover?.toLowerCase());
+          abaTMs.getRange(i + 1, colOrigem + 1).setValue(origens.join(', '));
+        } else {
+          // Adicionar Pokémon à origem
+          if (origemAtual && !origemAtual.toLowerCase().includes(nomePokemon.toLowerCase())) {
+            abaTMs.getRange(i + 1, colOrigem + 1).setValue(origemAtual + ', ' + nomePokemon);
+          } else if (!origemAtual) {
+            abaTMs.getRange(i + 1, colOrigem + 1).setValue(nomePokemon);
+          }
+        }
+        
+        return { success: true, message: 'TM' + tmNumero + ' atualizado com sucesso!' };
       }
     }
 

@@ -1560,8 +1560,8 @@
             const localizacao = card.querySelector('.pokemon-location div:last-child')?.textContent.trim() || '';
             const tms = card.querySelector('.tms-content')?.textContent.trim() || '';
             
-            // Carregar atacks antes de abrir o modal
-            carregarDadosAtacks().then(() => {
+            // Carregar atacks e TMs antes de abrir o modal
+            Promise.all([carregarDadosAtacks(), carregarDadosTMs()]).then(() => {
                 const modal = criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms, pokemonData);
                 document.body.appendChild(modal);
             });
@@ -1571,16 +1571,33 @@
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
             
+            // Debug: verificar chaves do pokemonData
+            if (pokemonData) {
+                console.log('📋 Chaves do pokemonData:', Object.keys(pokemonData).filter(k => k.toLowerCase().startsWith('m')));
+                for (let d = 1; d <= 10; d++) {
+                    const v = pokemonData[`M${d}`] || pokemonData[`m${d}`] || '';
+                    if (v) console.log(`  M${d}:`, v);
+                }
+            }
+            
             // Obter moves atuais do pokémon (M1-M10 da planilha)
             let movesHTML = '';
             const atackDatalistOptions = todosAtacks.map(a => `<option value="${(a['ATACK'] || a.ATACK || '')}">`).join('');
             
             for (let i = 1; i <= 10; i++) {
                 const slotKey = `M${i}`;
-                // Tentar encontrar o valor do slot nos dados do pokémon
+                // Tentar encontrar o valor do slot nos dados do pokémon (vários formatos possíveis)
                 let currentMove = '';
                 if (pokemonData) {
-                    currentMove = (pokemonData[slotKey] || pokemonData[`m${i}`] || '').toString().trim();
+                    currentMove = (
+                        pokemonData[slotKey] || 
+                        pokemonData[`m${i}`] || 
+                        pokemonData[` M${i}`] ||
+                        pokemonData[`M${i} `] ||
+                        // Buscar chave case-insensitive
+                        pokemonData[Object.keys(pokemonData).find(k => k.trim().toLowerCase() === `m${i}`)] ||
+                        ''
+                    ).toString().trim();
                 }
                 movesHTML += `
                     <div class="modal-atack-row">
@@ -1598,6 +1615,43 @@
             // Obter sugestões dos membros
             const sugestaoLoc = pokemonData ? obterSugestaoLocalizacao(pokemonData) : '';
             const nomePrincipal = pokemonData ? ((pokemonData.EV || pokemonData.POKEMON || '').toString().trim()) : nomeReal;
+
+            // ===== TMs do Pokémon (para edição) =====
+            const tmsDoPokemonEdit = obterTMsDoPokemon(nomePrincipal);
+            const tmDatalistOptions = todosTMs.map(tm => {
+                const numF = tm.tipo === 'HM' ? 'HM' + String(tm.numero).padStart(2,'0') : 'TM' + String(tm.numero).padStart(2,'0');
+                return `<option value="${numF} - ${tm.nome}">`;
+            }).join('');
+            
+            let tmsEditHTML = '';
+            // Mostrar TMs já gravados com opção de alterar
+            if (tmsDoPokemonEdit.length > 0) {
+                tmsDoPokemonEdit.forEach((tm, idx) => {
+                    const numF = tm.tipo === 'HM' ? 'HM' + String(tm.numero).padStart(2,'0') : 'TM' + String(tm.numero).padStart(2,'0');
+                    tmsEditHTML += `
+                        <div class="modal-atack-row">
+                            <span class="modal-atack-slot" style="background: rgba(162,155,254,0.15); color: #a29bfe;">TM</span>
+                            <input type="text" 
+                                class="modal-atack-input modal-tm-input"
+                                value="${numF} - ${tm.nome}" 
+                                list="datalistTMs"
+                                data-tm-numero-original="${tm.numero}"
+                                placeholder="Selecione o TM..." 
+                                autocomplete="off">
+                        </div>`;
+                });
+            }
+            // Campo vazio para adicionar novo TM
+            tmsEditHTML += `
+                <div class="modal-atack-row">
+                    <span class="modal-atack-slot" style="background: rgba(162,155,254,0.15); color: #a29bfe;">+</span>
+                    <input type="text" 
+                        class="modal-atack-input modal-tm-input modal-tm-new"
+                        value="" 
+                        list="datalistTMs"
+                        placeholder="Adicionar TM..." 
+                        autocomplete="off">
+                </div>`;
             
             // Sugestões de TMs
             const sugestoesTMs = obterSugestoesTMsParaPokemon(nomePrincipal);
@@ -1685,6 +1739,17 @@
                                 ${atackDatalistOptions}
                             </datalist>
                             ${movesHTML}
+                        </div>
+
+                        <!-- SEÇÃO: EDIÇÃO DE TMs -->
+                        <div class="modal-section">
+                            <div class="modal-section-title" style="color: #a29bfe;">
+                                <i class="fas fa-compact-disc"></i> TMs do Pokémon
+                            </div>
+                            <datalist id="datalistTMs">
+                                ${tmDatalistOptions}
+                            </datalist>
+                            ${tmsEditHTML}
                         </div>
 
                         <!-- SEÇÃO: SUGESTÕES DOS MEMBROS -->
@@ -1793,6 +1858,34 @@
                     atacksMudados.push({ slot: `m${i}`, nome: novoAtack });
                 }
             }
+
+            // Coletar TMs alterados
+            const tmsMudados = [];
+            document.querySelectorAll('[style*=fixed] .modal-tm-input').forEach(input => {
+                const valor = input.value.trim();
+                const numOriginal = input.getAttribute('data-tm-numero-original') || '';
+                const isNew = input.classList.contains('modal-tm-new');
+                
+                if (valor) {
+                    // Extrair número do TM do valor (formato: "TM01 - Nome" ou "HM01 - Nome")
+                    const match = valor.match(/^(TM|HM)(\d+)\s*-\s*(.+)$/i);
+                    if (match) {
+                        const tmNumero = match[2];
+                        const tmNome = match[3].trim();
+                        if (isNew) {
+                            // Novo TM: atualizar ORIGEM DO TM para este pokémon
+                            tmsMudados.push({ numero: tmNumero, nome: tmNome, tipo: 'novo' });
+                        } else if (numOriginal && numOriginal !== tmNumero) {
+                            // TM alterado: remover do antigo, adicionar ao novo
+                            tmsMudados.push({ numero: numOriginal, nome: '', tipo: 'remover' });
+                            tmsMudados.push({ numero: tmNumero, nome: tmNome, tipo: 'novo' });
+                        }
+                    }
+                } else if (numOriginal && !isNew) {
+                    // TM foi apagado (campo vazio) - remover associação
+                    tmsMudados.push({ numero: numOriginal, nome: '', tipo: 'remover' });
+                }
+            });
             
             // Buscar Pokémon no array local pela coluna EV ou POKEMON
             console.log('🔍 Buscando Pokémon:', nomeOriginal);
@@ -1924,6 +2017,30 @@
                                     })
                                 );
                             }
+                        }
+                    }
+
+                    // Requests de TMs alterados em paralelo
+                    if (tmsMudados && tmsMudados.length > 0) {
+                        console.log('💾 Salvando TMs em paralelo...');
+                        for (const tm of tmsMudados) {
+                            promessas.push(
+                                fetch(APPS_SCRIPT_URL, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'text/plain' },
+                                    body: JSON.stringify({
+                                        action: 'atualizarOrigemTM',
+                                        tmNumero: tm.numero,
+                                        nomePokemon: tm.tipo === 'remover' ? '' : nomeOriginal,
+                                        email: adminUser.email,
+                                        authToken: adminUser.authToken
+                                    })
+                                }).then(() => {
+                                    console.log(`✅ TM${tm.numero} ${tm.tipo === 'remover' ? 'removido' : 'salvo'}`);
+                                }).catch(e => {
+                                    console.warn(`⚠️ Erro ao salvar TM${tm.numero}:`, e);
+                                })
+                            );
                         }
                     }
 
@@ -2862,15 +2979,16 @@
             if (!confirm(`Apagar a sugestão de localização de "${nomePokemon}"?`)) return;
             
             try {
-                const authToken = localStorage.getItem('auth_token') || '';
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
                 const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
                         action: 'atualizarSugestao',
                         nomePokemon: nomePokemon,
                         sugestao: '',
-                        authToken: authToken
+                        authToken: adminUser.authToken || '',
+                        email: adminUser.email || ''
                     })
                 });
                 const result = await response.json();
@@ -2897,14 +3015,15 @@
             if (!confirm(`Apagar a sugestão do TM${tmNumero}?`)) return;
             
             try {
-                const authToken = localStorage.getItem('auth_token') || '';
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
                 const response = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
                         action: 'limparSugestaoTM',
                         tmNumero: tmNumero,
-                        authToken: authToken
+                        authToken: adminUser.authToken || '',
+                        email: adminUser.email || ''
                     })
                 });
                 const result = await response.json();
