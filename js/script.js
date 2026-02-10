@@ -1,5 +1,5 @@
 ﻿// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZ7bdw1o-1uTM1trZ_ixCakyH9qYM-VG1_mDvyByfzLuTMy-4QzsYalTEMbCfFnLQNg/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
         
         // 🤖 OCR COM TESSERACT.JS - Totalmente gratuito e local!
         // Roda direto no navegador, sem APIs externas ou chaves
@@ -11,6 +11,7 @@
         let todosPokemons = [];
         let todosPokemonsCompleto = []; // Array com TODOS os dados para busca
         let todosTMs = [];
+        let todosAtacks = [];
         let todasTasks = [];
         let usuarioLogado = null;
         let paginaAtual = 1;
@@ -122,12 +123,12 @@
             'Mega Venusaur': 'venusaur-mega',
             
             // FORMAS COM GÊNERO
-            'Female': 'indeedee-female',
-            'Male': 'indeedee-male',
-            'Male': 'basculegion-male',
-            'Female': 'basculegion-female',
-            'Male': 'oinkologne-male',
-            'Female': 'oinkologne-female',
+            'Indeedee Female': 'indeedee-female',
+            'Indeedee Male': 'indeedee-male',
+            'Basculegion Male': 'basculegion-male',
+            'Basculegion Female': 'basculegion-female',
+            'Oinkologne Male': 'oinkologne-male',
+            'Oinkologne Female': 'oinkologne-female',
             
             // OUTROS
             'Family of Four': 'maushold-family4',
@@ -208,6 +209,10 @@
 
                 document.getElementById('pokemonCount').textContent = resultado.total;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
+                
+                // Carregar TMs da aba TMs para cross-reference na Pokédex
+                await carregarDadosTMs();
+                
                 renderizarPokemons(todosPokemons);
 
                 // Configurar infinite scroll após primeiro carregamento
@@ -253,12 +258,6 @@
                 const defesaEsp = pokemon['Sp.Defense'] || '0';
                 const velocidade = pokemon['Speed'] || '0';
                 
-                // ⭐ NOVOS DADOS: TMs ⭐
-                const tmNumero = pokemon['TM'] || '';
-                const tmNome = pokemon['Nome do TM'] || '';
-                const tmCategoria = pokemon['Categoria'] || '';
-                const tmsTexto = tmNumero ? `${tmNumero} - ${tmNome}` : 'Sem TMs registradas';
-                
                 // 📍 PROCESSAR LOCALIZAÇÃO COM FORMATAÇÃO
                 let localizacaoHTML = '';
                 if (localizacao && localizacao !== 'Não informado') {
@@ -284,6 +283,9 @@
                 const nomeBase = evolucao ? nomePokemon : '';
                 const nomeParaBusca = evolucao || nomePokemon;  // Nome usado para buscar/atualizar
                 const imagemUrl = obterImagemPokemon(nomePrincipal, nomeBase);
+                
+                // ⭐ TMs da aba TMs (cross-reference) ⭐
+                const tmsDoPokemons = obterTMsDoPokemon(nomePrincipal);
                 
                 const card = document.createElement('div');
                 card.className = 'pokemon-card';
@@ -342,18 +344,18 @@
                         <div>${sugestaoLocalizacao}</div>
                     </div>
                     ` : ''}
-                    <button class="btn-sugerir-local" onclick="abrirModalSugestao('${nomeParaBusca.replace(/'/g, "\\'")}', '${(sugestaoLocalizacao || '').toString().replace(/'/g, "\\'")}')">
-                        <i class="fas fa-edit"></i> Sugerir Localização
-                    </button>
-                    <!-- ⭐ NOVA SEÇÃO: TMs / Moves ⭐ -->
+                    <!-- ⭐ SEÇÃO: TMs / Moves (da aba TMs) ⭐ -->
                     <div class="pokemon-tms">
                         <div class="tms-title">
                             <i class="fas fa-compact-disc"></i> TMs / Moves
                         </div>
                         <div class="tms-content">
-                            ${tmsTexto}
+                            ${gerarTMsHTML(tmsDoPokemons)}
                         </div>
-                    </div>`;
+                    </div>
+                    <button class="btn-sugerir" onclick="abrirModalSugestaoUnificado('${nomeParaBusca.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-lightbulb"></i> Sugerir
+                    </button>`;
                 
                 container.appendChild(card);
             });
@@ -415,15 +417,11 @@
                     const ataqueEsp = pokemon['Sp.Attack'] || '0';
                     const defesaEsp = pokemon['Sp.Defense'] || '0';
                     const velocidade = pokemon['Speed'] || '0';
-                    const tmNumero = pokemon['TM'] || '';
-                    const tmNome = pokemon['Nome do TM'] || '';
-                    const tmCategoria = pokemon['Categoria'] || '';
-                    const tmsTexto = tmNumero ? `${tmNumero} - ${tmNome}` : 'Sem TMs registradas';
-                    
                     const nomePrincipal = evolucao || nomePokemon;
                     const nomeBase = evolucao ? nomePokemon : '';
                     const nomeParaBusca = evolucao || nomePokemon;
                     const imagemUrl = obterImagemPokemon(nomePrincipal, nomeBase);
+                    const tmsDoPokemons = obterTMsDoPokemon(nomePrincipal);
                     
                     const card = document.createElement('div');
                     card.className = 'pokemon-card';
@@ -472,8 +470,16 @@
                             <i class="fas fa-map-marker-alt"></i> ${localizacao}
                         </div>
                         <div class="pokemon-tms">
-                            <i class="fas fa-compact-disc"></i> ${tmsTexto}
+                            <div class="tms-title">
+                                <i class="fas fa-compact-disc"></i> TMs / Moves
+                            </div>
+                            <div class="tms-content">
+                                ${gerarTMsHTML(tmsDoPokemons)}
+                            </div>
                         </div>
+                        <button class="btn-sugerir" onclick="abrirModalSugestaoUnificado('${nomeParaBusca.replace(/'/g, "\\'")}')"> 
+                            <i class="fas fa-lightbulb"></i> Sugerir
+                        </button>
                         ${isAdmin() ? `
                         <button class="btn-edit" onclick="abrirModalEdicao('${nomeParaBusca.replace(/'/g, "\\'")}')">
                             <i class="fas fa-edit"></i> Editar
@@ -702,7 +708,8 @@
                         nome: (tm['NOME DO TM'] || ''),
                         tipagem: (tm['TIPAGEM DO TM'] || 'Normal'),
                         pokemon: (tm['ORIGEM DO TM'] || ''),
-                        categoria: (tm['ORIGEM DO TM2'] || 'Spawn')
+                        categoria: (tm['ORIGEM DO TM2'] || 'Spawn'),
+                        sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || '')
                     }));
                     console.log('✅ TMs carregados da planilha:', todosTMs.length);
                 } else {
@@ -716,6 +723,63 @@
                 console.error('❌ Erro ao carregar TMs da planilha:', erro);
                 container.innerHTML = '<div class="error"><i class="fas fa-exclamation-triangle"></i><p>Erro ao carregar TMs</p></div>';
             }
+        }
+
+        // ⭐ Carregar dados de TMs para Pokédex (sem renderizar)
+        async function carregarDadosTMs() {
+            if (todosTMs.length > 0) return;
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?acao=obter_tms');
+                const resultado = await response.json();
+                if (resultado.success && resultado.data && resultado.data.length > 0) {
+                    todosTMs = resultado.data.map(tm => ({
+                        tipo: (tm['TIPO DE ITEM'] || 'TM'),
+                        numero: String(tm['NUMERO DO TM'] || ''),
+                        nome: (tm['NOME DO TM'] || ''),
+                        tipagem: (tm['TIPAGEM DO TM'] || 'Normal'),
+                        pokemon: (tm['ORIGEM DO TM'] || ''),
+                        categoria: (tm['ORIGEM DO TM2'] || 'Spawn'),
+                        sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || '')
+                    }));
+                    console.log('✅ TMs carregados para Pokédex:', todosTMs.length);
+                }
+            } catch (e) {
+                console.warn('⚠️ Erro ao carregar TMs para Pokédex:', e);
+            }
+        }
+
+        // ⭐ Buscar TMs de um Pokémon específico (cross-reference com aba TMs)
+        function obterTMsDoPokemon(nomePokemon) {
+            if (!todosTMs || todosTMs.length === 0) return [];
+            const nomeNorm = normalizarNome(nomePokemon);
+            return todosTMs.filter(tm => {
+                const origemNorm = normalizarNome(tm.pokemon);
+                return origemNorm === nomeNorm;
+            });
+        }
+
+        // ⭐ Gerar HTML dos TMs para o card da Pokédex
+        function gerarTMsHTML(tmsDoPokemons) {
+            if (!tmsDoPokemons || tmsDoPokemons.length === 0) {
+                return '<span class="sem-tms">Sem TMs registradas</span>';
+            }
+            return tmsDoPokemons.map(function(tm) {
+                var numFormatado = tm.tipo === 'HM' 
+                    ? 'HM' + String(tm.numero).padStart(2, '0')
+                    : 'TM' + String(tm.numero).padStart(2, '0');
+                var tipagem = (tm.tipagem || 'Normal').toLowerCase();
+                var discoSrc = 'IMAGENS/imagens-itens/tipagens de tm/' + (tm.tipagem || 'Normal').replace(/ /g, '_') + '_type_tm_disk.png';
+                var html = '<div class="pokedex-tm-item">';
+                html += '<img class="pokedex-tm-disco" src="' + discoSrc + '" alt="' + numFormatado + '" onerror="this.src=\'IMAGENS/imagens-itens/tipagens de tm/Normal_type_tm_disk.png\'">';
+                html += '<span class="pokedex-tm-numero">' + numFormatado + '</span>';
+                html += '<span class="pokedex-tm-nome">' + tm.nome + '</span>';
+                html += '<span class="type-badge type-' + tipagem + '" style="font-size:0.7em;padding:2px 8px;">' + tm.tipagem + '</span>';
+                if (tm.sugestao) {
+                    html += '<div class="pokedex-tm-sugestao"><i class="fas fa-lightbulb"></i> ' + tm.sugestao + '</div>';
+                }
+                html += '</div>';
+                return html;
+            }).join('');
         }
 
         function carregarTasks() {
@@ -1227,37 +1291,6 @@
             });
         }
 
-        function iniciarLogin() {
-            google.accounts.id.renderButton(
-                document.getElementById('loginBtn'),
-                { 
-                    theme: 'dark', 
-                    size: 'medium',
-                    type: 'standard',
-                    text: 'signin_with'
-                }
-            );
-            google.accounts.id.prompt();
-        }
-
-        function aoFazerLogin(response) {
-            // Decodificar JWT
-            const base64Url = response.credential.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-
-            const dados = JSON.parse(jsonPayload);
-            usuarioLogado = {
-                nome: dados.name,
-                email: dados.email,
-                foto: dados.picture
-            };
-
-            atualizarTelaLogin();
-        }
-
         function atualizarTelaLogin() {
             const btnLogin = document.getElementById('loginBtn');
             const userInfo = document.getElementById('userInfo');
@@ -1665,114 +1698,472 @@
         }
 
         // ========================
-        // 💡 SISTEMA DE SUGESTÕES DE LOCALIZAÇÃO
+        // 💡 SISTEMA UNIFICADO DE SUGESTÕES
         // ========================
-        
-        window.abrirModalSugestao = function(nomePokemon, sugestaoAtual) {
+
+        // Carregar base de atacks
+        async function carregarDadosAtacks() {
+            if (todosAtacks.length > 0) return;
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?acao=obter_atacks');
+                const resultado = await response.json();
+                if (resultado.success && resultado.data && resultado.data.length > 0) {
+                    todosAtacks = resultado.data;
+                    console.log('✅ Atacks carregados:', todosAtacks.length);
+                }
+            } catch (e) {
+                console.warn('⚠️ Erro ao carregar Atacks:', e);
+            }
+        }
+
+        // Estilos inline reutilizáveis para o modal
+        const modalStyles = {
+            overlay: 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;',
+            box: 'background:linear-gradient(135deg, #1a2980 0%, #0f3460 100%);padding:30px;border-radius:20px;max-width:650px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:2px solid rgba(255,215,0,0.3);max-height:90vh;overflow-y:auto;',
+            title: 'color:#ffd700;margin:0 0 20px 0;font-size:22px;display:flex;align-items:center;gap:10px;',
+            label: 'color:#ffd700;display:block;margin-bottom:8px;font-weight:600;font-size:14px;',
+            select: 'width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;margin-bottom:15px;font-family:Arial;',
+            input: 'width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;margin-bottom:15px;font-family:Arial;box-sizing:border-box;',
+            textarea: 'width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;min-height:80px;resize:vertical;font-family:Arial;margin-bottom:15px;box-sizing:border-box;',
+            btnSalvar: 'flex:1;padding:12px;background:linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:15px;transition:all 0.3s;',
+            btnCancelar: 'flex:1;padding:12px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-weight:600;cursor:pointer;font-size:15px;transition:all 0.3s;',
+            btnAdd: 'padding:10px 20px;background:linear-gradient(135deg, #00b894 0%, #00cec9 100%);border:none;border-radius:10px;color:#fff;font-weight:700;cursor:pointer;font-size:14px;margin-top:10px;transition:all 0.3s;display:inline-flex;align-items:center;gap:6px;',
+            btnOpcao: 'flex:1;padding:16px;background:rgba(255,255,255,0.08);border:2px solid rgba(255,215,0,0.3);border-radius:15px;color:#fff;font-weight:600;cursor:pointer;font-size:15px;transition:all 0.3s;display:flex;flex-direction:column;align-items:center;gap:10px;',
+            subtitle: 'color:#fff;margin-bottom:20px;font-size:15px;',
+            divider: 'border:none;border-top:1px solid rgba(255,215,0,0.2);margin:15px 0;'
+        };
+
+        window.abrirModalSugestaoUnificado = function(nomePokemon) {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (!user.email) {
+                alert('Você precisa estar logado para fazer sugestões!');
+                return;
+            }
+
             const modal = document.createElement('div');
-            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
-            
+            modal.id = 'modalSugestao';
+            modal.style.cssText = modalStyles.overlay;
             modal.innerHTML = `
-                <div style="background:linear-gradient(135deg, #1a2980 0%, #0f3460 100%);padding:30px;border-radius:20px;max-width:600px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:2px solid rgba(255,215,0,0.3);">
-                    <h2 style="color:#ffd700;margin:0 0 20px 0;font-size:24px;"><i class="fas fa-lightbulb"></i> Sugerir Localização</h2>
-                    <p style="color:#fff;margin-bottom:20px;"><strong>${nomePokemon}</strong></p>
-                    
-                    <label style="color:#ffd700;display:block;margin-bottom:8px;font-weight:600;">💡 Sua sugestão de localização:</label>
-                    <textarea id="sugestaoInput" placeholder="Ex: Encontrado na rota 5, próximo ao lago..." style="width:100%;padding:12px;border-radius:10px;border:2px solid rgba(255,215,0,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:14px;min-height:100px;resize:vertical;font-family:Arial;">${sugestaoAtual}</textarea>
-                    
-                    <div style="display:flex;gap:10px;margin-top:20px;">
-                        <button onclick="salvarSugestao('${nomePokemon.replace(/'/g, "\\'")}', this)" style="flex:1;padding:12px;background:linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);border:none;border-radius:10px;color:#000;font-weight:700;cursor:pointer;font-size:16px;transition:all 0.3s;">
-                            <i class="fas fa-save"></i> Salvar
+                <div style="${modalStyles.box}">
+                    <h2 style="${modalStyles.title}"><i class="fas fa-lightbulb"></i> Sugerir - ${nomePokemon}</h2>
+                    <p style="${modalStyles.subtitle}">Selecione o tipo de sugestão:</p>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <button onclick="mostrarFormLocalizacao('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnOpcao}">
+                            <i class="fas fa-map-marker-alt" style="font-size:28px;color:#ffd700;"></i>
+                            Localização
                         </button>
-                        <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;padding:12px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);border-radius:10px;color:#fff;font-weight:600;cursor:pointer;font-size:16px;transition:all 0.3s;">
-                            <i class="fas fa-times"></i> Cancelar
+                        <button onclick="mostrarFormAtacks('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnOpcao}">
+                            <i class="fas fa-fist-raised" style="font-size:28px;color:#ff6b6b;"></i>
+                            Atacks
+                        </button>
+                        <button onclick="mostrarFormTMs('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnOpcao}">
+                            <i class="fas fa-compact-disc" style="font-size:28px;color:#a29bfe;"></i>
+                            TMs
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:20px;">
+                        <button onclick="this.closest('#modalSugestao').remove()" style="${modalStyles.btnCancelar};width:100%;">
+                            <i class="fas fa-times"></i> Fechar
                         </button>
                     </div>
                 </div>
             `;
-            
             document.body.appendChild(modal);
-            setTimeout(() => document.getElementById('sugestaoInput').focus(), 100);
         };
-        
-        window.salvarSugestao = async function(nomePokemon, botao) {
-            const sugestao = document.getElementById('sugestaoInput').value.trim();
+
+        // ===== 1. LOCALIZAÇÃO =====
+        window.mostrarFormLocalizacao = function(nomePokemon) {
+            const modal = document.getElementById('modalSugestao');
+            if (!modal) return;
+            modal.innerHTML = `
+                <div style="${modalStyles.box}">
+                    <h2 style="${modalStyles.title}"><i class="fas fa-map-marker-alt"></i> Sugerir Localização</h2>
+                    <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
+                    <label style="${modalStyles.label}">📍 Sua sugestão de localização:</label>
+                    <textarea id="sugestaoLocInput" placeholder="Ex: Encontrado na rota 5, próximo ao lago..." style="${modalStyles.textarea}"></textarea>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="salvarSugestaoLocalizacao('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <button onclick="abrirModalSugestaoUnificado('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnCancelar}">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.salvarSugestaoLocalizacao = async function(nomePokemon, botao) {
+            const sugestao = document.getElementById('sugestaoLocInput').value.trim();
+            if (!sugestao) { alert('Digite uma sugestão!'); return; }
             const user = JSON.parse(localStorage.getItem('user') || '{}');
-            
-            if (!user.email) {
-                alert('Você precisa estar logado para sugerir localizações!');
-                return;
-            }
-            
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-            
             try {
-                // Usar a MESMA URL do script.js (Apps Script de Pokémon)
-                const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwxZ7bdw1o-1uTM1trZ_ixCakyH9qYM-VG1_mDvyByfzLuTMy-4QzsYalTEMbCfFnLQNg/exec';
-                
-                const payload = {
-                    action: 'atualizarSugestao',
-                    nomePokemon: nomePokemon,
-                    sugestao: sugestao,
-                    email: user.email,
-                    authToken: user.authToken
-                };
-                
-                console.log('📤 ENVIANDO PARA APPS SCRIPT:', payload);
-                console.log('📍 URL:', APPS_SCRIPT_URL);
-                
-                const resposta = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    // Usar Content-Type "text/plain" para evitar preflight CORS
-                    headers: {
-                        'Content-Type': 'text/plain'
-                    },
-                    body: JSON.stringify(payload)
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'atualizarSugestao', nomePokemon, sugestao, email: user.email, authToken: user.authToken })
                 });
-                
-                console.log('📥 RESPOSTA:', resposta);
-                console.log('📥 Status:', resposta.status);
-                console.log('📥 StatusText:', resposta.statusText);
-                console.log('📥 OK?:', resposta.ok);
-                
-                if (!resposta.ok) {
-                    throw new Error(`HTTP ${resposta.status}: ${resposta.statusText}`);
-                }
-                
-                const textoResposta = await resposta.text();
-                console.log('📥 TEXTO RESPOSTA:', textoResposta);
-                
-                let resultado;
-                try {
-                    resultado = JSON.parse(textoResposta);
-                } catch (e) {
-                    console.error('❌ Erro ao parsear JSON:', e);
-                    console.error('❌ Resposta recebida:', textoResposta);
-                    throw new Error('Resposta inválida do servidor');
-                }
-                
-                console.log('📋 RESULTADO:', resultado);
-                
-                if (resultado.sucesso) {
-                    console.log('✅ Sugestão salva com sucesso!');
+                const resultado = JSON.parse(await resp.text());
+                if (resultado.sucesso || resultado.success) {
+                    document.getElementById('modalSugestao').remove();
+                    setTimeout(() => location.reload(), 300);
                 } else {
-                    console.error('❌ Erro do servidor:', resultado.mensagem);
-                    alert('Erro: ' + resultado.mensagem);
-                    botao.disabled = false;
-                    botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
-                    return;
+                    alert('Erro: ' + (resultado.mensagem || resultado.message));
+                    botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
                 }
-                
-                // Fechar modal e recarregar
-                document.querySelector('[style*=fixed]').remove();
-                setTimeout(() => location.reload(), 300);
-                
-            } catch (erro) {
-                console.error('❌ Erro ao salvar sugestão:', erro);
+            } catch (e) {
                 alert('Erro ao salvar. Tente novamente.');
-                botao.disabled = false;
-                botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+                botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            }
+        };
+
+        // ===== 2. ATACKS =====
+        window.mostrarFormAtacks = async function(nomePokemon) {
+            const modal = document.getElementById('modalSugestao');
+            if (!modal) return;
+            
+            // Carregar atacks se necessário
+            await carregarDadosAtacks();
+            
+            let slotsHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                slotsHTML += `<option value="m${i}">M${i}</option>`;
+            }
+            
+            modal.innerHTML = `
+                <div style="${modalStyles.box}">
+                    <h2 style="${modalStyles.title}"><i class="fas fa-fist-raised"></i> Sugerir Atack</h2>
+                    <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
+                    
+                    <label style="${modalStyles.label}">🎯 Slot do Atack:</label>
+                    <select id="slotAtack" style="${modalStyles.select}">
+                        ${slotsHTML}
+                    </select>
+                    
+                    <label style="${modalStyles.label}">⚔️ Nome do Atack:</label>
+                    <input id="nomeAtackInput" type="text" list="listaAtacks" placeholder="Digite o nome do atack..." style="${modalStyles.input}">
+                    <datalist id="listaAtacks">
+                        ${todosAtacks.map(a => '<option value="' + (a['ATACK'] || a.ATACK || '') + '">').join('')}
+                    </datalist>
+                    
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="salvarSugestaoAtack('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <button onclick="abrirModalSugestaoUnificado('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnCancelar}">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                    </div>
+                    <hr style="${modalStyles.divider}">
+                    <p style="color:#a0e7ff;font-size:13px;margin-bottom:10px;">Atack não existe na base? Adicione:</p>
+                    <button onclick="mostrarFormAdicionarAtack('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnAdd}">
+                        <i class="fas fa-plus"></i> Adicionar novo Atack
+                    </button>
+                </div>
+            `;
+        };
+
+        window.salvarSugestaoAtack = async function(nomePokemon, botao) {
+            const slot = document.getElementById('slotAtack').value;
+            const nomeAtack = document.getElementById('nomeAtackInput').value.trim();
+            if (!nomeAtack) { alert('Digite o nome do atack!'); return; }
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'atualizarAtack', nomePokemon, slot, nomeAtack, email: user.email, authToken: user.authToken })
+                });
+                const resultado = JSON.parse(await resp.text());
+                if (resultado.sucesso || resultado.success) {
+                    document.getElementById('modalSugestao').remove();
+                    setTimeout(() => location.reload(), 300);
+                } else {
+                    alert('Erro: ' + (resultado.mensagem || resultado.message));
+                    botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+                }
+            } catch (e) {
+                alert('Erro ao salvar. Tente novamente.');
+                botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            }
+        };
+
+        // Formulário para adicionar novo atack à base
+        window.mostrarFormAdicionarAtack = function(nomePokemon) {
+            const modal = document.getElementById('modalSugestao');
+            if (!modal) return;
+            
+            const tiposOptions = ['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'].map(t => '<option value="'+t+'">'+t+'</option>').join('');
+            
+            modal.innerHTML = `
+                <div style="${modalStyles.box}">
+                    <h2 style="${modalStyles.title}"><i class="fas fa-plus-circle"></i> Adicionar Novo Atack</h2>
+                    
+                    <label style="${modalStyles.label}">Nome do Atack:</label>
+                    <input id="novoAtackNome" type="text" placeholder="Ex: Solar Blade" style="${modalStyles.input}">
+                    
+                    <label style="${modalStyles.label}">Tipo:</label>
+                    <select id="novoAtackType" style="${modalStyles.select}">
+                        ${tiposOptions}
+                    </select>
+                    
+                    <label style="${modalStyles.label}">Categoria:</label>
+                    <select id="novoAtackCategoria" style="${modalStyles.select}">
+                        <option value="Physical">Physical</option>
+                        <option value="Special">Special</option>
+                        <option value="Status">Status</option>
+                    </select>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                        <div>
+                            <label style="${modalStyles.label}">PP:</label>
+                            <input id="novoAtackPP" type="number" placeholder="PP" style="${modalStyles.input}">
+                        </div>
+                        <div>
+                            <label style="${modalStyles.label}">Power:</label>
+                            <input id="novoAtackPower" type="number" placeholder="Power" style="${modalStyles.input}">
+                        </div>
+                        <div>
+                            <label style="${modalStyles.label}">Accuracy:</label>
+                            <input id="novoAtackAccuracy" type="number" placeholder="Accuracy" style="${modalStyles.input}">
+                        </div>
+                    </div>
+                    
+                    <label style="${modalStyles.label}">GEN:</label>
+                    <input id="novoAtackGen" type="number" placeholder="Ex: 1, 2, 3..." style="${modalStyles.input}">
+                    
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="salvarNovoAtack('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
+                            <i class="fas fa-save"></i> Salvar Atack
+                        </button>
+                        <button onclick="mostrarFormAtacks('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnCancelar}">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.salvarNovoAtack = async function(nomePokemon, botao) {
+            const nome = document.getElementById('novoAtackNome').value.trim();
+            if (!nome) { alert('Digite o nome do atack!'); return; }
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'adicionarAtack',
+                        atack: nome,
+                        type: document.getElementById('novoAtackType').value,
+                        categoria: document.getElementById('novoAtackCategoria').value,
+                        pp: document.getElementById('novoAtackPP').value || '',
+                        power: document.getElementById('novoAtackPower').value || '',
+                        accuracy: document.getElementById('novoAtackAccuracy').value || '',
+                        gen: document.getElementById('novoAtackGen').value || '',
+                        email: user.email,
+                        authToken: user.authToken
+                    })
+                });
+                const resultado = JSON.parse(await resp.text());
+                if (resultado.sucesso || resultado.success) {
+                    alert('Atack adicionado com sucesso!');
+                    todosAtacks.push({ ATACK: nome }); // Atualizar cache local
+                    mostrarFormAtacks(nomePokemon); // Voltar ao form de atacks
+                } else {
+                    alert('Erro: ' + (resultado.mensagem || resultado.message));
+                    botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar Atack';
+                }
+            } catch (e) {
+                alert('Erro ao salvar. Tente novamente.');
+                botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar Atack';
+            }
+        };
+
+        // ===== 3. TMs =====
+        window.mostrarFormTMs = async function(nomePokemon) {
+            const modal = document.getElementById('modalSugestao');
+            if (!modal) return;
+            await carregarDadosTMs();
+            
+            modal.innerHTML = `
+                <div style="${modalStyles.box}">
+                    <h2 style="${modalStyles.title}"><i class="fas fa-compact-disc"></i> Sugerir TM</h2>
+                    <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
+                    <p style="${modalStyles.subtitle}">O TM já existe na base?</p>
+                    <div style="display:flex;gap:12px;">
+                        <button onclick="mostrarFormTMExistente('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnOpcao}">
+                            <i class="fas fa-check-circle" style="font-size:24px;color:#00b894;"></i>
+                            TM Existente
+                        </button>
+                        <button onclick="mostrarFormTMNovo('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnOpcao}">
+                            <i class="fas fa-plus-circle" style="font-size:24px;color:#fdcb6e;"></i>
+                            Novo TM
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:10px;margin-top:15px;">
+                        <button onclick="abrirModalSugestaoUnificado('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnCancelar};width:100%;">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        // TM Existente - sugerir pokémon que dropa
+        window.mostrarFormTMExistente = function(nomePokemon) {
+            const modal = document.getElementById('modalSugestao');
+            if (!modal) return;
+            
+            const tmOptions = todosTMs.map(function(tm) {
+                const numFormatado = tm.tipo === 'HM' 
+                    ? 'HM' + String(tm.numero).padStart(2, '0')
+                    : 'TM' + String(tm.numero).padStart(2, '0');
+                return '<option value="' + tm.numero + '">' + numFormatado + ' - ' + tm.nome + ' (' + tm.tipagem + ')</option>';
+            }).join('');
+
+            modal.innerHTML = `
+                <div style="${modalStyles.box}">
+                    <h2 style="${modalStyles.title}"><i class="fas fa-compact-disc"></i> Sugerir Pokémon para TM</h2>
+                    <p style="${modalStyles.subtitle}"><strong>${nomePokemon}</strong></p>
+                    
+                    <label style="${modalStyles.label}">💿 Selecione o TM:</label>
+                    <select id="tmSelecionado" style="${modalStyles.select}">
+                        <option value="">-- Selecione um TM --</option>
+                        ${tmOptions}
+                    </select>
+                    
+                    <label style="${modalStyles.label}">🐾 Pokémon que dropa / Sugestão:</label>
+                    <textarea id="sugestaoTMInput" placeholder="Ex: Charizard dropa na rota 5..." style="${modalStyles.textarea}"></textarea>
+                    
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="salvarSugestaoTMExistente('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <button onclick="mostrarFormTMs('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnCancelar}">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.salvarSugestaoTMExistente = async function(nomePokemon, botao) {
+            const tmNumero = document.getElementById('tmSelecionado').value;
+            const sugestao = document.getElementById('sugestaoTMInput').value.trim();
+            if (!tmNumero) { alert('Selecione um TM!'); return; }
+            if (!sugestao) { alert('Digite a sugestão!'); return; }
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'atualizarSugestaoTM', tmNumero, sugestao, nomePokemon, email: user.email, authToken: user.authToken })
+                });
+                const resultado = JSON.parse(await resp.text());
+                if (resultado.sucesso || resultado.success) {
+                    document.getElementById('modalSugestao').remove();
+                    setTimeout(() => location.reload(), 300);
+                } else {
+                    alert('Erro: ' + (resultado.mensagem || resultado.message));
+                    botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+                }
+            } catch (e) {
+                alert('Erro ao salvar. Tente novamente.');
+                botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
+            }
+        };
+
+        // Novo TM - adicionar à base de TMs
+        window.mostrarFormTMNovo = function(nomePokemon) {
+            const modal = document.getElementById('modalSugestao');
+            if (!modal) return;
+            
+            const tiposOptions = ['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'].map(t => '<option value="'+t+'">'+t+'</option>').join('');
+
+            modal.innerHTML = `
+                <div style="${modalStyles.box}">
+                    <h2 style="${modalStyles.title}"><i class="fas fa-plus-circle"></i> Adicionar Novo TM</h2>
+                    
+                    <label style="${modalStyles.label}">Tipo de Item:</label>
+                    <input type="text" value="TM" disabled style="${modalStyles.input};opacity:0.6;">
+                    
+                    <label style="${modalStyles.label}">Número do TM:</label>
+                    <input id="novoTMNumero" type="number" placeholder="Ex: 12" style="${modalStyles.input}">
+                    
+                    <label style="${modalStyles.label}">Nome do TM:</label>
+                    <input id="novoTMNome" type="text" placeholder="Ex: Solar Blade" style="${modalStyles.input}">
+                    
+                    <label style="${modalStyles.label}">Tipagem do TM:</label>
+                    <select id="novoTMTipagem" style="${modalStyles.select}">
+                        ${tiposOptions}
+                    </select>
+                    
+                    <label style="${modalStyles.label}">Origem do TM (Pokémon):</label>
+                    <input id="novoTMOrigem" type="text" placeholder="Ex: Charizard" style="${modalStyles.input}">
+                    
+                    <label style="${modalStyles.label}">Tipo de Drop:</label>
+                    <select id="novoTMTipoDrop" style="${modalStyles.select}">
+                        <option value="Spawn">Spawn</option>
+                        <option value="Craft">Craft</option>
+                        <option value="Event">Event</option>
+                        <option value="desconhecido">Desconhecido</option>
+                    </select>
+                    
+                    <label style="${modalStyles.label}">Sugestão de Pokémon:</label>
+                    <input id="novoTMSugestao" type="text" placeholder="Ex: Pokémon que dropa este TM..." style="${modalStyles.input}">
+                    
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="salvarNovoTM('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
+                            <i class="fas fa-save"></i> Salvar TM
+                        </button>
+                        <button onclick="mostrarFormTMs('${nomePokemon.replace(/'/g, "\\'")}')" style="${modalStyles.btnCancelar}">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.salvarNovoTM = async function(nomePokemon, botao) {
+            const numero = document.getElementById('novoTMNumero').value.trim();
+            const nome = document.getElementById('novoTMNome').value.trim();
+            if (!numero || !nome) { alert('Preencha número e nome do TM!'); return; }
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            botao.disabled = true;
+            botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'adicionarTM',
+                        tipoItem: 'TM',
+                        numero: numero,
+                        nome: nome,
+                        tipagem: document.getElementById('novoTMTipagem').value,
+                        origem: document.getElementById('novoTMOrigem').value.trim(),
+                        tipoDrop: document.getElementById('novoTMTipoDrop').value,
+                        sugestao: document.getElementById('novoTMSugestao').value.trim(),
+                        email: user.email,
+                        authToken: user.authToken
+                    })
+                });
+                const resultado = JSON.parse(await resp.text());
+                if (resultado.sucesso || resultado.success) {
+                    alert('TM adicionado com sucesso!');
+                    document.getElementById('modalSugestao').remove();
+                    setTimeout(() => location.reload(), 300);
+                } else {
+                    alert('Erro: ' + (resultado.mensagem || resultado.message));
+                    botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar TM';
+                }
+            } catch (e) {
+                alert('Erro ao salvar. Tente novamente.');
+                botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar TM';
             }
         };
 
@@ -2038,13 +2429,6 @@
                 console.error('❌ Erro ao processar texto:', erro);
                 return [];
             }
-        }
-
-        // Inicializar busca por imagem quando página carregar
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', configurarBuscaPorImagem);
-        } else {
-            configurarBuscaPorImagem();
         }
 
         // Converter arquivo para base64

@@ -129,6 +129,18 @@ function doPost(e) {
       case 'atualizarSugestao':
         result = handleAtualizarSugestao(planilha, dados);
         break;
+      case 'atualizarSugestaoTM':
+        result = handleAtualizarSugestaoTM(planilha, dados);
+        break;
+      case 'atualizarAtack':
+        result = handleAtualizarAtack(planilha, dados);
+        break;
+      case 'adicionarAtack':
+        result = handleAdicionarAtack(planilha, dados);
+        break;
+      case 'adicionarTM':
+        result = handleAdicionarTM(planilha, dados);
+        break;
       case 'salvarBuild':
         result = handleSalvarBuild(planilha, dados);
         break;
@@ -242,6 +254,35 @@ function doGet(e) {
         success: true,
         data: tms,
         total: tms.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Obter Atacks da aba "ATACKS"
+    if (acao === 'obter_atacks') {
+      const abaAtacks = planilha.getSheetByName('ATACKS');
+      if (!abaAtacks) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          message: 'Aba ATACKS não encontrada'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const dados = abaAtacks.getDataRange().getValues();
+      const cabecalho = dados[0];
+      const linhas = dados.slice(1);
+      
+      const atacks = linhas.map(linha => {
+        const obj = {};
+        cabecalho.forEach((coluna, index) => {
+          obj[coluna] = linha[index];
+        });
+        return obj;
+      }).filter(a => a['ATACK']);
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: atacks,
+        total: atacks.length
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -822,6 +863,164 @@ function handleAtualizarSugestao(planilha, dados) {
       sucesso: false,
       mensagem: 'Erro: ' + erro.toString()
     };
+  }
+}
+
+/**
+ * Atualizar sugestão de TM/Pokémon na aba TMs
+ */
+function handleAtualizarSugestaoTM(planilha, dados) {
+  try {
+    const abaTMs = planilha.getSheetByName('TMs');
+    if (!abaTMs) {
+      return { success: false, message: 'Aba TMs não encontrada' };
+    }
+    
+    const todosOsDados = abaTMs.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+    
+    const colNumero = cabecalho.indexOf('NUMERO DO TM');
+    const colSugestao = cabecalho.indexOf('SUGESTÃO DE POKEMON') !== -1 
+      ? cabecalho.indexOf('SUGESTÃO DE POKEMON') 
+      : cabecalho.indexOf('SUGESTÃO DE TM/POKEMON');
+    
+    if (colNumero === -1 || colSugestao === -1) {
+      return { success: false, message: 'Colunas não encontradas na aba TMs' };
+    }
+    
+    const tmNumero = String(dados.tmNumero).trim();
+    
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if (String(todosOsDados[i][colNumero]).trim() === tmNumero) {
+        const sugestaoExistente = (todosOsDados[i][colSugestao] || '').toString();
+        const novaSugestao = sugestaoExistente 
+          ? sugestaoExistente + ' | ' + dados.sugestao + ' (' + (dados.nomePokemon || '') + ')'
+          : dados.sugestao + ' (' + (dados.nomePokemon || '') + ')';
+        
+        abaTMs.getRange(i + 1, colSugestao + 1).setValue(novaSugestao);
+        
+        return { success: true, message: 'Sugestão de TM salva com sucesso!' };
+      }
+    }
+    
+    return { success: false, message: 'TM não encontrado: TM' + tmNumero };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Atualizar atack de um Pokémon (slot m1-m10) na aba POKEDEX
+ */
+function handleAtualizarAtack(planilha, dados) {
+  try {
+    const aba = planilha.getSheets()[0]; // Aba POKEDEX
+    const nomeOriginal = dados.nomePokemon.toLowerCase().trim();
+    const slot = (dados.slot || '').toLowerCase().trim(); // m1, m2, ... m10
+    const nomeAtack = dados.nomeAtack || '';
+    
+    const todosOsDados = aba.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+    
+    // Encontrar índice da coluna do slot (m1, m2, etc.)
+    const colIndex = cabecalho.findIndex(function(col) {
+      return col.toString().toLowerCase().trim() === slot;
+    });
+    
+    if (colIndex === -1) {
+      return { success: false, message: 'Coluna ' + slot + ' não encontrada na planilha. Colunas disponíveis: ' + cabecalho.join(', ') };
+    }
+    
+    // Buscar Pokémon
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim();
+      const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim();
+      const nomeParaComparar = nomeEV || nomePokemon;
+      
+      if (nomeParaComparar === nomeOriginal) {
+        aba.getRange(i + 1, colIndex + 1).setValue(nomeAtack);
+        return { success: true, message: 'Atack ' + slot.toUpperCase() + ' atualizado para ' + nomeAtack };
+      }
+    }
+    
+    return { success: false, message: 'Pokémon não encontrado: ' + dados.nomePokemon };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Adicionar novo atack à aba ATACKS
+ */
+function handleAdicionarAtack(planilha, dados) {
+  try {
+    let abaAtacks = planilha.getSheetByName('ATACKS');
+    if (!abaAtacks) {
+      abaAtacks = planilha.insertSheet('ATACKS');
+      abaAtacks.appendRow(['ATACK', 'TYPE', 'CATEGORIA', 'PP', 'POWER', 'ACCURACY', 'GEN']);
+    }
+    
+    // Verificar se o atack já existe
+    const todosOsDados = abaAtacks.getDataRange().getValues();
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if ((todosOsDados[i][0] || '').toString().toLowerCase().trim() === (dados.atack || '').toLowerCase().trim()) {
+        return { success: false, message: 'Atack já existe: ' + dados.atack };
+      }
+    }
+    
+    abaAtacks.appendRow([
+      dados.atack || '',
+      dados.type || '',
+      dados.categoria || '',
+      dados.pp || '',
+      dados.power || '',
+      dados.accuracy || '',
+      dados.gen || ''
+    ]);
+    
+    return { success: true, message: 'Atack adicionado com sucesso!' };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Adicionar novo TM à aba TMs
+ */
+function handleAdicionarTM(planilha, dados) {
+  try {
+    let abaTMs = planilha.getSheetByName('TMs');
+    if (!abaTMs) {
+      abaTMs = planilha.insertSheet('TMs');
+      abaTMs.appendRow(['TIPO DE ITEM', 'NUMERO DO TM', 'NOME DO TM', 'TIPAGEM DO TM', 'ORIGEM DO TM', 'TIPO DE DROP', 'SUGESTÃO DE POKEMON']);
+    }
+    
+    // Verificar se TM com mesmo número já existe
+    const todosOsDados = abaTMs.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+    const colNumero = cabecalho.indexOf('NUMERO DO TM');
+    
+    if (colNumero !== -1) {
+      for (let i = 1; i < todosOsDados.length; i++) {
+        if (String(todosOsDados[i][colNumero]).trim() === String(dados.numero).trim()) {
+          return { success: false, message: 'TM com número ' + dados.numero + ' já existe' };
+        }
+      }
+    }
+    
+    abaTMs.appendRow([
+      dados.tipoItem || 'TM',
+      dados.numero || '',
+      dados.nome || '',
+      dados.tipagem || '',
+      dados.origem || '',
+      dados.tipoDrop || '',
+      dados.sugestao || ''
+    ]);
+    
+    return { success: true, message: 'TM adicionado com sucesso!' };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
   }
 }
 

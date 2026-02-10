@@ -1043,7 +1043,82 @@ footer {
     gap: 8px;
 }
 
-.btn-sugerir-local {
+/* ⭐ TMs no card da Pokédex ⭐ */
+.pokedex-tm-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    flex-wrap: wrap;
+}
+
+.pokedex-tm-item:last-child {
+    border-bottom: none;
+}
+
+.pokedex-tm-disco {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+.pokedex-tm-numero {
+    color: #ffd700;
+    font-weight: 700;
+    font-size: 0.85em;
+    min-width: 45px;
+}
+
+.pokedex-tm-nome {
+    color: #fff;
+    font-size: 0.9em;
+    flex: 1;
+}
+
+.pokedex-tm-sugestao {
+    width: 100%;
+    color: #a8e6cf;
+    font-size: 0.8em;
+    padding: 4px 0 0 36px;
+    font-style: italic;
+}
+
+.sem-tms {
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+}
+
+.btn-sugerir-tm {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 237, 78, 0.1) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 10px;
+    color: #ffd700;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-sugerir-tm:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.25) 0%, rgba(255, 237, 78, 0.2) 100%);
+    border-color: #ffd700;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
+}
+
+.btn-sugerir-tm:active {
+    transform: translateY(0);
+}
+
+.btn-sugerir {
     width: 100%;
     padding: 12px;
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 237, 78, 0.15) 100%);
@@ -1061,14 +1136,14 @@ footer {
     gap: 8px;
 }
 
-.btn-sugerir-local:hover {
+.btn-sugerir:hover {
     background: linear-gradient(135deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 237, 78, 0.25) 100%);
     border-color: #ffd700;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
 }
 
-.btn-sugerir-local:active {
+.btn-sugerir:active {
     transform: translateY(0);
 }
 
