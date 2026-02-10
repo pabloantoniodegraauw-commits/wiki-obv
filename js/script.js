@@ -1625,8 +1625,11 @@
             });
 
             overlay.innerHTML = `
-                <div style="background: linear-gradient(145deg, #1a2980, #0f3460); border-radius: 20px; padding: 30px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid #ffd700;" data-nome-real="${nomeReal}">
-                    <h2 style="color: #ffd700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                <div style="background: linear-gradient(145deg, #1a2980, #0f3460); border-radius: 20px; padding: 30px; max-width: 700px; width: 100%; max-height: 90vh; overflow-y: auto; border: 2px solid #ffd700; position: relative;" data-nome-real="${nomeReal}">
+                    <button onclick="this.closest('[style*=fixed]').remove()" style="position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; z-index: 10;" onmouseover="this.style.background='rgba(255,75,75,0.4)';this.style.borderColor='#ff4b4b'" onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.2)'">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <h2 style="color: #ffd700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; padding-right: 40px;">
                         <i class="fas fa-edit"></i> Editando: ${nomeDisplay}
                     </h2>
                     
@@ -1878,33 +1881,32 @@
                     
                     const inicio = Date.now();
                     // Incluir credenciais do admin para validação no backend
-                    try {
-                        const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
-                        payload.authToken = adminUser.authToken;
-                        payload.adminEmail = adminUser.email;
-                    } catch (e) {}
+                    const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    payload.authToken = adminUser.authToken;
+                    payload.adminEmail = adminUser.email;
 
-                    const resposta = await fetch(APPS_SCRIPT_URL, {
-                        method: 'POST',
-                        // Evitar preflight CORS usando text/plain
-                        headers: {
-                            'Content-Type': 'text/plain'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    const tempoDecorrido = Date.now() - inicio;
-                    console.log(`✅ Requisição enviada em ${tempoDecorrido}ms`);
-                    console.log('ℹ️ Status da resposta:', resposta.type, resposta.status);
+                    // Disparar TODAS as requests em paralelo (principal + atacks)
+                    const promessas = [];
 
-                    // 🎯 Salvar atacks M1-M10 (enviar cada um que mudou)
+                    // Request principal (dados do Pokémon)
+                    promessas.push(
+                        fetch(APPS_SCRIPT_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify(payload)
+                        }).then(r => r.text()).then(t => {
+                            console.log('✅ Dados principais salvos');
+                            return t;
+                        })
+                    );
+
+                    // Requests de atacks M1-M10 em paralelo
                     if (atacksMudados && atacksMudados.length > 0) {
-                        console.log('🎯 Salvando atacks M1-M10...');
-                        const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                        console.log('🎯 Salvando atacks M1-M10 em paralelo...');
                         for (const atack of atacksMudados) {
                             if (atack.nome !== undefined) {
-                                try {
-                                    await fetch(APPS_SCRIPT_URL, {
+                                promessas.push(
+                                    fetch(APPS_SCRIPT_URL, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'text/plain' },
                                         body: JSON.stringify({
@@ -1915,31 +1917,36 @@
                                             email: adminUser.email,
                                             authToken: adminUser.authToken
                                         })
-                                    });
-                                    console.log(`✅ ${atack.slot} salvo: ${atack.nome}`);
-                                } catch (e) {
-                                    console.warn(`⚠️ Erro ao salvar ${atack.slot}:`, e);
-                                }
+                                    }).then(() => {
+                                        console.log(`✅ ${atack.slot} salvo: ${atack.nome}`);
+                                    }).catch(e => {
+                                        console.warn(`⚠️ Erro ao salvar ${atack.slot}:`, e);
+                                    })
+                                );
                             }
                         }
                     }
-                    
-                    // Fechar modal e recarregar página
-                    document.querySelector('[style*=fixed]').remove();
-                    setTimeout(() => location.reload(), 300);
+
+                    // Fechar modal IMEDIATAMENTE (não esperar as requests)
+                    const overlay = document.querySelector('[style*=fixed]');
+                    if (overlay) overlay.remove();
+
+                    // Aguardar todas as requests em background
+                    Promise.all(promessas).then(() => {
+                        const tempoDecorrido = Date.now() - inicio;
+                        console.log(`✅ Todas as alterações salvas em ${tempoDecorrido}ms`);
+                    }).catch(err => {
+                        console.error('⚠️ Erro parcial ao salvar:', err);
+                    });
                     
                 } catch (erro) {
                     console.error('❌ Erro ao salvar no Google Sheets:', erro);
-                    console.error('Detalhes do erro:', erro.message, erro.stack);
-                    
-                    // Fechar modal e recarregar página
-                    document.querySelector('[style*=fixed]').remove();
-                    setTimeout(() => location.reload(), 500);
+                    const overlay = document.querySelector('[style*=fixed]');
+                    if (overlay) overlay.remove();
                 }
             } else {
-                // Fechar modal e recarregar página
-                document.querySelector('[style*=fixed]').remove();
-                setTimeout(() => location.reload(), 500);
+                const overlay = document.querySelector('[style*=fixed]');
+                if (overlay) overlay.remove();
             }
         }
         
