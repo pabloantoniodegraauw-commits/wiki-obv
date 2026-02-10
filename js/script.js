@@ -241,14 +241,16 @@
         
         // Função auxiliar para buscar sugestão de localização independente do nome exato da coluna
         function obterSugestaoLocalizacao(pokemon) {
-            // Tentar nomes conhecidos primeiro
-            if (pokemon['SUGESTÃO LOCALIZAÇÃO']) return pokemon['SUGESTÃO LOCALIZAÇÃO'];
-            if (pokemon['SUGESTÃO DE LOCALIZAÇÃO']) return pokemon['SUGESTÃO DE LOCALIZAÇÃO'];
+            // Chave ASCII limpa enviada pelo backend (coluna F, índice 5) - MAIS CONFIÁVEL
+            if (pokemon['SUGESTAO_LOC']) return pokemon['SUGESTAO_LOC'];
+            // Fallbacks por nome da coluna com acentos
+            if (pokemon['SUGEST\u00C3O LOCALIZA\u00C7\u00C3O']) return pokemon['SUGEST\u00C3O LOCALIZA\u00C7\u00C3O'];
+            if (pokemon['SUGEST\u00C3O DE LOCALIZA\u00C7\u00C3O']) return pokemon['SUGEST\u00C3O DE LOCALIZA\u00C7\u00C3O'];
             if (pokemon['SUGESTAO LOCALIZACAO']) return pokemon['SUGESTAO LOCALIZACAO'];
-            // Busca genérica: qualquer chave que contenha SUGEST e LOCAL
+            // Busca genérica: remover acentos e comparar
             const chave = Object.keys(pokemon).find(k => {
-                const upper = k.toUpperCase();
-                return upper.includes('SUGEST') && upper.includes('LOCAL');
+                const ascii = k.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+                return ascii.includes('SUGEST') && ascii.includes('LOCAL');
             });
             return chave ? pokemon[chave] : '';
         }
