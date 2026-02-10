@@ -2067,10 +2067,14 @@
                             modalContent.appendChild(successMsg);
                         }
                         
-                        // Fechar modal após breve delay
-                        setTimeout(() => {
+                        // Fechar modal após breve delay e recarregar dados da planilha
+                        setTimeout(async () => {
                             const overlay = document.getElementById('modalEdicaoOverlay');
                             if (overlay) overlay.remove();
+                            // Limpar cache local e recarregar dados frescos da planilha
+                            localStorage.removeItem('pokemons_editados');
+                            console.log('🔄 Recarregando dados da planilha...');
+                            await carregarDados();
                         }, 1500);
                     } catch (err) {
                         console.error('⚠️ Erro parcial ao salvar:', err);
@@ -2085,9 +2089,13 @@
                             warnMsg.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Salvo com avisos (verifique o console)';
                             modalContent.appendChild(warnMsg);
                         }
-                        setTimeout(() => {
+                        setTimeout(async () => {
                             const overlay = document.getElementById('modalEdicaoOverlay');
                             if (overlay) overlay.remove();
+                            // Recarregar mesmo com avisos
+                            localStorage.removeItem('pokemons_editados');
+                            console.log('🔄 Recarregando dados da planilha...');
+                            await carregarDados();
                         }, 2000);
                     }
                     
