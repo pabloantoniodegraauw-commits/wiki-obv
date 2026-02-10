@@ -105,9 +105,19 @@
             <i class="fas fa-shopping-cart"></i> Carrinho de Vendas
             <span class="market-cart-count" id="cartCount">0</span>
         </h2>
-        <button class="btn-clear-cart" onclick="limparCarrinho()">
-            <i class="fas fa-trash"></i> Limpar
-        </button>
+        <div class="market-cart-header-actions">
+            <div class="market-cart-view-toggle">
+                <button class="market-cart-view-btn active" data-view="lista" onclick="alternarVistaCarrinho('lista')" title="Vista em lista">
+                    <i class="fas fa-list"></i>
+                </button>
+                <button class="market-cart-view-btn" data-view="cards" onclick="alternarVistaCarrinho('cards')" title="Vista em cards">
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+            <button class="btn-clear-cart" onclick="limparCarrinho()">
+                <i class="fas fa-trash"></i> Limpar
+            </button>
+        </div>
     </div>
 
     <div class="market-cart-list" id="marketCartList">

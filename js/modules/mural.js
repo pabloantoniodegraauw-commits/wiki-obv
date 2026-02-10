@@ -188,7 +188,7 @@ async function excluirVendaMural(vendaId) {
 
     try {
         const body = new URLSearchParams();
-        body.append('acao', 'excluirVenda');
+        body.append('action', 'excluirVenda');
         body.append('vendaIndex', String(vendaId));
         body.append('authToken', authToken);
 

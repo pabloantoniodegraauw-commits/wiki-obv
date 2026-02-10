@@ -10,6 +10,8 @@ let marketTipoAtual = 'pokemon';
 let marketItemSelecionado = null;
 let marketPokemonData = [];
 let marketDadosCarregados = { itens: false, natures: false, pokemon: false };
+let marketUsarStickers = false; // false = sprite-pokemon, true = stickers
+let marketVistaCarrinho = 'lista'; // 'lista' ou 'cards'
 
 // Subconjuntos de Itens (preenchidos ao carregar)
 let marketPokebolas = [];
@@ -146,13 +148,45 @@ function obterImagemTM(tipagem) {
 
 function obterImagemPokemonMarket(pokemon) {
     const nome = pokemon['POKEMON'] || '';
-    // Reutilizar a função global se disponível
+    const ev = pokemon['EV'] || '';
+    const nomePrincipal = ev || nome;
+    const nomeBase = ev ? nome : '';
+
     if (typeof obterImagemPokemon === 'function') {
-        const ev = pokemon['EV'] || '';
-        const nomeBase = nome;
-        return obterImagemPokemon(ev || nomeBase, nomeBase, true); // stickers
+        return obterImagemPokemon(nomePrincipal, nomeBase, marketUsarStickers);
     }
-    return `IMAGENS/imagens-pokemon/stickers-pokemon/${nome}.png`;
+
+    // Fallback manual (mesma lógica do script.js)
+    if (marketUsarStickers) {
+        const nomeSticker = (nomeBase || nomePrincipal).trim();
+        return `IMAGENS/imagens-pokemon/stickers-pokemon/${nomeSticker}.png`;
+    }
+    let nomeArquivo;
+    if (nomeBase && nomeBase !== nomePrincipal) {
+        nomeArquivo = `${nomeBase}-${nomePrincipal.replace(/ /g, '-')}`;
+    } else {
+        nomeArquivo = nomePrincipal;
+    }
+    return `IMAGENS/imagens-pokemon/sprite-pokemon/${nomeArquivo.trim()}.png`;
+}
+
+function alternarImagensMarket() {
+    marketUsarStickers = !marketUsarStickers;
+    const btn = document.getElementById('marketToggleImgBtn');
+    if (btn) {
+        btn.innerHTML = marketUsarStickers
+            ? '<i class="fas fa-image"></i> Database'
+            : '<i class="fas fa-image"></i> Stickers';
+        btn.classList.toggle('active', marketUsarStickers);
+    }
+    // Re-renderizar grid e card
+    renderizarGridMarket();
+    if (marketItemSelecionado && marketItemSelecionado.tipo === 'pokemon') {
+        const pokemon = marketItemSelecionado.dados;
+        const imgSrc = obterImagemPokemonMarket(pokemon);
+        const cardImg = document.getElementById('marketCardImg');
+        if (cardImg) cardImg.src = imgSrc;
+    }
 }
 
 // ── Abas de Tipo ────────────────────────────────
@@ -213,6 +247,12 @@ function renderizarFiltros() {
                     <label><i class="fas fa-search"></i> Buscar Pokémon</label>
                     <input type="text" id="marketSearchPokemon" placeholder="Digite o nome... (min 2 letras)"
                            oninput="filtrarGridMarket()">
+                </div>
+                <div class="market-filter-group" style="flex:0 0 auto;">
+                    <label>&nbsp;</label>
+                    <button type="button" id="marketToggleImgBtn" class="btn-toggle-img-market" onclick="alternarImagensMarket()">
+                        <i class="fas fa-image"></i> Stickers
+                    </button>
                 </div>
             `;
             break;
@@ -313,7 +353,8 @@ function renderizarGridPokemon(grid) {
     const resultados = dados.filter(p => {
         const nome = (p['POKEMON'] || '').toLowerCase();
         const ev = (p['EV'] || '').toLowerCase();
-        return nome.includes(busca) || ev.includes(busca);
+        const nomePrincipal = ev || nome;
+        return nomePrincipal.includes(busca) || nome.includes(busca);
     }).slice(0, 60);
 
     if (resultados.length === 0) {
@@ -322,18 +363,21 @@ function renderizarGridPokemon(grid) {
     }
 
     grid.innerHTML = resultados.map(p => {
-        const nome = p['EV'] || p['POKEMON'] || 'Desconhecido';
-        const nomeDisplay = p['POKEMON'] || 'Desconhecido';
+        const ev = p['EV'] || '';
+        const nomePokemon = p['POKEMON'] || 'Desconhecido';
+        const nomePrincipal = ev || nomePokemon;
         const tipo1 = p['Type 1'] || '';
         const imgSrc = obterImagemPokemonMarket(p);
+        const evBadge = ev ? '<span class="market-grid-ev-badge">EV</span>' : '';
         return `
-            <div class="market-grid-item" onclick="selecionarItemMarket('pokemon', '${nome.replace(/'/g, "\\'")}')">
+            <div class="market-grid-item" onclick="selecionarItemMarket('pokemon', '${nomePrincipal.replace(/'/g, "\\'")}')">
+                ${evBadge}
                 <div class="market-grid-item-img">
-                    <img src="${imgSrc}" alt="${nomeDisplay}"
-                         onerror="this.src='IMAGENS/imagens-pokemon/stickers-pokemon/${nomeDisplay}.png'">
+                    <img src="${imgSrc}" alt="${nomePrincipal}"
+                         onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
                 </div>
-                <div class="market-grid-item-name">${nomeDisplay}</div>
-                <div class="market-grid-item-sub">${tipo1}</div>
+                <div class="market-grid-item-name">${nomePrincipal}</div>
+                <div class="market-grid-item-sub">${ev ? nomePokemon + ' · ' : ''}${tipo1}</div>
             </div>
         `;
     }).join('');
@@ -476,19 +520,28 @@ function selecionarItemMarket(tipo, identificador) {
 // ── Card: Pokémon ───────────────────────────────
 function renderizarCardPokemon(nomeOuEV) {
     const dados = marketPokemonData.length > 0 ? marketPokemonData : todosPokemons || [];
-    const pokemon = dados.find(p => (p['EV'] || p['POKEMON']) === nomeOuEV) ||
-                    dados.find(p => p['POKEMON'] === nomeOuEV);
+    const pokemon = dados.find(p => {
+        const ev = (p['EV'] || '').trim();
+        const pk = (p['POKEMON'] || '').trim();
+        return (ev || pk) === nomeOuEV;
+    }) || dados.find(p => p['POKEMON'] === nomeOuEV);
 
     if (!pokemon) return;
 
     marketItemSelecionado = { tipo: 'pokemon', dados: pokemon };
 
+    const ev = pokemon['EV'] || '';
     const nome = pokemon['POKEMON'] || 'Desconhecido';
+    const nomePrincipal = ev || nome;
     const imgSrc = obterImagemPokemonMarket(pokemon);
 
     document.getElementById('marketCardImg').src = imgSrc;
-    document.getElementById('marketCardImg').alt = nome;
-    document.getElementById('marketCardName').textContent = nome;
+    document.getElementById('marketCardImg').alt = nomePrincipal;
+    document.getElementById('marketCardImg').onerror = function() {
+        this.onerror = null;
+        this.src = 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png';
+    };
+    document.getElementById('marketCardName').textContent = nomePrincipal;
     document.getElementById('marketCardTypeLabel').textContent = 'POKÉMON';
 
     // Opções de pokébola
@@ -824,7 +877,9 @@ function obterPrecos() {
 
 function coletarDadosPokemon() {
     const pokemon = marketItemSelecionado.dados;
-    const nome = pokemon['POKEMON'] || '';
+    const ev = pokemon['EV'] || '';
+    const nomePokemon = pokemon['POKEMON'] || '';
+    const nome = ev || nomePokemon;
     const shiny = document.getElementById('mkShiny')?.checked || false;
     const nickname = document.getElementById('mkNickname')?.value || '';
     const pokebola = document.getElementById('mkPokebola')?.value || '';
@@ -923,6 +978,14 @@ function salvarCarrinhoSession() {
     sessionStorage.setItem('marketCarrinho', JSON.stringify(marketCarrinho));
 }
 
+function alternarVistaCarrinho(vista) {
+    marketVistaCarrinho = vista;
+    document.querySelectorAll('.market-cart-view-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === vista);
+    });
+    renderizarCarrinho();
+}
+
 function renderizarCarrinho() {
     const list = document.getElementById('marketCartList');
     const count = document.getElementById('cartCount');
@@ -936,6 +999,7 @@ function renderizarCarrinho() {
     if (marketCarrinho.length === 0) {
         if (empty) empty.style.display = 'flex';
         if (actions) actions.style.display = 'none';
+        list.className = 'market-cart-list';
         list.innerHTML = `<div class="market-cart-empty" id="cartEmpty">
             <i class="fas fa-shopping-cart"></i>
             Seu carrinho está vazio. Adicione itens para montar sua lista de vendas.
@@ -945,30 +1009,87 @@ function renderizarCarrinho() {
 
     if (actions) actions.style.display = 'flex';
 
-    list.innerHTML = marketCarrinho.map((item, idx) => {
-        const precoDisplay = [];
-        if (item.precos.hd) precoDisplay.push(`💶${item.precos.hd}`);
-        if (item.precos.ponto) precoDisplay.push(`💎${item.precos.ponto}`);
-        if (item.precos.dinheiro) precoDisplay.push(`💲${item.precos.dinheiro}`);
+    const tipoLabels = { pokemon: 'Pokémon', tm: 'TM', item: 'Item', conta: 'Conta' };
 
-        const tipoLabels = { pokemon: 'Pokémon', tm: 'TM', item: 'Item', conta: 'Conta' };
+    if (marketVistaCarrinho === 'cards') {
+        list.className = 'market-cart-list market-cart-cards-grid';
+        list.innerHTML = marketCarrinho.map((item, idx) => {
+            const precoDisplay = [];
+            if (item.precos.hd) precoDisplay.push(`<span class="market-cart-card-price-tag">💶 HD: ${item.precos.hd}</span>`);
+            if (item.precos.ponto) precoDisplay.push(`<span class="market-cart-card-price-tag">💎 Ponto: ${item.precos.ponto}</span>`);
+            if (item.precos.dinheiro) precoDisplay.push(`<span class="market-cart-card-price-tag">💲 R$: ${item.precos.dinheiro}</span>`);
 
-        return `
-            <div class="market-cart-item">
-                <div class="market-cart-item-img">
-                    <img src="${item.imagem}" alt="${item.nome}" onerror="this.style.opacity='0.3'">
+            // Detalhes extras para pokemon
+            let detailsHTML = '';
+            if (item.tipo === 'pokemon' && item.dados) {
+                const d = item.dados;
+                const parts = [];
+                if (d.shiny) parts.push('✨ Shiny');
+                parts.push(`Lv.${d.level}`);
+                parts.push(d.sexo === 'Male' ? '♂' : d.sexo === 'Female' ? '♀' : '⚪');
+                if (d.nature) parts.push(d.nature);
+                detailsHTML = `<div class="market-cart-card-detail">${parts.join(' · ')}</div>`;
+                const extras = [];
+                if (d.pokebola) extras.push(d.pokebola);
+                if (d.boost) extras.push(`Boost x${d.boost}`);
+                if (d.held) extras.push(d.held);
+                if (d.mega) extras.push(d.mega);
+                if (d.addon) extras.push(d.addon);
+                if (extras.length) detailsHTML += `<div class="market-cart-card-extras">${extras.join(' · ')}</div>`;
+            } else if (item.tipo === 'tm' && item.dados) {
+                detailsHTML = `<div class="market-cart-card-detail">${item.dados.tipagem} · x${item.dados.qty}</div>`;
+            } else if (item.tipo === 'item' && item.dados) {
+                detailsHTML = `<div class="market-cart-card-detail">${item.dados.tipo} · x${item.dados.qty}</div>`;
+            } else if (item.tipo === 'conta' && item.dados) {
+                const d = item.dados;
+                detailsHTML = `<div class="market-cart-card-detail">Lv.${d.level} · ${d.cla} · Tier ${d.tier}</div>`;
+            }
+
+            return `
+                <div class="market-cart-card">
+                    <button class="market-cart-card-remove" onclick="removerDoCarrinho(${idx})" title="Remover">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div class="market-cart-card-img">
+                        <img src="${item.imagem}" alt="${item.nome}"
+                             onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
+                    </div>
+                    <div class="market-cart-card-name">${item.nome}</div>
+                    <div class="market-cart-card-type">
+                        <i class="fas fa-tag"></i> ${tipoLabels[item.tipo] || item.tipo}
+                    </div>
+                    ${detailsHTML}
+                    <div class="market-cart-card-prices">
+                        ${precoDisplay.join('')}
+                    </div>
                 </div>
-                <div class="market-cart-item-info">
-                    <div class="market-cart-item-name">${item.nome}</div>
-                    <div class="market-cart-item-details">${tipoLabels[item.tipo] || item.tipo}</div>
-                    <div class="market-cart-item-price">${precoDisplay.join(' ')}</div>
+            `;
+        }).join('');
+    } else {
+        list.className = 'market-cart-list';
+        list.innerHTML = marketCarrinho.map((item, idx) => {
+            const precoDisplay = [];
+            if (item.precos.hd) precoDisplay.push(`💶${item.precos.hd}`);
+            if (item.precos.ponto) precoDisplay.push(`💎${item.precos.ponto}`);
+            if (item.precos.dinheiro) precoDisplay.push(`💲${item.precos.dinheiro}`);
+
+            return `
+                <div class="market-cart-item">
+                    <div class="market-cart-item-img">
+                        <img src="${item.imagem}" alt="${item.nome}" onerror="this.style.opacity='0.3'">
+                    </div>
+                    <div class="market-cart-item-info">
+                        <div class="market-cart-item-name">${item.nome}</div>
+                        <div class="market-cart-item-details">${tipoLabels[item.tipo] || item.tipo}</div>
+                        <div class="market-cart-item-price">${precoDisplay.join(' ')}</div>
+                    </div>
+                    <button class="market-cart-item-remove" onclick="removerDoCarrinho(${idx})" title="Remover">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <button class="market-cart-item-remove" onclick="removerDoCarrinho(${idx})" title="Remover">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    }
 }
 
 // ── Gerar texto completo da venda ───────────────
@@ -1075,7 +1196,7 @@ async function salvarVenda() {
 
     try {
         const body = new URLSearchParams();
-        body.append('acao', 'salvarVenda');
+        body.append('action', 'salvarVenda');
         body.append('textoVenda', texto);
         body.append('dadosJSON', dadosJSON);
         body.append('email', email);
