@@ -2547,9 +2547,6 @@
                         ${tiposOptions}
                     </select>
                     
-                    <label style="${modalStyles.label}">Origem do TM (Pokémon):</label>
-                    <input id="novoTMOrigem" type="text" placeholder="Ex: Charizard" style="${modalStyles.input}">
-                    
                     <label style="${modalStyles.label}">Tipo de Drop:</label>
                     <select id="novoTMTipoDrop" style="${modalStyles.select}">
                         <option value="Spawn">Spawn</option>
@@ -2592,7 +2589,7 @@
                         numero: numero,
                         nome: nome,
                         tipagem: document.getElementById('novoTMTipagem').value,
-                        origem: document.getElementById('novoTMOrigem').value.trim(),
+                        origem: '',
                         tipoDrop: document.getElementById('novoTMTipoDrop').value,
                         sugestao: document.getElementById('novoTMSugestao').value.trim(),
                         email: user.email,
