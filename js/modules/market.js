@@ -12,6 +12,7 @@ let marketPokemonData = [];
 let marketDadosCarregados = { itens: false, natures: false, pokemon: false };
 let marketUsarStickers = false; // false = sprite-pokemon, true = stickers
 let marketVistaCarrinho = 'lista'; // 'lista' ou 'cards'
+let marketEditandoIndex = null; // índice do item sendo editado no carrinho
 
 // Subconjuntos de Itens (preenchidos ao carregar)
 let marketPokebolas = [];
@@ -600,10 +601,10 @@ function renderizarCardPokemon(nomeOuEV) {
         </div>
         <div class="market-field">
             <label><i class="fas fa-circle"></i> Pokébola</label>
-            <select id="mkPokebola">
-                <option value="">Nenhuma</option>
+            <input type="text" id="mkPokebola" list="datalistPokebolas" placeholder="Digite ou selecione..." autocomplete="off">
+            <datalist id="datalistPokebolas">
                 ${pokebolasOpts}
-            </select>
+            </datalist>
         </div>
         <div class="market-field">
             <label><i class="fas fa-arrow-up"></i> Level</label>
@@ -635,10 +636,10 @@ function renderizarCardPokemon(nomeOuEV) {
         </div>
         <div class="market-field">
             <label><i class="fas fa-dna"></i> Nature</label>
-            <select id="mkNature">
-                <option value="">Selecione</option>
+            <input type="text" id="mkNature" list="datalistNatures" placeholder="Digite ou selecione..." autocomplete="off">
+            <datalist id="datalistNatures">
                 ${naturesOpts}
-            </select>
+            </datalist>
         </div>
         <div class="market-field">
             <label><i class="fas fa-gem"></i> Boost Stone</label>
@@ -661,10 +662,10 @@ function renderizarCardPokemon(nomeOuEV) {
                 </label>
             </div>
             <div class="market-conditional-field" id="mkHeldWrap">
-                <select id="mkHeldItem">
-                    <option value="">Selecione</option>
+                <input type="text" id="mkHeldItem" list="datalistHelds" placeholder="Digite ou selecione..." autocomplete="off">
+                <datalist id="datalistHelds">
                     ${heldOpts}
-                </select>
+                </datalist>
             </div>
         </div>
         <div class="market-field">
@@ -869,7 +870,14 @@ function adicionarAoCarrinho() {
     }
 
     cartItem.texto = gerarTextoItemCarrinho(cartItem);
-    marketCarrinho.push(cartItem);
+
+    // Se estiver editando um item existente, substituir
+    if (typeof marketEditandoIndex === 'number' && marketEditandoIndex >= 0) {
+        marketCarrinho[marketEditandoIndex] = cartItem;
+        marketEditandoIndex = null;
+    } else {
+        marketCarrinho.push(cartItem);
+    }
     salvarCarrinhoSession();
     renderizarCarrinho();
     resetarCard();
@@ -877,8 +885,10 @@ function adicionarAoCarrinho() {
     // Feedback
     const btn = document.getElementById('btnAddCart');
     if (btn) {
-        btn.innerHTML = '<i class="fas fa-check"></i> Adicionado!';
+        const msgOk = marketEditandoIndex === null ? 'Adicionado!' : 'Atualizado!';
+        btn.innerHTML = `<i class="fas fa-check"></i> ${msgOk}`;
         btn.disabled = true;
+        marketEditandoIndex = null;
         setTimeout(() => {
             btn.innerHTML = '<i class="fas fa-cart-plus"></i> Adicionar ao Carrinho';
             btn.disabled = false;
@@ -979,6 +989,156 @@ function gerarTextoItemCarrinho(item) {
     }
 }
 
+function editarItemCarrinho(index) {
+    const item = marketCarrinho[index];
+    if (!item) return;
+
+    marketEditandoIndex = index;
+
+    // Trocar para aba do tipo correto
+    trocarTipoMarket(item.tipo);
+
+    // Aguardar renderização antes de preencher os campos
+    setTimeout(async () => {
+        // Aguardar dados carregarem se necessário
+        await carregarDadosMarket();
+
+        switch (item.tipo) {
+            case 'pokemon': {
+                const d = item.dados;
+                // Selecionar pokemon no grid
+                selecionarItemMarket('pokemon', d.nome);
+                // Preencher campos após render
+                setTimeout(() => {
+                    const mkShiny = document.getElementById('mkShiny');
+                    if (mkShiny) mkShiny.checked = d.shiny || false;
+                    const mkNickname = document.getElementById('mkNickname');
+                    if (mkNickname) mkNickname.value = d.nickname || '';
+                    const mkPokebola = document.getElementById('mkPokebola');
+                    if (mkPokebola) mkPokebola.value = d.pokebola || '';
+                    // Level
+                    if (d.level && d.level !== '100') {
+                        const outroRadio = document.querySelector('input[name="mkLevel"][value="outro"]');
+                        if (outroRadio) { outroRadio.checked = true; toggleCampoLevel(); }
+                        const mkLevelOutro = document.getElementById('mkLevelOutro');
+                        if (mkLevelOutro) mkLevelOutro.value = d.level;
+                    } else {
+                        const radio100 = document.querySelector('input[name="mkLevel"][value="100"]');
+                        if (radio100) radio100.checked = true;
+                    }
+                    // Sexo
+                    const sexoRadio = document.querySelector(`input[name="mkSexo"][value="${d.sexo || 'Indefinido'}"]`);
+                    if (sexoRadio) sexoRadio.checked = true;
+                    // Nature
+                    const mkNature = document.getElementById('mkNature');
+                    if (mkNature) mkNature.value = d.nature || '';
+                    // Boost
+                    if (d.boost) {
+                        const mkBoostCheck = document.getElementById('mkBoostCheck');
+                        if (mkBoostCheck) { mkBoostCheck.checked = true; toggleConditional('mkBoostWrap', true); }
+                        const mkBoostQty = document.getElementById('mkBoostQty');
+                        if (mkBoostQty) mkBoostQty.value = d.boost;
+                    }
+                    // Held
+                    if (d.held) {
+                        const mkHeldCheck = document.getElementById('mkHeldCheck');
+                        if (mkHeldCheck) { mkHeldCheck.checked = true; toggleConditional('mkHeldWrap', true); }
+                        const mkHeldItem = document.getElementById('mkHeldItem');
+                        if (mkHeldItem) mkHeldItem.value = d.held;
+                    }
+                    // Mega
+                    if (d.mega) {
+                        const mkMegaCheck = document.getElementById('mkMegaCheck');
+                        if (mkMegaCheck) { mkMegaCheck.checked = true; toggleConditional('mkMegaWrap', true); }
+                        const mkMegaStone = document.getElementById('mkMegaStone');
+                        if (mkMegaStone) mkMegaStone.value = d.mega;
+                    }
+                    // Addon
+                    if (d.addon) {
+                        const mkAddonCheck = document.getElementById('mkAddonCheck');
+                        if (mkAddonCheck) { mkAddonCheck.checked = true; toggleConditional('mkAddonWrap', true); }
+                        const mkAddon = document.getElementById('mkAddon');
+                        if (mkAddon) mkAddon.value = d.addon;
+                    }
+                    // Preços
+                    preencherPrecosEdicao(item.precos);
+                    // Mudar botão
+                    const btn = document.getElementById('btnAddCart');
+                    if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alteração';
+                }, 200);
+                break;
+            }
+            case 'tm': {
+                selecionarItemMarket('tm', String(item.dados.numero));
+                setTimeout(() => {
+                    const mkTMQty = document.getElementById('mkTMQty');
+                    if (mkTMQty) mkTMQty.value = item.dados.qty || '1';
+                    preencherPrecosEdicao(item.precos);
+                    const btn = document.getElementById('btnAddCart');
+                    if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alteração';
+                }, 200);
+                break;
+            }
+            case 'item': {
+                selecionarItemMarket('item', item.dados.nome);
+                setTimeout(() => {
+                    const mkItemQty = document.getElementById('mkItemQty');
+                    if (mkItemQty) mkItemQty.value = item.dados.qty || '1';
+                    preencherPrecosEdicao(item.precos);
+                    const btn = document.getElementById('btnAddCart');
+                    if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alteração';
+                }, 200);
+                break;
+            }
+            case 'conta': {
+                selecionarItemMarket('conta', item.dados.tipoConta || item.nome);
+                setTimeout(() => {
+                    const d = item.dados;
+                    const mkContaNick = document.getElementById('mkContaNick');
+                    if (mkContaNick) mkContaNick.value = d.nick || '';
+                    const mkContaLevel = document.getElementById('mkContaLevel');
+                    if (mkContaLevel) mkContaLevel.value = d.level || '';
+                    const mkContaCla = document.getElementById('mkContaCla');
+                    if (mkContaCla) mkContaCla.value = d.cla || '';
+                    const mkContaTier = document.getElementById('mkContaTier');
+                    if (mkContaTier) mkContaTier.value = d.tier || '';
+                    const mkContaTMs = document.getElementById('mkContaTMs');
+                    if (mkContaTMs) mkContaTMs.value = d.tms || '';
+                    preencherPrecosEdicao(item.precos);
+                    const btn = document.getElementById('btnAddCart');
+                    if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alteração';
+                }, 200);
+                break;
+            }
+        }
+    }, 300);
+
+    // Scroll para o card
+    document.querySelector('.market-card-wrapper')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function preencherPrecosEdicao(precos) {
+    if (!precos) return;
+    if (precos.dinheiro) {
+        const ck = document.getElementById('priceDinheiroCheck');
+        const vl = document.getElementById('priceDinheiroValue');
+        if (ck) { ck.checked = true; }
+        if (vl) { vl.value = precos.dinheiro; vl.classList.add('visible'); }
+    }
+    if (precos.ponto) {
+        const ck = document.getElementById('pricePontoCheck');
+        const vl = document.getElementById('pricePontoValue');
+        if (ck) { ck.checked = true; }
+        if (vl) { vl.value = precos.ponto; vl.classList.add('visible'); }
+    }
+    if (precos.hd) {
+        const ck = document.getElementById('priceHdCheck');
+        const vl = document.getElementById('priceHdValue');
+        if (ck) { ck.checked = true; }
+        if (vl) { vl.value = precos.hd; vl.classList.add('visible'); }
+    }
+}
+
 function removerDoCarrinho(index) {
     marketCarrinho.splice(index, 1);
     salvarCarrinhoSession();
@@ -1066,9 +1226,14 @@ function renderizarCarrinho() {
 
             return `
                 <div class="market-cart-card">
-                    <button class="market-cart-card-remove" onclick="removerDoCarrinho(${idx})" title="Remover">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="market-cart-card-actions-top">
+                        <button class="market-cart-card-edit" onclick="editarItemCarrinho(${idx})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="market-cart-card-remove" onclick="removerDoCarrinho(${idx})" title="Remover">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     <div class="market-cart-card-img">
                         <img src="${item.imagem}" alt="${item.nome}"
                              onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
@@ -1102,9 +1267,14 @@ function renderizarCarrinho() {
                         <div class="market-cart-item-details">${tipoLabels[item.tipo] || item.tipo}</div>
                         <div class="market-cart-item-price">${precoDisplay.join(' ')}</div>
                     </div>
-                    <button class="market-cart-item-remove" onclick="removerDoCarrinho(${idx})" title="Remover">
-                        <i class="fas fa-times"></i>
-                    </button>
+                    <div class="market-cart-item-actions">
+                        <button class="market-cart-item-edit" onclick="editarItemCarrinho(${idx})" title="Editar">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="market-cart-item-remove" onclick="removerDoCarrinho(${idx})" title="Remover">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -1214,6 +1384,25 @@ async function salvarVenda() {
     }
 
     try {
+        // Se estiver editando uma venda existente do mural, excluir a antiga primeiro
+        const muralEditId = sessionStorage.getItem('muralEditVendaId');
+        if (muralEditId) {
+            try {
+                const delBody = new URLSearchParams();
+                delBody.append('action', 'excluirVenda');
+                delBody.append('vendaIndex', muralEditId);
+                delBody.append('authToken', authToken);
+                await fetch(MARKET_BASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: delBody.toString()
+                });
+                console.log('🗑️ Venda antiga excluída (editando)');
+            } catch (e) {
+                console.warn('⚠️ Erro ao excluir venda antiga:', e);
+            }
+        }
+
         const body = new URLSearchParams();
         body.append('action', 'salvarVenda');
         body.append('textoVenda', texto);
@@ -1232,6 +1421,8 @@ async function salvarVenda() {
         const resultado = await response.json();
 
         if (resultado.success) {
+            // Limpar flag de edição do mural
+            sessionStorage.removeItem('muralEditVendaId');
             alert('✅ Venda salva com sucesso!');
             marketCarrinho = [];
             salvarCarrinhoSession();

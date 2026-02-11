@@ -139,6 +139,11 @@ function renderizarMural() {
                     <button class="btn-mural-copy" onclick="copiarTextoMural(${venda.id})" title="Copiar texto">
                         <i class="fas fa-copy"></i> Copiar
                     </button>
+                    ${isDono ? `
+                        <button class="btn-mural-edit" onclick="editarVendaMural(${venda.id})" title="Editar venda">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                    ` : ''}
                     ${canDelete ? `
                         <button class="btn-mural-delete" onclick="excluirVendaMural(${venda.id})" title="Excluir venda">
                             <i class="fas fa-trash"></i> Excluir
@@ -210,6 +215,70 @@ async function excluirVendaMural(vendaId) {
         console.error('❌ Erro ao excluir venda:', err);
         alert('Erro ao excluir venda.');
     }
+}
+
+// ── Editar venda (carregar no Market) ───────────
+function editarVendaMural(vendaId) {
+    const venda = muralVendas.find(v => v.id === vendaId);
+    if (!venda) return;
+
+    // Tentar carregar dados do carrinho salvo
+    let dadosCarrinho = [];
+    try {
+        dadosCarrinho = JSON.parse(venda.dadosJSON || '[]');
+    } catch {
+        alert('Não foi possível carregar os dados desta venda para edição.');
+        return;
+    }
+
+    if (dadosCarrinho.length === 0) {
+        alert('Esta venda não possui dados editáveis (formato antigo).');
+        return;
+    }
+
+    // Reconstruir itens do carrinho com campos necessários
+    const carrinhoReconstruido = dadosCarrinho.map(item => {
+        const cartItem = {
+            tipo: item.tipo,
+            nome: item.nome,
+            dados: item.dados,
+            precos: item.precos || {},
+            timestamp: Date.now()
+        };
+
+        // Reconstruir imagem e texto
+        switch (item.tipo) {
+            case 'pokemon':
+                cartItem.imagem = 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png';
+                break;
+            case 'tm':
+                cartItem.imagem = obterImagemTM ? obterImagemTM(item.dados?.tipagem || 'Normal') : '';
+                break;
+            case 'item':
+                cartItem.imagem = obterImagemItem ? obterImagemItem(item.dados?.nome || item.nome, item.dados?.tipo || '') : '';
+                break;
+            case 'conta':
+                cartItem.imagem = '';
+                break;
+        }
+
+        cartItem.texto = typeof gerarTextoItemCarrinho === 'function' ? gerarTextoItemCarrinho(cartItem) : '';
+        return cartItem;
+    });
+
+    // Salvar no sessionStorage e marcar que estamos editando uma venda existente
+    sessionStorage.setItem('marketCarrinho', JSON.stringify(carrinhoReconstruido));
+    sessionStorage.setItem('muralEditVendaId', String(vendaId));
+
+    // Navegar para aba Market
+    if (typeof loadPage === 'function') {
+        loadPage('market');
+    }
+
+    // Feedback
+    setTimeout(() => {
+        alert('📝 Venda carregada no Market para edição. Faça as alterações e salve novamente.');
+    }, 500);
 }
 
 // ── Registrar Página ────────────────────────────
