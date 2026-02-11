@@ -754,7 +754,7 @@
                         nome: (tm['NOME DO TM'] || ''),
                         tipagem: (tm['TIPAGEM DO TM'] || 'Normal'),
                         pokemon: (tm['ORIGEM DO TM'] || ''),
-                        categoria: (tm['ORIGEM DO TM2'] || 'Spawn'),
+                        categoria: (tm['TIPO DE DROP'] || tm['ORIGEM DO TM2'] || 'Spawn'),
                         sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || tm['SUGESTÃO DE POKEMON'] || '')
                     }));
                     console.log('✅ TMs carregados da planilha:', todosTMs.length);
@@ -784,7 +784,7 @@
                         nome: (tm['NOME DO TM'] || ''),
                         tipagem: (tm['TIPAGEM DO TM'] || 'Normal'),
                         pokemon: (tm['ORIGEM DO TM'] || ''),
-                        categoria: (tm['ORIGEM DO TM2'] || 'Spawn'),
+                        categoria: (tm['TIPO DE DROP'] || tm['ORIGEM DO TM2'] || 'Spawn'),
                         sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || tm['SUGESTÃO DE POKEMON'] || '')
                     }));
                     console.log('✅ TMs carregados para Pokédex:', todosTMs.length);
