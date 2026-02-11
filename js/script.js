@@ -675,8 +675,10 @@
                 return 'IMAGENS/imagens-itens/itens-task/xp.webp';
             }
             
-            // Todos os itens de recompensa usam a pasta itens-task
-            return `IMAGENS/imagens-itens/itens-task/${nome}.png`;
+            // Todos os itens de recompensa usam a pasta itens-task (usar nomeNormalizado para garantir lowercase)
+            const caminho = `IMAGENS/imagens-itens/itens-task/${nomeNormalizado}.png`;
+            console.log('[ITEM IMG]', nome, '->', caminho);
+            return caminho;
         }
 
         function obterImagemMembro(nomeMembro) {
