@@ -646,12 +646,12 @@
             
             const nomeNormalizado = normalizarNomeItem(nome);
             
-            // Se for um item (não pokémon), usa a pasta de itens task
+            // Se for um item (não pokémon), usa a pasta de itens task (lowercase)
             if (itensTask.includes(nomeNormalizado)) {
                 return `IMAGENS/imagens-itens/itens task/${nome}.png`;
             }
             
-            // Pokémons especiais com nomes que não batem direto com arquivo
+            // Pokémons especiais com nomes que não batem direto com arquivo (lowercase)
             const pokemonsEspeciais = {
                 'shinygloom': 'IMAGENS/imagens-pokemon/stickers-pokemon/shinygloom.png',
                 'hordeleaderpoliwrath': 'IMAGENS/imagens-pokemon/stickers-pokemon/hordeleaderpoliwrath.png',
@@ -662,8 +662,9 @@
                 return pokemonsEspeciais[nomeNormalizado];
             }
             
-            // Pokémon normal - usar stickers
-            return `IMAGENS/imagens-pokemon/stickers-pokemon/${nome}.png`;
+            // Pokémon normal - capitalizar primeira letra (stickers usam PrimeiraLetraMaiuscula.png)
+            const nomeCapitalizado = nome.charAt(0).toUpperCase() + nome.slice(1);
+            return `IMAGENS/imagens-pokemon/stickers-pokemon/${nomeCapitalizado}.png`;
         }
 
         function obterImagemItem(nome) {
@@ -981,7 +982,7 @@
                 let premiosHtml = '';
                 task.premios.forEach(premio => {
                     const isXP = premio.isxp;
-                    const src = isXP ? 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png' : obterImagemItem(premio.item);
+                    const src = isXP ? 'IMAGENS/imagens-itens/itens task/xp.webp' : obterImagemItem(premio.item);
                     premiosHtml += `
                         <div class="task-reward-item">
                             <img src="${src}" alt="${premio.item}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'">
