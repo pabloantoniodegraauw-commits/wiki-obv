@@ -667,7 +667,7 @@
             return `IMAGENS/imagens-pokemon/stickers-pokemon/${nomeCapitalizado}.png`;
         }
 
-        function obterImagemItem(nome) {
+        function obterImagemItemTask(nome) {
             const nomeNormalizado = normalizarNomeItem(nome);
             
             // XP usa imagem especial (formato .webp)
@@ -984,7 +984,7 @@
                 let premiosHtml = '';
                 task.premios.forEach(premio => {
                     const isXP = premio.isxp;
-                    const src = isXP ? 'IMAGENS/imagens-itens/itens-task/xp.webp' : obterImagemItem(premio.item);
+                    const src = isXP ? 'IMAGENS/imagens-itens/itens-task/xp.webp' : obterImagemItemTask(premio.item);
                     premiosHtml += `
                         <div class="task-reward-item">
                             <img src="${src}" alt="${premio.item}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'">
