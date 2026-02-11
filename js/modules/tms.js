@@ -15,7 +15,6 @@ function initTMs() {
             console.log('✅ TMs já carregados, renderizando...');
             renderizarTMs(todosTMs);
             configurarBuscaTMs();
-            configurarFiltrosTMs();
         }
     } catch (erro) {
         console.error('❌ Erro ao inicializar TMs:', erro);

@@ -1035,7 +1035,10 @@
                 card.className = 'tm-card';
                 const pokeLower = (tm.pokemon || '').toLowerCase().replace(/ /g, '-');
                 card.dataset.poke = pokeLower;
-                const catRaw = (tm.categoria || '').toString().trim().toLowerCase();
+                let catRaw = (tm.categoria || '').toString().trim().toLowerCase();
+                // Normalizar categorias para coincidir com os filtros
+                const categoriasMap = { 'evento': 'event', 'eventos': 'event', 'chefe': 'boss', 'bosses': 'boss' };
+                if (categoriasMap[catRaw]) catRaw = categoriasMap[catRaw];
                 card.dataset.cat = catRaw;
 
                 // Número formatado: TM02, TM15, TM120 etc.
@@ -1056,7 +1059,7 @@
                 } else if (catRaw === 'desconhecido') {
                     stickerSrc = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
                     stickerAlt = 'Desconhecido';
-                } else if (catRaw === 'event' || catRaw === 'evento') {
+                } else if (catRaw === 'event') {
                     stickerSrc = 'IMAGENS/imagens-pokemon/stickers-pokemon/eventos.png';
                     stickerAlt = 'Evento';
                 } else {
