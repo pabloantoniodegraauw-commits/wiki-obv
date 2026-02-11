@@ -29,8 +29,13 @@ const ITEM_FOLDER_MAP = {
     'addon': 'addonbox',
     'addon box': 'addonbox',
     'dinheiro': 'dinheiro',
-    'conta': 'conta'
+    'conta': 'conta',
+    'item normal': 'itens-task',
+    'item': 'itens-task'
 };
+
+// Pastas cujos arquivos usam nomes normalizados (lowercase, sem espaços)
+const FOLDERS_NORMALIZED = ['itens-task'];
 
 // ── Inicialização ───────────────────────────────
 function initMarket() {
@@ -130,15 +135,29 @@ function classificarItens() {
     });
 }
 
+// Normalizar nome para pastas que usam lowercase sem espaços
+function normalizarNomeImagem(nome) {
+    return nome.toLowerCase()
+        .replace(/'/g, '')
+        .replace(/\./g, '')
+        .replace(/\s+/g, '')
+        .replace(/[^a-z0-9]/g, '');
+}
+
 // ── Imagens ─────────────────────────────────────
 function obterImagemItem(nomeItem, tipoItem) {
     const tipoLower = (tipoItem || '').toLowerCase().trim();
     for (const [key, folder] of Object.entries(ITEM_FOLDER_MAP)) {
         if (tipoLower.includes(key)) {
-            return `IMAGENS/imagens-itens/${folder}/${nomeItem}.png`;
+            const nomeArquivo = FOLDERS_NORMALIZED.includes(folder)
+                ? normalizarNomeImagem(nomeItem)
+                : nomeItem;
+            return `IMAGENS/imagens-itens/${folder}/${nomeArquivo}.png`;
         }
     }
-    return `IMAGENS/imagens-itens/${nomeItem}.png`;
+    // Fallback: tentar itens-task com nome normalizado
+    const nomeFallback = normalizarNomeImagem(nomeItem);
+    return `IMAGENS/imagens-itens/itens-task/${nomeFallback}.png`;
 }
 
 function obterImagemTM(tipagem) {
