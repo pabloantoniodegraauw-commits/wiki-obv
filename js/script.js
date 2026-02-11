@@ -635,74 +635,47 @@
         }
         
         function obterImagemTarefa(nome) {
-            // Fallback local para itens sem imagem própria
             const fallbackLocal = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
             
-            // Mapeamento de itens especiais para imagens locais
-            const itensEspeciais = {
-                'watergem': 'IMAGENS/imagens-itens/helditem/Water Gem.png',
-                'firegem': 'IMAGENS/imagens-itens/helditem/Fire Gem.png',
-                'grassgem': 'IMAGENS/imagens-itens/helditem/Grass Gem.png',
-                'shinygloom': 'IMAGENS/imagens-pokemon/stickers-pokemon/Gloom.png',
-                'hordeleaderpoliwrath': 'IMAGENS/imagens-pokemon/stickers-pokemon/Poliwrath.png',
-                'shinygyarados': 'IMAGENS/imagens-pokemon/stickers-pokemon/Gyarados.png',
-                // Itens sem imagem local - usa pokebola como placeholder
-                'waterstone': fallbackLocal,
-                'screws': fallbackLocal,
-                'bottleofpoison': fallbackLocal,
-                'venomstone': fallbackLocal,
-                'flour': fallbackLocal,
-                'seeds': fallbackLocal,
-                'firestone': fallbackLocal,
-                'smallstone': fallbackLocal,
-                'dragonstone': fallbackLocal,
-                'brokenstone': fallbackLocal,
-                'futureorb': fallbackLocal,
-                'sugarcane': fallbackLocal,
-                'essencesoffire': fallbackLocal
-            };
+            // Itens que NÃO são pokémons (usados em tasks "Entregar")
+            const itensTask = [
+                'waterstone', 'screws', 'bottleofpoison', 'venomstone', 'flour',
+                'seeds', 'firestone', 'smallstone', 'dragonstone', 'brokenstone',
+                'futureorb', 'sugarcane', 'essencesoffire', 'watergem'
+            ];
             
             const nomeNormalizado = normalizarNomeItem(nome);
             
-            // Se for um item especial, retorna a imagem local
-            if (itensEspeciais[nomeNormalizado]) {
-                return itensEspeciais[nomeNormalizado];
+            // Se for um item (não pokémon), usa a pasta de itens task
+            if (itensTask.includes(nomeNormalizado)) {
+                return `IMAGENS/imagens-itens/itens task/${nome}.png`;
             }
             
-            // Se não, trata como pokémon normal (forçar stickers)
-            return obterImagemPokemon(nome, '', true);
+            // Pokémons especiais com nomes que não batem direto com arquivo
+            const pokemonsEspeciais = {
+                'shinygloom': 'IMAGENS/imagens-pokemon/stickers-pokemon/shinygloom.png',
+                'hordeleaderpoliwrath': 'IMAGENS/imagens-pokemon/stickers-pokemon/hordeleaderpoliwrath.png',
+                'shinygyarados': 'IMAGENS/imagens-pokemon/stickers-pokemon/shinygyarados.png'
+            };
+            
+            if (pokemonsEspeciais[nomeNormalizado]) {
+                return pokemonsEspeciais[nomeNormalizado];
+            }
+            
+            // Pokémon normal - usar stickers
+            return `IMAGENS/imagens-pokemon/stickers-pokemon/${nome}.png`;
         }
 
         function obterImagemItem(nome) {
-            const fallbackLocal = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
-            
-            const mapeamentoEspecial = {
-                'watergem': 'IMAGENS/imagens-itens/helditem/Water Gem.png',
-                'firegem': 'IMAGENS/imagens-itens/helditem/Fire Gem.png',
-                'grassgem': 'IMAGENS/imagens-itens/helditem/Grass Gem.png',
-                'xp': fallbackLocal,
-                'waterstone': fallbackLocal,
-                'screws': fallbackLocal,
-                'bottleofpoison': fallbackLocal,
-                'venomstone': fallbackLocal,
-                'flour': fallbackLocal,
-                'seeds': fallbackLocal,
-                'firestone': fallbackLocal,
-                'smallstone': fallbackLocal,
-                'dragonstone': fallbackLocal,
-                'brokenstone': fallbackLocal,
-                'futureorb': fallbackLocal,
-                'sugarcane': fallbackLocal
-            };
-            
             const nomeNormalizado = normalizarNomeItem(nome);
             
-            if (mapeamentoEspecial[nomeNormalizado]) {
-                return mapeamentoEspecial[nomeNormalizado];
+            // XP usa imagem especial (formato .webp)
+            if (nomeNormalizado === 'xp') {
+                return 'IMAGENS/imagens-itens/itens task/xp.webp';
             }
             
-            // Fallback: tenta sticker do pokémon
-            return `IMAGENS/imagens-pokemon/stickers-pokemon/${nome}.png`;
+            // Todos os itens de recompensa usam a pasta itens task
+            return `IMAGENS/imagens-itens/itens task/${nome}.png`;
         }
 
         function obterImagemMembro(nomeMembro) {
