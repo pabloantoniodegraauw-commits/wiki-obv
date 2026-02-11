@@ -648,7 +648,7 @@
             
             // Se for um item (não pokémon), usa a pasta de itens task (lowercase)
             if (itensTask.includes(nomeNormalizado)) {
-                return `IMAGENS/imagens-itens/itens task/${nome}.png`;
+                return `IMAGENS/imagens-itens/itens%20task/${nome}.png`;
             }
             
             // Pokémons especiais com nomes que não batem direto com arquivo (lowercase)
@@ -672,11 +672,11 @@
             
             // XP usa imagem especial (formato .webp)
             if (nomeNormalizado === 'xp') {
-                return 'IMAGENS/imagens-itens/itens task/xp.webp';
+                return 'IMAGENS/imagens-itens/itens%20task/xp.webp';
             }
             
             // Todos os itens de recompensa usam a pasta itens task
-            return `IMAGENS/imagens-itens/itens task/${nome}.png`;
+            return `IMAGENS/imagens-itens/itens%20task/${nome}.png`;
         }
 
         function obterImagemMembro(nomeMembro) {
@@ -982,7 +982,7 @@
                 let premiosHtml = '';
                 task.premios.forEach(premio => {
                     const isXP = premio.isxp;
-                    const src = isXP ? 'IMAGENS/imagens-itens/itens task/xp.webp' : obterImagemItem(premio.item);
+                    const src = isXP ? 'IMAGENS/imagens-itens/itens%20task/xp.webp' : obterImagemItem(premio.item);
                     premiosHtml += `
                         <div class="task-reward-item">
                             <img src="${src}" alt="${premio.item}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'">
