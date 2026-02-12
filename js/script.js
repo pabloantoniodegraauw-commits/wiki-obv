@@ -3017,92 +3017,46 @@
         };
 
         // ⭐ Apagar sugestão individual de Atack (admin)
-        window.apagarSugestaoAtack = async function(nomePokemon, slot) {
-            if (!confirm(`Apagar a sugestão do ${slot.toUpperCase()} de "${nomePokemon}"?`)) return;
-            
-            try {
-                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({
-                        action: 'atualizarAtack',
-                        nomePokemon: nomePokemon,
-                        slot: slot,
-                        nomeAtack: '',
-                        email: adminUser.email || '',
-                        authToken: adminUser.authToken || ''
-                    })
-                });
-                const resultado = JSON.parse(await response.text());
-                if (resultado.sucesso || resultado.success) {
-                    // Atualizar UI: remover o item
-                    const modal = document.getElementById('modalEdicaoOverlay');
-                    if (modal) {
-                        const atackItems = modal.querySelectorAll('.modal-suggestion-item.atack');
-                        atackItems.forEach(item => {
-                            if (item.textContent.includes(slot.toUpperCase())) {
-                                item.outerHTML = '<div class="modal-no-suggestion">Sugestão do ' + slot.toUpperCase() + ' apagada ✓</div>';
-                            }
-                        });
-                        // Também limpar o campo de input correspondente no modal
-                        const inputSlot = document.getElementById('edit-' + slot);
-                        if (inputSlot) inputSlot.value = '';
+        window.apagarSugestaoAtack = function(nomePokemon, slot) {
+            // Apenas limpa o campo de input no modal — a remoção real acontece ao clicar "Salvar"
+            const inputSlot = document.getElementById('edit-' + slot);
+            if (inputSlot) inputSlot.value = '';
+
+            // Atualizar UI: riscar o item na lista de sugestões
+            const modal = document.getElementById('modalEdicaoOverlay');
+            if (modal) {
+                const atackItems = modal.querySelectorAll('.modal-suggestion-item.atack');
+                atackItems.forEach(item => {
+                    if (item.textContent.includes(slot.toUpperCase())) {
+                        item.style.opacity = '0.4';
+                        item.style.textDecoration = 'line-through';
+                        const btn = item.querySelector('.suggestion-delete-btn');
+                        if (btn) btn.remove();
                     }
-                    alert(`Sugestão do ${slot.toUpperCase()} apagada com sucesso!`);
-                } else {
-                    alert('Erro: ' + (resultado.mensagem || resultado.message || 'Erro desconhecido'));
-                }
-            } catch (erro) {
-                alert('Erro ao apagar sugestão: ' + erro.message);
+                });
             }
+            mostrarToastSucesso(`${slot.toUpperCase()} será removido ao salvar`);
         };
 
-        // ⭐ Limpar TODAS as sugestões de Atacks de um Pokémon (admin)
-        window.limparTodasSugestoesAtacks = async function(nomePokemon) {
-            if (!confirm(`Limpar TODOS os atacks sugeridos de "${nomePokemon}"?\n\nIsso irá apagar os slots M1 a M10.`)) return;
+        // ⭐ Limpar TODOS os atacks de um Pokémon (apenas no modal — salva ao clicar "Salvar")
+        window.limparTodasSugestoesAtacks = function(nomePokemon) {
+            if (!confirm(`Limpar TODOS os atacks de "${nomePokemon}"?\n\nIsso limpará M1 a M10. A alteração só será gravada ao clicar Salvar.`)) return;
             
-            try {
-                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
-                
-                const promessas = [];
-                for (let i = 1; i <= 10; i++) {
-                    promessas.push(
-                        fetch(APPS_SCRIPT_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain' },
-                            body: JSON.stringify({
-                                action: 'atualizarAtack',
-                                nomePokemon: nomePokemon,
-                                slot: `m${i}`,
-                                nomeAtack: '',
-                                email: adminUser.email || '',
-                                authToken: adminUser.authToken || ''
-                            })
-                        }).catch(e => console.warn(`Erro ao limpar M${i}:`, e))
-                    );
-                }
-                
-                await Promise.all(promessas);
-                
-                // Atualizar UI
-                const modal = document.getElementById('modalEdicaoOverlay');
-                if (modal) {
-                    const container = modal.querySelector('#sugestoesAtacksContainer');
-                    if (container) {
-                        container.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Todas as sugestões de atacks apagadas ✓</span>';
-                    }
-                    // Limpar campos de input dos atacks
-                    for (let i = 1; i <= 10; i++) {
-                        const input = document.getElementById(`edit-m${i}`);
-                        if (input) input.value = '';
-                    }
-                    // Esconder botão "Limpar Todas"
-                    const btnLimpar = modal.querySelector('#btnLimparSugestoesAtacks');
-                    if (btnLimpar) btnLimpar.style.display = 'none';
-                }
-                alert('Todas as sugestões de atacks apagadas com sucesso!');
-            } catch (erro) {
-                alert('Erro ao limpar sugestões: ' + erro.message);
+            // Limpar campos de input dos atacks
+            for (let i = 1; i <= 10; i++) {
+                const input = document.getElementById(`edit-m${i}`);
+                if (input) input.value = '';
             }
+            
+            // Atualizar UI
+            const modal = document.getElementById('modalEdicaoOverlay');
+            if (modal) {
+                const container = modal.querySelector('#sugestoesAtacksContainer');
+                if (container) {
+                    container.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Todos os atacks serão removidos ao salvar</span>';
+                }
+                const btnLimpar = modal.querySelector('#btnLimparSugestoesAtacks');
+                if (btnLimpar) btnLimpar.style.display = 'none';
+            }
+            mostrarToastSucesso('Atacks limpos — clique Salvar para confirmar');
         };
