@@ -18,6 +18,18 @@
         let carregandoMais = false;
         let temMaisPaginas = true;
         let dadosCompletosCarregados = false;
+
+        // 🍞 Toast de sucesso (sem reload)
+        function mostrarToastSucesso(mensagem = 'Salvo com sucesso!') {
+            const toast = document.createElement('div');
+            toast.textContent = mensagem;
+            toast.style.cssText = 'position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#2ecc71,#27ae60);color:#fff;padding:14px 28px;border-radius:12px;font-weight:bold;font-size:15px;z-index:100000;box-shadow:0 8px 25px rgba(46,204,113,0.5);animation:toastIn .4s ease;pointer-events:none;';
+            const style = document.createElement('style');
+            style.textContent = '@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+            document.head.appendChild(style);
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.transition = 'opacity .4s'; toast.style.opacity = '0'; setTimeout(() => { toast.remove(); style.remove(); }, 400); }, 2500);
+        }
         let usarStickers = false; // false = database, true = stickers
 
         function isAdmin() {
@@ -152,33 +164,29 @@
                 const container = document.getElementById('pokemonContainer');
                 container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando Pokémons...</p></div>';
 
-                console.log('⏳ Iniciando carregamento (paginado)...');
+                console.log('⏳ Iniciando carregamento completo...');
                 const inicio = Date.now();
 
-                // Carregar primeira página
-                paginaAtual = 1;
-                console.log('🚀 Carregando página 1...');
-                console.log('🌐 URL usada para fetch:', `${URL_DADOS}&page=1&limit=100`);
-                const resposta = await fetch(`${URL_DADOS}&page=1&limit=100`);
-                console.log('🔎 Status da resposta:', resposta.status, resposta.statusText);
+                // Carregar TODOS os Pokémon de uma vez
+                const resposta = await fetch(`${URL_DADOS}&page=1&limit=9999`);
                 const textoResposta = await resposta.text();
-                console.log('📦 Conteúdo da resposta:', textoResposta.slice(0, 300));
 
                 // Verificar se é JSON válido
                 let resultado;
                 try {
                     resultado = JSON.parse(textoResposta);
-                    console.log('✅ Apps Script OK! JSON válido:', resultado);
                 } catch (e) {
-                    console.error('❌ Erro ao processar resposta do servidor:', e, textoResposta);
+                    console.error('❌ Erro ao processar resposta do servidor:', e);
                     throw new Error('Erro ao processar resposta do servidor');
                 }
 
                 todosPokemons = resultado.data;
-                temMaisPaginas = resultado.hasMore;
+                todosPokemonsCompleto = resultado.data;
+                dadosCompletosCarregados = true;
+                temMaisPaginas = false;
 
                 const tempoDecorrido = Date.now() - inicio;
-                console.log(`📥 Primeira página carregada em ${tempoDecorrido}ms:`, todosPokemons.length, 'de', resultado.total);
+                console.log(`📥 Todos os Pokémon carregados em ${tempoDecorrido}ms:`, todosPokemons.length);
 
                 // Se tem dados locais editados, aplicar as edições sobre os dados da planilha
                 const dadosLocais = localStorage.getItem('pokemons_editados');
@@ -207,18 +215,13 @@
                     console.log('✓ Dados mesclados com edições locais');
                 }
 
-                document.getElementById('pokemonCount').textContent = resultado.total;
+                document.getElementById('pokemonCount').textContent = todosPokemons.length;
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
                 
                 // Carregar TMs da aba TMs para cross-reference na Pokédex
                 await carregarDadosTMs();
                 
                 renderizarPokemons(todosPokemons);
-
-                // Configurar infinite scroll após primeiro carregamento
-                if (temMaisPaginas) {
-                    configurarInfiniteScroll();
-                }
             } catch (erro) {
                 const container = document.getElementById('pokemonContainer');
                 if (!container) return; // Sair se o elemento não existir
@@ -396,186 +399,7 @@
             }
         }
         
-        // Nova função: Infinite Scroll
-        async function carregarMaisPokemos() {
-            if (carregandoMais || !temMaisPaginas) return;
-            
-            carregandoMais = true;
-            paginaAtual++;
-            
-            // Mostrar loading no final da página
-            const container = document.getElementById('pokemonContainer');
-            const loadingDiv = document.createElement('div');
-            loadingDiv.id = 'loadingMore';
-            loadingDiv.style.cssText = 'text-align:center;padding:30px;color:#ffd700;grid-column:1/-1;';
-            loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:36px;"></i><p style="margin-top:15px;">Carregando mais...</p>';
-            container.appendChild(loadingDiv);
-            
-            try {
-                console.log(`🔄 Carregando página ${paginaAtual}...`);
-                const inicio = Date.now();
-                
-                const resposta = await fetch(`${URL_DADOS}&page=${paginaAtual}&limit=100`);
-                const resultado = await resposta.json();
-                
-                const tempoDecorrido = Date.now() - inicio;
-                console.log(`📥 Página ${paginaAtual} carregada em ${tempoDecorrido}ms:`, resultado.data.length);
-                
-                // Adicionar novos pokémons ao array existente
-                todosPokemons = todosPokemons.concat(resultado.data);
-                temMaisPaginas = resultado.hasMore;
-                
-                // Remover loading
-                loadingDiv.remove();
-                
-                // Renderizar apenas os novos pokémons
-                resultado.data.forEach((pokemon) => {
-                    const numero = pokemon['PS'] || '';
-                    const nomePokemon = pokemon['POKEMON'] || 'Desconhecido';
-                    const tipo1 = pokemon['Type 1'] || 'Normal';
-                    const tipo2 = pokemon['Type 2'] || '';
-                    const evolucao = pokemon['EV'] || '';
-                    const localizacao = pokemon['LOCALIZAÇÃO'] || 'Não informado';
-                    const sugestaoLocalizacao = obterSugestaoLocalizacao(pokemon);
-                    const hp = pokemon['HP'] || '0';
-                    const ataque = pokemon['Attack'] || '0';
-                    const defesa = pokemon['Defense'] || '0';
-                    const ataqueEsp = pokemon['Sp.Attack'] || '0';
-                    const defesaEsp = pokemon['Sp.Defense'] || '0';
-                    const velocidade = pokemon['Speed'] || '0';
-                    const nomePrincipal = evolucao || nomePokemon;
-                    const nomeBase = evolucao ? nomePokemon : '';
-                    const nomeParaBusca = evolucao || nomePokemon;
-                    const imagemUrl = obterImagemPokemon(nomePrincipal, nomeBase);
-                    const tmsDoPokemons = obterTMsDoPokemon(nomePrincipal);
-                    const sugestoesTMs = obterSugestoesTMsParaPokemon(nomePrincipal);
-                    
-                    // 📍 PROCESSAR LOCALIZAÇÃO COM FORMATAÇÃO
-                    let localizacaoHTML = '';
-                    if (localizacao && localizacao !== 'Não informado') {
-                        const locais = localizacao.split(' / ');
-                        let total = 0;
-                        localizacaoHTML = '<div style="line-height: 1.8;">';
-                        locais.forEach(local => {
-                            const match = local.match(/(\d+)un/);
-                            if (match) total += parseInt(match[1]);
-                            localizacaoHTML += `• ${local}<br>`;
-                        });
-                        if (total > 0) {
-                            localizacaoHTML += `<br><strong style="color: #ffd700;">Total: ${total}un</strong>`;
-                        }
-                        localizacaoHTML += '</div>';
-                    } else {
-                        localizacaoHTML = 'Não informado';
-                    }
-                    
-                    const card = document.createElement('div');
-                    card.className = 'pokemon-card';
-                    card.setAttribute('data-pokemon-nome', nomeParaBusca);
-                    card.innerHTML = `
-                        ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
-                        <div class="img-container">
-                            <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
-                        </div>
-                        ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
-                        <h3 class="pokemon-name">
-                            ${nomePrincipal}
-                        </h3>
-                        ${nomeBase ? `<div class="pokemon-base">Forma base: ${nomeBase}</div>` : ''}
-                        <div class="pokemon-types">
-                            <span class="type-badge type-${tipo1.toLowerCase()}">${tipo1}</span>
-                            ${tipo2 ? `<span class="type-badge type-${tipo2.toLowerCase()}">${tipo2}</span>` : ''}
-                        </div>
-                        <div class="pokemon-stats">
-                            <div class="stat">
-                                <div class="stat-value">${hp}</div>
-                                <div class="stat-label">HP</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-value">${ataque}</div>
-                                <div class="stat-label">Ataque</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-value">${defesa}</div>
-                                <div class="stat-label">Defesa</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-value">${ataqueEsp}</div>
-                                <div class="stat-label">Sp.Atk</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-value">${defesaEsp}</div>
-                                <div class="stat-label">Sp.Def</div>
-                            </div>
-                            <div class="stat">
-                                <div class="stat-value">${velocidade}</div>
-                                <div class="stat-label">Velocidade</div>
-                            </div>
-                        </div>
-                        <div class="pokemon-location">
-                            <div class="location-title">
-                                <i class="fas fa-map-marker-alt"></i> Localização
-                            </div>
-                            ${localizacaoHTML}
-                        </div>
-                        ${sugestaoLocalizacao ? `
-                        <div class="pokemon-suggestion">
-                            <div class="suggestion-title">
-                                <i class="fas fa-lightbulb"></i> Sugestão da Comunidade
-                            </div>
-                            <div>${sugestaoLocalizacao}</div>
-                        </div>
-                        ` : ''}
-                        <!-- ⭐ SEÇÃO: TMs / Moves (da aba TMs) ⭐ -->
-                        <div class="pokemon-tms">
-                            <div class="tms-title">
-                                <i class="fas fa-compact-disc"></i> TMs / Moves
-                            </div>
-                            <div class="tms-content">
-                                ${gerarTMsHTML(tmsDoPokemons)}
-                            </div>
-                        </div>
-                        ${gerarSugestoesTMsHTML(sugestoesTMs)}
-                        <button class="btn-sugerir" onclick="abrirModalSugestaoUnificado('${nomeParaBusca.replace(/'/g, "\\'")}')"> 
-                            <i class="fas fa-lightbulb"></i> Sugerir
-                        </button>
-                        ${isAdmin() ? `
-                        <button class="btn-edit" onclick="abrirModalEdicao('${nomeParaBusca.replace(/'/g, "\\'")}')">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        ` : ''}
-                    `;
-                    container.appendChild(card);
-                });
-                
-                document.getElementById('pokemonCount').textContent = todosPokemons.length;
-                
-                console.log(`✅ Total de Pokémons: ${todosPokemons.length}`);
-                
-            } catch (erro) {
-                console.error('❌ Erro ao carregar mais:', erro);
-                if (loadingDiv.parentNode) {
-                    loadingDiv.innerHTML = '<p style="color:#ff4444;">Erro ao carregar mais. <button onclick="carregarMaisPokemos()" style="margin-left:10px;padding:5px 15px;background:#ffd700;color:#1a2980;border:none;border-radius:15px;cursor:pointer;">Tentar novamente</button></p>';
-                }
-            } finally {
-                carregandoMais = false;
-            }
-        }
-        
-        function configurarInfiniteScroll() {
-            window.addEventListener('scroll', () => {
-                if (carregandoMais || !temMaisPaginas) return;
-                
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                const scrollHeight = document.documentElement.scrollHeight;
-                const clientHeight = document.documentElement.clientHeight;
-                
-                // Carregar mais quando chegar a 500px do final
-                if (scrollTop + clientHeight >= scrollHeight - 500) {
-                    carregarMaisPokemos();
-                }
-            });
-        }
+// (Infinite scroll removido — todos os dados são carregados de uma vez)
         
         function obterImagemPokemon(nomePrincipal, nomeBase, forceStickers = false) {
             // Remove "Boss " do início, se houver
@@ -1185,7 +1009,7 @@
             const input = document.getElementById('searchInput');
             const container = document.getElementById('pokemonContainer');
             
-            input.addEventListener('input', async function() {
+            input.addEventListener('input', function() {
                 const termo = this.value.toLowerCase().trim();
                 container.querySelectorAll('.no-results').forEach(m => m.remove());
                 
@@ -1199,30 +1023,7 @@
                     return;
                 }
                 
-                // Se tem busca e ainda não carregou todos os dados, carregar agora
-                if (!dadosCompletosCarregados) {
-                    console.log('🔍 Carregando todos os dados para busca...');
-                    container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando todos os Pokémons para busca...</p></div>';
-                    
-                    try {
-                        // Carregar TODOS os dados sem paginação (limit alto)
-                        const resposta = await fetch(`${URL_DADOS}&page=1&limit=9999`);
-                        const resultado = await resposta.json();
-                        todosPokemonsCompleto = resultado.data;
-                        dadosCompletosCarregados = true;
-                        console.log('✅ Todos os dados carregados:', todosPokemonsCompleto.length);
-                        
-                        // Renderizar todos
-                        renderizarPokemons(todosPokemonsCompleto);
-                        todosPokemons = todosPokemonsCompleto;
-                        temMaisPaginas = false; // Desabilitar infinite scroll
-                    } catch (erro) {
-                        console.error('❌ Erro ao carregar dados completos:', erro);
-                        return;
-                    }
-                }
-                
-                // Agora buscar nos cards
+                // Buscar nos cards
                 const cards = container.querySelectorAll('.pokemon-card');
                 let encontrados = 0;
                 
@@ -1542,12 +1343,105 @@
                 document.body.appendChild(btnReset);
             }, 500);
         }
+
+        // ⚡ Atualizar apenas um card no DOM sem re-renderizar tudo
+        function atualizarCardNoDom(nomeOriginal, pokemon) {
+            const nomeNorm = normalizarNome(nomeOriginal);
+            const cards = document.querySelectorAll('.pokemon-card');
+            for (const card of cards) {
+                const dataNome = card.getAttribute('data-pokemon-nome');
+                if (normalizarNome(dataNome) === nomeNorm) {
+                    const nomePokemon = pokemon['POKEMON'] || 'Desconhecido';
+                    const tipo1 = pokemon['Type 1'] || 'Normal';
+                    const tipo2 = pokemon['Type 2'] || '';
+                    const evolucao = pokemon['EV'] || '';
+                    const nomePrincipal = evolucao || nomePokemon;
+                    const nomeBase = evolucao ? nomePokemon : '';
+                    const nomeParaBusca = evolucao || nomePokemon;
+                    const localizacao = pokemon['LOCALIZAÇÃO'] || 'Não informado';
+                    const sugestaoLocalizacao = obterSugestaoLocalizacao(pokemon);
+                    const imagemUrl = obterImagemPokemon(nomePrincipal, nomeBase);
+                    const tmsDoPokemons = obterTMsDoPokemon(nomePrincipal);
+                    const sugestoesTMs = obterSugestoesTMsParaPokemon(nomePrincipal);
+
+                    // Atualizar data attribute
+                    card.setAttribute('data-pokemon-nome', nomeParaBusca);
+
+                    // Atualizar imagem
+                    const img = card.querySelector('.pokemon-img');
+                    if (img) { img.src = imagemUrl; img.alt = nomePrincipal; }
+
+                    // Atualizar nome
+                    const nameEl = card.querySelector('.pokemon-name');
+                    if (nameEl) nameEl.textContent = nomePrincipal;
+
+                    // Atualizar base
+                    const baseEl = card.querySelector('.pokemon-base');
+                    if (baseEl) baseEl.textContent = nomeBase ? `Forma base: ${nomeBase}` : '';
+
+                    // Atualizar número
+                    const numEl = card.querySelector('.pokemon-number');
+                    if (numEl) numEl.textContent = pokemon['PS'] ? `#${pokemon['PS']}` : '';
+
+                    // Atualizar stats
+                    const statValues = card.querySelectorAll('.stat-value');
+                    const statsArr = [pokemon['HP'], pokemon['Attack'], pokemon['Defense'], pokemon['Sp.Attack'], pokemon['Sp.Defense'], pokemon['Speed']];
+                    statValues.forEach((el, i) => { if (statsArr[i] !== undefined) el.textContent = statsArr[i]; });
+
+                    // Atualizar localização
+                    const locDiv = card.querySelector('.pokemon-location');
+                    if (locDiv) {
+                        let locHTML = '';
+                        if (localizacao && localizacao !== 'Não informado') {
+                            const locais = localizacao.split(' / ');
+                            let total = 0;
+                            locHTML = '<div style="line-height: 1.8;">';
+                            locais.forEach(local => {
+                                const match = local.match(/(\d+)un/);
+                                if (match) total += parseInt(match[1]);
+                                locHTML += `• ${local}<br>`;
+                            });
+                            if (total > 0) locHTML += `<br><strong style="color: #ffd700;">Total: ${total}un</strong>`;
+                            locHTML += '</div>';
+                        } else {
+                            locHTML = 'Não informado';
+                        }
+                        locDiv.innerHTML = `<div class="location-title"><i class="fas fa-map-marker-alt"></i> Localização</div>${locHTML}`;
+                    }
+
+                    // Atualizar TMs
+                    const tmsDiv = card.querySelector('.tms-content');
+                    if (tmsDiv) tmsDiv.innerHTML = gerarTMsHTML(tmsDoPokemons);
+
+                    // Flash visual de confirmação
+                    card.style.transition = 'box-shadow 0.3s ease';
+                    card.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.6)';
+                    setTimeout(() => { card.style.boxShadow = ''; }, 2000);
+
+                    // Re-adicionar botão de editar se admin
+                    if (isAdmin() && !card.querySelector('.btn-edit-pokemon')) {
+                        mostrarOpcoesAdmin();
+                    }
+
+                    console.log('⚡ Card atualizado no DOM:', nomeParaBusca);
+                    break;
+                }
+            }
+        }
         
         function editarPokemon(card, pokemonData, nomeReal) {
             const nomeDisplay = card.querySelector('.pokemon-name').textContent.trim();
-            const numero = card.querySelector('.pokemon-number')?.textContent.replace('#', '').trim() || '';
-            const stats = Array.from(card.querySelectorAll('.stat-value')).map(el => el.textContent);
-            const localizacao = card.querySelector('.pokemon-location div:last-child')?.textContent.trim() || '';
+            const numero = pokemonData ? (pokemonData['PS'] || '') : (card.querySelector('.pokemon-number')?.textContent.replace('#', '').trim() || '');
+            const stats = pokemonData ? [
+                pokemonData['HP'] || '0',
+                pokemonData['Attack'] || '0',
+                pokemonData['Defense'] || '0',
+                pokemonData['Sp.Attack'] || '0',
+                pokemonData['Sp.Defense'] || '0',
+                pokemonData['Speed'] || '0'
+            ] : Array.from(card.querySelectorAll('.stat-value')).map(el => el.textContent);
+            // Ler localização diretamente dos dados da planilha (preserva formatação original)
+            const localizacao = pokemonData ? (pokemonData['LOCALIZAÇÃO'] || '') : '';
             const tms = card.querySelector('.tms-content')?.textContent.trim() || '';
             
             // Carregar atacks e TMs antes de abrir o modal
@@ -1757,16 +1651,13 @@
 
                             <!-- Localização -->
                             <div style="margin-bottom: 10px;">
-                                <div style="color: #00d4ff; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-map-marker-alt"></i> Localização
+                                <div style="color: #00d4ff; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span><i class="fas fa-map-marker-alt"></i> Localização</span>
+                                    ${sugestaoLoc ? `<button class="suggestion-clear-all-btn" onclick="apagarSugestaoLocalizacao('${nomePrincipal.replace(/'/g, "\\'")}')" title="Limpar sugestão de localização"><i class="fas fa-broom"></i> Limpar</button>` : ''}
                                 </div>
                                 ${sugestaoLoc 
-                                    ? `<div class="modal-suggestion-item loc suggestion-with-delete">
+                                    ? `<div class="modal-suggestion-item loc">
                                         <span class="suggestion-text">${sugestaoLoc}</span>
-                                        <button class="suggestion-delete-btn" onclick="apagarSugestaoLocalizacao('${nomePrincipal.replace(/'/g, "\\'")}')"
-                                            title="Apagar sugestão de localização">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
                                       </div>` 
                                     : `<div class="modal-no-suggestion">Nenhuma sugestão de localização</div>`
                                 }
@@ -1774,8 +1665,9 @@
 
                             <!-- TMs -->
                             <div style="margin-bottom: 10px;">
-                                <div style="color: #a29bfe; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-compact-disc"></i> TMs
+                                <div style="color: #a29bfe; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span><i class="fas fa-compact-disc"></i> TMs</span>
+                                    ${sugestoesTMsHTML ? `<button class="suggestion-clear-all-btn" onclick="limparTodasSugestoesTMs('${nomePrincipal.replace(/'/g, "\\'")}')" title="Limpar todas as sugestões de TM"><i class="fas fa-broom"></i> Limpar Todas</button>` : ''}
                                 </div>
                                 ${sugestoesTMsHTML 
                                     ? sugestoesTMsHTML 
@@ -1785,8 +1677,9 @@
 
                             <!-- Atacks sugeridos -->
                             <div>
-                                <div style="color: #ff6b6b; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                    <i class="fas fa-fist-raised"></i> Atacks
+                                <div style="color: #ff6b6b; font-weight: 600; font-size: 0.85em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between;">
+                                    <span><i class="fas fa-fist-raised"></i> Atacks</span>
+                                    <button class="suggestion-clear-all-btn" id="btnLimparSugestoesAtacks" style="display:none;" onclick="limparTodasSugestoesAtacks('${nomePrincipal.replace(/'/g, "\\'")}')" title="Limpar todas as sugestões de Atacks"><i class="fas fa-broom"></i> Limpar Todas</button>
                                 </div>
                                 <div id="sugestoesAtacksContainer" class="modal-no-suggestion">Carregando...</div>
                             </div>
@@ -1815,7 +1708,7 @@
                     for (let i = 1; i <= 10; i++) {
                         const move = (pokemonData[`M${i}`] || pokemonData[`m${i}`] || '').toString().trim();
                         if (move) {
-                            atacksSugeridos.push(`<div class="modal-suggestion-item atack"><span class="suggestion-type atack">M${i}</span> ${move}</div>`);
+                            atacksSugeridos.push(`<div class="modal-suggestion-item atack suggestion-with-delete"><span class="suggestion-type atack">M${i}</span> ${move}<button class="suggestion-delete-btn" onclick="apagarSugestaoAtack('${nomePrincipal.replace(/'/g, "\\'")}', 'm${i}')" title="Apagar M${i}"><i class="fas fa-trash-alt"></i></button></div>`);
                         }
                     }
                 }
@@ -1825,6 +1718,11 @@
                         ? atacksSugeridos.join('') 
                         : '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Nenhum atack registrado</span>';
                     containerSugestoes.className = '';
+                }
+                // Mostrar botão "Limpar Todas" se houver atacks
+                const btnLimpar = overlay.querySelector('#btnLimparSugestoesAtacks');
+                if (btnLimpar) {
+                    btnLimpar.style.display = atacksSugeridos.length > 0 ? 'inline-flex' : 'none';
                 }
             }, 100);
             
@@ -1942,8 +1840,8 @@
             // Salvar no localStorage
             localStorage.setItem('pokemons_editados', JSON.stringify(todosPokemons));
             
-            // Re-renderizar
-            renderizarPokemons(todosPokemons);
+            // ⚡ Atualizar apenas o card modificado no DOM (sem re-renderizar tudo)
+            atualizarCardNoDom(nomeOriginal, todosPokemons[index]);
             
             // 🚀 SALVAR NO GOOGLE SHEETS
             if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== '') {
@@ -2057,15 +1955,13 @@
                             modalContent.appendChild(successMsg);
                         }
                         
-                        // Fechar modal após breve delay e recarregar dados da planilha
-                        setTimeout(async () => {
+                        // Fechar modal após breve delay (card já atualizado no DOM)
+                        setTimeout(() => {
                             const overlay = document.getElementById('modalEdicaoOverlay');
                             if (overlay) overlay.remove();
-                            // Limpar cache local e recarregar dados frescos da planilha
                             localStorage.removeItem('pokemons_editados');
-                            console.log('🔄 Recarregando dados da planilha...');
-                            await carregarDados();
-                        }, 1500);
+                            console.log('✅ Edição concluída, card atualizado no DOM.');
+                        }, 800);
                     } catch (err) {
                         console.error('⚠️ Erro parcial ao salvar:', err);
                         // Mesmo com erro parcial, mostrar aviso e fechar
@@ -2079,14 +1975,12 @@
                             warnMsg.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Salvo com avisos (verifique o console)';
                             modalContent.appendChild(warnMsg);
                         }
-                        setTimeout(async () => {
+                        setTimeout(() => {
                             const overlay = document.getElementById('modalEdicaoOverlay');
                             if (overlay) overlay.remove();
-                            // Recarregar mesmo com avisos
                             localStorage.removeItem('pokemons_editados');
-                            console.log('🔄 Recarregando dados da planilha...');
-                            await carregarDados();
-                        }, 2000);
+                            console.log('⚠️ Edição concluída com avisos, card atualizado no DOM.');
+                        }, 1200);
                     }
                     
                 } catch (erro) {
@@ -2227,7 +2121,7 @@
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
                     document.getElementById('modalSugestao').remove();
-                    setTimeout(() => location.reload(), 300);
+                    mostrarToastSucesso('Sugestão de localização enviada!');
                 } else {
                     alert('Erro: ' + (resultado.mensagem || resultado.message));
                     botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
@@ -2301,7 +2195,7 @@
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
                     document.getElementById('modalSugestao').remove();
-                    setTimeout(() => location.reload(), 300);
+                    mostrarToastSucesso('Sugestão de atack enviada!');
                 } else {
                     alert('Erro: ' + (resultado.mensagem || resultado.message));
                     botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
@@ -2507,7 +2401,7 @@
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
                     document.getElementById('modalSugestao').remove();
-                    setTimeout(() => location.reload(), 300);
+                    mostrarToastSucesso('Sugestão de TM enviada!');
                 } else {
                     alert('Erro: ' + (resultado.mensagem || resultado.message));
                     botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
@@ -2596,9 +2490,8 @@
                 });
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
-                    alert('TM adicionado com sucesso!');
                     document.getElementById('modalSugestao').remove();
-                    setTimeout(() => location.reload(), 300);
+                    mostrarToastSucesso('Novo TM adicionado com sucesso!');
                 } else {
                     alert('Erro: ' + (resultado.mensagem || resultado.message));
                     botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar TM';
@@ -2920,7 +2813,7 @@
             aplicarFiltrosPokedex();
         };
 
-        window.aplicarFiltrosPokedex = async function() {
+        window.aplicarFiltrosPokedex = function() {
             const container = document.getElementById('pokemonContainer');
             if (!container) return;
 
@@ -2930,22 +2823,6 @@
             const sugestaoFiltro = ((document.getElementById('filterSugestao') || {}).value || '').toLowerCase();
 
             const temFiltroAtivo = genFiltro || typeFiltro || evFiltro || sugestaoFiltro;
-
-            // Se algum filtro ativo e dados incompletos, carregar tudo
-            if (temFiltroAtivo && !dadosCompletosCarregados) {
-                container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando todos os Pokémons para filtrar...</p></div>';
-                try {
-                    const resposta = await fetch(`${URL_DADOS}&page=1&limit=9999`);
-                    const resultado = await resposta.json();
-                    todosPokemonsCompleto = resultado.data;
-                    dadosCompletosCarregados = true;
-                    todosPokemons = todosPokemonsCompleto;
-                    temMaisPaginas = false;
-                } catch (e) {
-                    console.error('Erro ao carregar dados para filtro:', e);
-                    return;
-                }
-            }
 
             // Se nenhum filtro, re-renderizar tudo
             if (!temFiltroAtivo) {
@@ -3081,5 +2958,151 @@
                 }
             } catch (erro) {
                 alert('Erro ao apagar sugestão: ' + erro.message);
+            }
+        };
+
+        // ⭐ Limpar TODAS as sugestões de TMs de um Pokémon (admin)
+        window.limparTodasSugestoesTMs = async function(nomePokemon) {
+            if (!confirm(`Limpar TODAS as sugestões de TMs de "${nomePokemon}"?`)) return;
+            
+            try {
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const nomeNorm = normalizarNome(nomePokemon);
+                
+                // Buscar todos os TMs que têm sugestão mencionando este Pokémon
+                const tmsComSugestao = todosTMs.filter(tm => {
+                    if (!tm.sugestao) return false;
+                    const sugestaoNorm = normalizarNome(tm.sugestao);
+                    return sugestaoNorm.includes(nomeNorm);
+                });
+                
+                // Incluir também TMs do próprio Pokémon que tenham sugestão
+                const tmsDoPokemon = obterTMsDoPokemon(nomePokemon).filter(tm => tm.sugestao);
+                const todosComSugestao = [...new Map([...tmsDoPokemon, ...tmsComSugestao].map(tm => [tm.numero, tm])).values()];
+                
+                if (todosComSugestao.length === 0) {
+                    alert('Nenhuma sugestão de TM encontrada.');
+                    return;
+                }
+                
+                const promessas = todosComSugestao.map(tm => 
+                    fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: JSON.stringify({
+                            action: 'limparSugestaoTM',
+                            tmNumero: tm.numero,
+                            authToken: adminUser.authToken || '',
+                            email: adminUser.email || ''
+                        })
+                    }).catch(e => console.warn('Erro ao limpar TM' + tm.numero, e))
+                );
+                
+                await Promise.all(promessas);
+                
+                // Atualizar UI
+                const modal = document.getElementById('modalEdicaoOverlay');
+                if (modal) {
+                    const tmItems = modal.querySelectorAll('.modal-suggestion-item.tm');
+                    tmItems.forEach(item => {
+                        item.outerHTML = '<div class="modal-no-suggestion">Sugestão apagada ✓</div>';
+                    });
+                    const btnLimpar = modal.querySelector('.suggestion-clear-all-btn[onclick*="limparTodasSugestoesTMs"]');
+                    if (btnLimpar) btnLimpar.style.display = 'none';
+                }
+                alert(`${todosComSugestao.length} sugestão(ões) de TMs apagada(s) com sucesso!`);
+            } catch (erro) {
+                alert('Erro ao limpar sugestões: ' + erro.message);
+            }
+        };
+
+        // ⭐ Apagar sugestão individual de Atack (admin)
+        window.apagarSugestaoAtack = async function(nomePokemon, slot) {
+            if (!confirm(`Apagar a sugestão do ${slot.toUpperCase()} de "${nomePokemon}"?`)) return;
+            
+            try {
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'atualizarAtack',
+                        nomePokemon: nomePokemon,
+                        slot: slot,
+                        nomeAtack: '',
+                        email: adminUser.email || '',
+                        authToken: adminUser.authToken || ''
+                    })
+                });
+                const resultado = JSON.parse(await response.text());
+                if (resultado.sucesso || resultado.success) {
+                    // Atualizar UI: remover o item
+                    const modal = document.getElementById('modalEdicaoOverlay');
+                    if (modal) {
+                        const atackItems = modal.querySelectorAll('.modal-suggestion-item.atack');
+                        atackItems.forEach(item => {
+                            if (item.textContent.includes(slot.toUpperCase())) {
+                                item.outerHTML = '<div class="modal-no-suggestion">Sugestão do ' + slot.toUpperCase() + ' apagada ✓</div>';
+                            }
+                        });
+                        // Também limpar o campo de input correspondente no modal
+                        const inputSlot = document.getElementById('edit-' + slot);
+                        if (inputSlot) inputSlot.value = '';
+                    }
+                    alert(`Sugestão do ${slot.toUpperCase()} apagada com sucesso!`);
+                } else {
+                    alert('Erro: ' + (resultado.mensagem || resultado.message || 'Erro desconhecido'));
+                }
+            } catch (erro) {
+                alert('Erro ao apagar sugestão: ' + erro.message);
+            }
+        };
+
+        // ⭐ Limpar TODAS as sugestões de Atacks de um Pokémon (admin)
+        window.limparTodasSugestoesAtacks = async function(nomePokemon) {
+            if (!confirm(`Limpar TODOS os atacks sugeridos de "${nomePokemon}"?\n\nIsso irá apagar os slots M1 a M10.`)) return;
+            
+            try {
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                
+                const promessas = [];
+                for (let i = 1; i <= 10; i++) {
+                    promessas.push(
+                        fetch(APPS_SCRIPT_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({
+                                action: 'atualizarAtack',
+                                nomePokemon: nomePokemon,
+                                slot: `m${i}`,
+                                nomeAtack: '',
+                                email: adminUser.email || '',
+                                authToken: adminUser.authToken || ''
+                            })
+                        }).catch(e => console.warn(`Erro ao limpar M${i}:`, e))
+                    );
+                }
+                
+                await Promise.all(promessas);
+                
+                // Atualizar UI
+                const modal = document.getElementById('modalEdicaoOverlay');
+                if (modal) {
+                    const container = modal.querySelector('#sugestoesAtacksContainer');
+                    if (container) {
+                        container.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Todas as sugestões de atacks apagadas ✓</span>';
+                    }
+                    // Limpar campos de input dos atacks
+                    for (let i = 1; i <= 10; i++) {
+                        const input = document.getElementById(`edit-m${i}`);
+                        if (input) input.value = '';
+                    }
+                    // Esconder botão "Limpar Todas"
+                    const btnLimpar = modal.querySelector('#btnLimparSugestoesAtacks');
+                    if (btnLimpar) btnLimpar.style.display = 'none';
+                }
+                alert('Todas as sugestões de atacks apagadas com sucesso!');
+            } catch (erro) {
+                alert('Erro ao limpar sugestões: ' + erro.message);
             }
         };

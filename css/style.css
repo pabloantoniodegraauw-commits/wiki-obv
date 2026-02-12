@@ -2270,6 +2270,29 @@ footer {
     padding: 5px 0;
 }
 
+/* Botão "Limpar" / "Limpar Todas" para sugestões */
+.suggestion-clear-all-btn {
+    background: rgba(255, 165, 0, 0.15);
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    color: #ffa500;
+    border-radius: 6px;
+    padding: 3px 10px;
+    cursor: pointer;
+    font-size: 0.75em;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.suggestion-clear-all-btn:hover {
+    background: rgba(255, 165, 0, 0.35);
+    border-color: #ffa500;
+    color: #fff;
+    transform: scale(1.05);
+}
+
 /* Responsivo */
 @media (max-width: 1024px) {
     .smeargle-container {

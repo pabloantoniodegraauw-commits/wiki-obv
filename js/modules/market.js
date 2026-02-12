@@ -588,14 +588,6 @@ function renderizarCardPokemon(nomeOuEV) {
     const fields = document.getElementById('marketCardFields');
     fields.innerHTML = `
         <div class="market-field">
-            <label><i class="fas fa-star"></i> Shiny?</label>
-            <div class="market-checkbox-group">
-                <label class="market-checkbox-option">
-                    <input type="checkbox" id="mkShiny"> <span>Sim, é Shiny</span>
-                </label>
-            </div>
-        </div>
-        <div class="market-field">
             <label><i class="fas fa-tag"></i> Nickname (opcional)</label>
             <input type="text" id="mkNickname" placeholder="Nickname do Pokémon">
         </div>
@@ -909,7 +901,6 @@ function coletarDadosPokemon() {
     const ev = pokemon['EV'] || '';
     const nomePokemon = pokemon['POKEMON'] || '';
     const nome = ev || nomePokemon;
-    const shiny = document.getElementById('mkShiny')?.checked || false;
     const nickname = document.getElementById('mkNickname')?.value || '';
     const pokebola = document.getElementById('mkPokebola')?.value || '';
     const levelRadio = document.querySelector('input[name="mkLevel"]:checked')?.value || '100';
@@ -921,7 +912,7 @@ function coletarDadosPokemon() {
     const mega = document.getElementById('mkMegaCheck')?.checked ? (document.getElementById('mkMegaStone')?.value || '') : '';
     const addon = document.getElementById('mkAddonCheck')?.checked ? (document.getElementById('mkAddon')?.value || '') : '';
 
-    return { nome, shiny, nickname, pokebola, level, sexo, nature, boost, held, mega, addon };
+    return { nome, nickname, pokebola, level, sexo, nature, boost, held, mega, addon };
 }
 
 function coletarDadosTM() {
@@ -961,7 +952,6 @@ function gerarTextoItemCarrinho(item) {
     switch (item.tipo) {
         case 'pokemon': {
             const d = item.dados;
-            const shinyTag = d.shiny ? 'Shiny ' : '';
             const pokeStr = d.pokebola ? ` ${d.pokebola}.` : '.';
             const extras = [];
             if (d.nickname) extras.push(`Nickname: ${d.nickname}`);
@@ -970,7 +960,7 @@ function gerarTextoItemCarrinho(item) {
             if (d.held) extras.push(`Held: ${d.held}`);
             if (d.mega) extras.push(`Mega: ${d.mega}`);
             const extrasStr = extras.length > 0 ? '\n' + extras.join(' / ') : '';
-            return `${shinyTag}${d.nome}${pokeStr}\n${d.level}/${d.sexo}/${d.nature || '?'}${extrasStr}\n${precoStr}`;
+            return `${d.nome}${pokeStr}\n${d.level}/${d.sexo}/${d.nature || '?'}${extrasStr}\n${precoStr}`;
         }
         case 'tm': {
             const d = item.dados;
@@ -1010,8 +1000,6 @@ function editarItemCarrinho(index) {
                 selecionarItemMarket('pokemon', d.nome);
                 // Preencher campos após render
                 setTimeout(() => {
-                    const mkShiny = document.getElementById('mkShiny');
-                    if (mkShiny) mkShiny.checked = d.shiny || false;
                     const mkNickname = document.getElementById('mkNickname');
                     if (mkNickname) mkNickname.value = d.nickname || '';
                     const mkPokebola = document.getElementById('mkPokebola');
@@ -1203,7 +1191,6 @@ function renderizarCarrinho() {
             if (item.tipo === 'pokemon' && item.dados) {
                 const d = item.dados;
                 const parts = [];
-                if (d.shiny) parts.push('✨ Shiny');
                 parts.push(`Lv.${d.level}`);
                 parts.push(d.sexo === 'Male' ? '♂' : d.sexo === 'Female' ? '♀' : '⚪');
                 if (d.nature) parts.push(d.nature);
