@@ -1951,15 +1951,28 @@
                 _setupEditLocEntries(overlay, localizacao);
             }, 50);
 
-            // Carregar sugestões de atacks dos membros (verificar se moves foram atribuídos por membros)
+            // Carregar sugestões de atacks dos membros a partir da coluna SUGESTAO_ATACKS
             setTimeout(() => {
                 const atacksSugeridos = [];
                 if (pokemonData) {
-                    for (let i = 1; i <= 10; i++) {
-                        const move = (pokemonData[`M${i}`] || pokemonData[`m${i}`] || '').toString().trim();
-                        if (move) {
-                            atacksSugeridos.push(`<div class="modal-suggestion-item atack suggestion-with-delete"><span class="suggestion-type atack">M${i}</span> ${move}<button class="suggestion-delete-btn" onclick="apagarSugestaoAtack('${nomePrincipal.replace(/'/g, "\\'")}', 'm${i}')" title="Apagar M${i}"><i class="fas fa-trash-alt"></i></button></div>`);
-                        }
+                    const sugestaoAtacksRaw = (pokemonData['SUGESTAO_ATACKS'] || '').toString().trim();
+                    if (sugestaoAtacksRaw) {
+                        const entradas = sugestaoAtacksRaw.split(' - ');
+                        entradas.forEach((entrada, idx) => {
+                            const partes = entrada.split(' / ').map(p => p.trim());
+                            const slot = partes[0] || '';
+                            const nomeMove = partes[1] || '';
+                            const origem = partes[2] || '';
+                            const tipo = partes[3] || '';
+                            const categoria = partes[4] || '';
+                            if (slot && nomeMove) {
+                                let descricao = `${nomeMove}`;
+                                if (origem) descricao += ` (${origem})`;
+                                if (tipo) descricao += ` — ${tipo}`;
+                                if (categoria) descricao += ` / ${categoria}`;
+                                atacksSugeridos.push(`<div class="modal-suggestion-item atack suggestion-with-delete"><span class="suggestion-type atack">${slot}</span> ${descricao}<button class="suggestion-delete-btn" onclick="apagarSugestaoAtack('${nomePrincipal.replace(/'/g, "\\'")}', '${slot.replace(/'/g, "\\'")}')" title="Apagar ${slot}"><i class="fas fa-trash-alt"></i></button></div>`);
+                            }
+                        });
                     }
                 }
                 const containerSugestoes = overlay.querySelector('#sugestoesAtacksContainer');
@@ -2799,6 +2812,9 @@
                         ${todosAtacks.map(a => '<option value="' + (a['ATACK'] || a.ATACK || '') + '">').join('')}
                     </datalist>
                     
+                    <label style="${modalStyles.label}">📍 Origem (como aprende):</label>
+                    <input id="origemAtackInput" type="text" placeholder="Ex: dash, pulo, level, tm..." style="${modalStyles.input}">
+                    
                     <div style="display:flex;gap:10px;">
                         <button onclick="salvarSugestaoAtack('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
                             <i class="fas fa-save"></i> Salvar
@@ -2817,20 +2833,34 @@
         };
 
         window.salvarSugestaoAtack = async function(nomePokemon, botao) {
-            const slot = document.getElementById('slotAtack').value;
+            const slot = document.getElementById('slotAtack').value.toUpperCase(); // ex: M1
             const nomeAtack = document.getElementById('nomeAtackInput').value.trim();
+            const origem = (document.getElementById('origemAtackInput')?.value || '').trim();
             if (!nomeAtack) { alert('Digite o nome do atack!'); return; }
+            
+            // Buscar tipo e categoria do atack na base local
+            let tipoAtack = '';
+            let categoriaAtack = '';
+            const atackInfo = todosAtacks.find(a => (a['ATACK'] || '').toLowerCase() === nomeAtack.toLowerCase());
+            if (atackInfo) {
+                tipoAtack = (atackInfo['TYPE'] || atackInfo['TIPO'] || atackInfo['Type'] || '').toString().trim();
+                categoriaAtack = (atackInfo['CATEGORY'] || atackInfo['CATEGORIA'] || atackInfo['Category'] || '').toString().trim();
+            }
+            
+            // Formato: M2 / Night Slash / dash / Dark / Físico
+            const sugestaoFormatada = `${slot} / ${nomeAtack} / ${origem} / ${tipoAtack} / ${categoriaAtack}`;
+            
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             try {
                 const resp = await fetch(APPS_SCRIPT_URL, {
                     method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ action: 'atualizarAtack', nomePokemon, slot, nomeAtack, email: user.email, authToken: user.authToken })
+                    body: JSON.stringify({ action: 'salvarSugestaoAtack', nomePokemon, sugestao: sugestaoFormatada, email: user.email, authToken: user.authToken })
                 });
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
-                    // ⚡ Push imediato: atualizar dados locais e card no DOM
+                    // ⚡ Push imediato: atualizar SUGESTAO_ATACKS no array local
                     const nomeNorm = normalizarNome(nomePokemon);
                     const idx = todosPokemons.findIndex(p => {
                         const nEV = normalizarNome(p.EV || '');
@@ -2838,10 +2868,8 @@
                         return (nEV && nEV === nomeNorm) || (nPK && nPK === nomeNorm);
                     });
                     if (idx !== -1) {
-                        // Atualizar slot do atack no array local
-                        const slotKey = slot.toUpperCase();
-                        todosPokemons[idx][slotKey] = nomeAtack;
-                        atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
+                        const valorAtual = (todosPokemons[idx]['SUGESTAO_ATACKS'] || '').toString().trim();
+                        todosPokemons[idx]['SUGESTAO_ATACKS'] = valorAtual ? valorAtual + ' - ' + sugestaoFormatada : sugestaoFormatada;
                     }
                     document.getElementById('modalSugestao')?.remove();
                     mostrarToastSucesso('Sugestão de atack enviada!');
@@ -3556,9 +3584,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({
-                        action: 'atualizarSugestao',
+                        action: 'limparSugestaoLoc',
                         nomePokemon: nomePokemon,
-                        sugestao: '',
                         authToken: adminUser.authToken || '',
                         email: adminUser.email || ''
                     })
@@ -3572,6 +3599,11 @@
                         if (locContainer) {
                             locContainer.outerHTML = '<div class="modal-no-suggestion">Sugestão apagada ✓</div>';
                         }
+                    }
+                    // Push imediato: limpar sugestão no array local
+                    if (window.todosPokemons) {
+                        const pokLocal = window.todosPokemons.find(p => (p.EV || p.POKEMON || '').toLowerCase() === nomePokemon.toLowerCase());
+                        if (pokLocal) pokLocal['SUGESTÃO LOC'] = '';
                     }
                     alert('Sugestão de localização apagada com sucesso!');
                 } else {
@@ -3675,47 +3707,100 @@
             }
         };
 
-        // ⭐ Apagar sugestão individual de Atack (admin)
-        window.apagarSugestaoAtack = function(nomePokemon, slot) {
-            // Apenas limpa o campo de input no modal — a remoção real acontece ao clicar "Salvar"
-            const inputSlot = document.getElementById('edit-' + slot);
-            if (inputSlot) inputSlot.value = '';
-
-            // Atualizar UI: riscar o item na lista de sugestões
-            const modal = document.getElementById('modalEdicaoOverlay');
-            if (modal) {
-                const atackItems = modal.querySelectorAll('.modal-suggestion-item.atack');
-                atackItems.forEach(item => {
-                    if (item.textContent.includes(slot.toUpperCase())) {
-                        item.style.opacity = '0.4';
-                        item.style.textDecoration = 'line-through';
-                        const btn = item.querySelector('.suggestion-delete-btn');
-                        if (btn) btn.remove();
-                    }
+        // ⭐ Apagar sugestão individual de Atack (admin) — chama backend para remover da coluna Y
+        window.apagarSugestaoAtack = async function(nomePokemon, slot) {
+            if (!confirm(`Apagar a sugestão de atack "${slot}" de "${nomePokemon}"?`)) return;
+            
+            try {
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'limparSugestaoAtack',
+                        nomePokemon: nomePokemon,
+                        slot: slot,
+                        authToken: adminUser.authToken || '',
+                        email: adminUser.email || ''
+                    })
                 });
+                const result = await response.json();
+                if (result.sucesso || result.success) {
+                    // Atualizar UI: remover o item
+                    const modal = document.getElementById('modalEdicaoOverlay');
+                    if (modal) {
+                        const atackItems = modal.querySelectorAll('.modal-suggestion-item.atack');
+                        atackItems.forEach(item => {
+                            if (item.querySelector('.suggestion-type')?.textContent?.trim().toUpperCase() === slot.toUpperCase()) {
+                                item.outerHTML = '<div class="modal-no-suggestion">Sugestão apagada ✓</div>';
+                            }
+                        });
+                        // Esconder botão "Limpar Todas" se não sobrou nenhuma sugestão
+                        const restantes = modal.querySelectorAll('.modal-suggestion-item.atack');
+                        if (restantes.length === 0) {
+                            const btnLimpar = modal.querySelector('#btnLimparSugestoesAtacks');
+                            if (btnLimpar) btnLimpar.style.display = 'none';
+                        }
+                    }
+                    // Push imediato: atualizar SUGESTAO_ATACKS no array local
+                    if (window.todosPokemons) {
+                        const pokLocal = window.todosPokemons.find(p => (p.EV || p.POKEMON || '').toLowerCase() === nomePokemon.toLowerCase());
+                        if (pokLocal) {
+                            const valorAtual = (pokLocal['SUGESTAO_ATACKS'] || '').toString().trim();
+                            if (valorAtual) {
+                                const entradas = valorAtual.split(' - ').filter(e => !e.trim().toUpperCase().startsWith(slot.toUpperCase() + ' /'));
+                                pokLocal['SUGESTAO_ATACKS'] = entradas.join(' - ');
+                            }
+                        }
+                    }
+                    mostrarToastSucesso(`Sugestão ${slot} apagada com sucesso!`);
+                } else {
+                    alert('Erro: ' + (result.mensagem || result.message || 'Erro desconhecido'));
+                }
+            } catch (erro) {
+                alert('Erro ao apagar sugestão: ' + erro.message);
             }
-            mostrarToastSucesso(`${slot.toUpperCase()} será removido ao salvar`);
         };
 
-        // ⭐ Limpar TODOS os atacks de um Pokémon (apenas no modal — salva ao clicar "Salvar")
-        window.limparTodasSugestoesAtacks = function(nomePokemon) {
-            if (!confirm(`Limpar TODOS os atacks de "${nomePokemon}"?\n\nIsso limpará M1 a M10. A alteração só será gravada ao clicar Salvar.`)) return;
+        // ⭐ Limpar TODAS as sugestões de atacks de um Pokémon — chama backend para limpar coluna Y
+        window.limparTodasSugestoesAtacks = async function(nomePokemon) {
+            if (!confirm(`Limpar TODAS as sugestões de atacks de "${nomePokemon}"?`)) return;
             
-            // Limpar campos de input dos atacks
-            for (let i = 1; i <= 10; i++) {
-                const input = document.getElementById(`edit-m${i}`);
-                if (input) input.value = '';
-            }
-            
-            // Atualizar UI
-            const modal = document.getElementById('modalEdicaoOverlay');
-            if (modal) {
-                const container = modal.querySelector('#sugestoesAtacksContainer');
-                if (container) {
-                    container.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Todos os atacks serão removidos ao salvar</span>';
+            try {
+                const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'limparSugestaoAtack',
+                        nomePokemon: nomePokemon,
+                        slot: '',
+                        authToken: adminUser.authToken || '',
+                        email: adminUser.email || ''
+                    })
+                });
+                const result = await response.json();
+                if (result.sucesso || result.success) {
+                    // Atualizar UI
+                    const modal = document.getElementById('modalEdicaoOverlay');
+                    if (modal) {
+                        const container = modal.querySelector('#sugestoesAtacksContainer');
+                        if (container) {
+                            container.innerHTML = '<span style="color: rgba(255,255,255,0.4); font-style: italic;">Todas as sugestões apagadas ✓</span>';
+                        }
+                        const btnLimpar = modal.querySelector('#btnLimparSugestoesAtacks');
+                        if (btnLimpar) btnLimpar.style.display = 'none';
+                    }
+                    // Push imediato: limpar SUGESTAO_ATACKS no array local
+                    if (window.todosPokemons) {
+                        const pokLocal = window.todosPokemons.find(p => (p.EV || p.POKEMON || '').toLowerCase() === nomePokemon.toLowerCase());
+                        if (pokLocal) pokLocal['SUGESTAO_ATACKS'] = '';
+                    }
+                    mostrarToastSucesso('Todas as sugestões de atacks limpas!');
+                } else {
+                    alert('Erro: ' + (result.mensagem || result.message || 'Erro desconhecido'));
                 }
-                const btnLimpar = modal.querySelector('#btnLimparSugestoesAtacks');
-                if (btnLimpar) btnLimpar.style.display = 'none';
+            } catch (erro) {
+                alert('Erro ao limpar sugestões: ' + erro.message);
             }
-            mostrarToastSucesso('Atacks limpos — clique Salvar para confirmar');
         };

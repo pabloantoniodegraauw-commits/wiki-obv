@@ -129,6 +129,15 @@ function doPost(e) {
       case 'atualizarSugestao':
         result = handleAtualizarSugestao(planilha, dados);
         break;
+      case 'limparSugestaoLoc':
+        result = handleLimparSugestaoLoc(planilha, dados);
+        break;
+      case 'salvarSugestaoAtack':
+        result = handleSalvarSugestaoAtack(planilha, dados);
+        break;
+      case 'limparSugestaoAtack':
+        result = handleLimparSugestaoAtack(planilha, dados);
+        break;
       case 'atualizarSugestaoTM':
         result = handleAtualizarSugestaoTM(planilha, dados);
         break;
@@ -224,6 +233,8 @@ function doGet(e) {
         // SEMPRE enviar sugestão de localização com chave ASCII limpa (coluna F = índice 5)
         // Isso evita problemas de encoding com acentos no nome da coluna
         obj['SUGESTAO_LOC'] = (linha[5] || '').toString();
+        // Coluna Y (índice 24) = Sugestão de atacks
+        obj['SUGESTAO_ATACKS'] = (linha[24] || '').toString();
         return obj;
       });
       
@@ -980,6 +991,150 @@ function handleAtualizarSugestao(planilha, dados) {
       sucesso: false,
       mensagem: 'Erro: ' + erro.toString()
     };
+  }
+}
+
+/**
+ * Limpar sugestão de localização de um Pokémon (setar coluna F como vazia)
+ * Apenas admin pode limpar
+ */
+function handleLimparSugestaoLoc(planilha, dados) {
+  try {
+    const adminEmail = validateTokenAndGetEmail(dados);
+    if (!adminEmail) {
+      return { sucesso: false, mensagem: 'Token de autenticação inválido ou ausente' };
+    }
+    
+    // Verificar se é admin
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') isAdmin = true;
+        break;
+      }
+    }
+    if (!isAdmin) {
+      return { sucesso: false, mensagem: 'Sem permissão: apenas administradores podem limpar sugestões' };
+    }
+    
+    const aba = planilha.getSheets()[0];
+    const nomeOriginal = dados.nomePokemon.toLowerCase().trim();
+    const todosOsDados = aba.getDataRange().getValues();
+    
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim();
+      const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim();
+      const nomeParaComparar = nomeEV || nomePokemon;
+      
+      if (nomeParaComparar === nomeOriginal) {
+        // Coluna F (6) = sugestão de localização — LIMPAR
+        aba.getRange(i + 1, 6).setValue('');
+        return { sucesso: true, mensagem: 'Sugestão de localização limpa com sucesso!' };
+      }
+    }
+    
+    return { sucesso: false, mensagem: 'Pokémon não encontrado' };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Salvar sugestão de atack na coluna Y (índice 24) - APPEND
+ * Formato: M2 / Night Slash / dash / Dark / Físico - M3 / Dive / pulo / Water / Físico
+ */
+function handleSalvarSugestaoAtack(planilha, dados) {
+  try {
+    const aba = planilha.getSheets()[0];
+    const nomeOriginal = dados.nomePokemon.toLowerCase().trim();
+    const novaSugestao = dados.sugestao || '';
+    
+    if (!novaSugestao) {
+      return { sucesso: false, mensagem: 'Sugestão vazia' };
+    }
+    
+    const todosOsDados = aba.getDataRange().getValues();
+    
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim();
+      const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim();
+      const nomeParaComparar = nomeEV || nomePokemon;
+      
+      if (nomeParaComparar === nomeOriginal) {
+        // Coluna Y (25) = sugestão de atacks
+        var valorAtual = (todosOsDados[i][24] || '').toString().trim();
+        var novoValor = valorAtual ? valorAtual + ' - ' + novaSugestao : novaSugestao;
+        aba.getRange(i + 1, 25).setValue(novoValor);
+        return { sucesso: true, mensagem: 'Sugestão de atack salva com sucesso!' };
+      }
+    }
+    
+    return { sucesso: false, mensagem: 'Pokémon não encontrado' };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Limpar sugestão(ões) de atack da coluna Y
+ * Se dados.slot informado, remove apenas aquela entrada; senão, limpa tudo
+ */
+function handleLimparSugestaoAtack(planilha, dados) {
+  try {
+    const adminEmail = validateTokenAndGetEmail(dados);
+    if (!adminEmail) {
+      return { sucesso: false, mensagem: 'Token de autenticação inválido ou ausente' };
+    }
+    
+    // Verificar se é admin
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') isAdmin = true;
+        break;
+      }
+    }
+    if (!isAdmin) {
+      return { sucesso: false, mensagem: 'Sem permissão: apenas administradores podem limpar sugestões' };
+    }
+    
+    const aba = planilha.getSheets()[0];
+    const nomeOriginal = dados.nomePokemon.toLowerCase().trim();
+    const slotRemover = (dados.slot || '').toUpperCase().trim(); // ex: "M2"
+    const todosOsDados = aba.getDataRange().getValues();
+    
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim();
+      const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim();
+      const nomeParaComparar = nomeEV || nomePokemon;
+      
+      if (nomeParaComparar === nomeOriginal) {
+        if (!slotRemover) {
+          // Limpar TUDO
+          aba.getRange(i + 1, 25).setValue('');
+          return { sucesso: true, mensagem: 'Todas as sugestões de atack limpas!' };
+        } else {
+          // Remover apenas a entrada do slot específico
+          var valorAtual = (todosOsDados[i][24] || '').toString().trim();
+          if (!valorAtual) {
+            return { sucesso: true, mensagem: 'Nenhuma sugestão para remover' };
+          }
+          var entradas = valorAtual.split(' - ').filter(function(e) {
+            return !e.trim().toUpperCase().startsWith(slotRemover + ' /');
+          });
+          aba.getRange(i + 1, 25).setValue(entradas.join(' - '));
+          return { sucesso: true, mensagem: 'Sugestão do ' + slotRemover + ' removida!' };
+        }
+      }
+    }
+    
+    return { sucesso: false, mensagem: 'Pokémon não encontrado' };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
   }
 }
 
