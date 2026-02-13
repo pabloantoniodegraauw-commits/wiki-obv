@@ -3599,10 +3599,16 @@
                 const btnLimpar = modal.querySelector('.suggestion-clear-all-btn[onclick*="apagarSugestaoLocalizacao"]');
                 if (btnLimpar) btnLimpar.style.display = 'none';
             }
-            // Atualizar array local
+            // Atualizar array local — limpar TODAS as chaves possíveis de sugestão de localização
             if (window.todosPokemons) {
                 const pokLocal = window.todosPokemons.find(p => (p.EV || p.POKEMON || '').toLowerCase() === nomePokemon.toLowerCase());
-                if (pokLocal) pokLocal['SUGESTÃO LOC'] = '';
+                if (pokLocal) {
+                    pokLocal['SUGESTAO_LOC'] = '';        // chave ASCII do backend (prioridade em obterSugestaoLocalizacao)
+                    pokLocal['SUGESTÃO LOC'] = '';
+                    pokLocal['SUGESTÃO LOCALIZAÇÃO'] = '';
+                    pokLocal['SUGESTÃO DE LOCALIZAÇÃO'] = '';
+                    pokLocal['SUGESTAO LOCALIZACAO'] = '';
+                }
             }
         };
 
@@ -3626,6 +3632,11 @@
                         item.outerHTML = '<div class="modal-no-suggestion" style="color:#ffa500;">Sugestão do ' + numFormatado + ' marcada para exclusão</div>';
                     }
                 });
+            }
+            // Atualizar array local de TMs para que o card não re-renderize a sugestão antiga
+            if (window.todosTMs) {
+                const tmObj = todosTMs.find(t => String(t.numero) === String(tmNumero));
+                if (tmObj) tmObj.sugestao = '';
             }
         };
 
@@ -3668,6 +3679,8 @@
                 const btnLimpar = modal.querySelector('.suggestion-clear-all-btn[onclick*="limparTodasSugestoesTMs"]');
                 if (btnLimpar) btnLimpar.style.display = 'none';
             }
+            // Atualizar array local de TMs para que o card não re-renderize sugestões antigas
+            todosComSugestao.forEach(tm => { tm.sugestao = ''; });
         };
 
         // ⭐ Apagar sugestão individual de Atack (admin) — marca para apagar, salva junto ao "Salvar"
