@@ -11,7 +11,7 @@ let marketItemSelecionado = null;
 let marketPokemonData = [];
 let marketDadosCarregados = { itens: false, natures: false, pokemon: false };
 let marketUsarStickers = false; // false = sprite-pokemon, true = stickers
-let marketVistaCarrinho = 'lista'; // 'lista' ou 'cards'
+let marketVistaCarrinho = 'cards'; // 'lista' ou 'cards'
 let marketEditandoIndex = null; // índice do item sendo editado no carrinho
 
 // Subconjuntos de Itens (preenchidos ao carregar)
@@ -114,8 +114,58 @@ async function carregarDadosMarket() {
             renderizarFiltros();
             renderizarGridMarket();
         }
+
+        // Reconstruir imagens do carrinho (caso tenha vindo do mural com imagens incorretas)
+        _reconstruirImagensCarrinho();
     } catch (err) {
         console.error('❌ Erro ao carregar dados do Market:', err);
+    }
+}
+
+function _reconstruirImagensCarrinho() {
+    if (marketCarrinho.length === 0) return;
+    let alterou = false;
+    const allPk = marketPokemonData.length > 0 ? marketPokemonData : (typeof todosPokemons !== 'undefined' ? todosPokemons : []);
+    marketCarrinho.forEach(item => {
+        switch (item.tipo) {
+            case 'pokemon': {
+                const nomePk = item.dados?.nome || item.nome || '';
+                const pkData = allPk.find(p => {
+                    const ev = (p['EV'] || '').trim();
+                    const pk = (p['POKEMON'] || '').trim();
+                    return (ev || pk) === nomePk;
+                });
+                if (pkData) {
+                    const novaImg = obterImagemPokemonMarket(pkData);
+                    if (novaImg && item.imagem !== novaImg) {
+                        item.imagem = novaImg;
+                        alterou = true;
+                    }
+                }
+                break;
+            }
+            case 'item': {
+                const novaImg = obterImagemItem(item.dados?.nome || item.nome, item.dados?.tipo || '');
+                if (novaImg && item.imagem !== novaImg) {
+                    item.imagem = novaImg;
+                    alterou = true;
+                }
+                break;
+            }
+            case 'tm': {
+                const novaImg = obterImagemTM(item.dados?.tipagem || '');
+                if (novaImg && item.imagem !== novaImg) {
+                    item.imagem = novaImg;
+                    alterou = true;
+                }
+                break;
+            }
+        }
+    });
+    if (alterou) {
+        salvarCarrinhoSession();
+        renderizarCarrinho();
+        console.log('🖼️ Imagens do carrinho reconstruídas');
     }
 }
 

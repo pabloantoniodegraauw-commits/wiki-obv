@@ -20,7 +20,8 @@
         let dadosCompletosCarregados = false;
 
         // 📦 Lazy load: quantos pokémons renderizar por lote
-        const POKEMON_BATCH_SIZE = 1000;
+        const POKEMON_BATCH_SIZE = 100;
+        const POKEMON_PAGE_SIZE = 710; // Quantos pokémons carregar por vez do servidor
         let _pokemonsAtuais = []; // Array filtrado/total atualmente exibido
         let _pokemonsRenderizados = 0; // Quantos já estão no DOM
 
@@ -182,14 +183,13 @@
                 const container = document.getElementById('pokemonContainer');
                 container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando Pokémons...</p></div>';
 
-                console.log('⏳ Iniciando carregamento completo...');
+                console.log('⏳ Iniciando carregamento (fase 1: primeiros ' + POKEMON_PAGE_SIZE + ')...');
                 const inicio = Date.now();
 
-                // Carregar TODOS os Pokémon de uma vez
-                const resposta = await fetch(`${URL_DADOS}&page=1&limit=9999`);
+                // FASE 1: Carregar primeiros 710 pokémon (rápido)
+                const resposta = await fetch(`${URL_DADOS}&page=1&limit=${POKEMON_PAGE_SIZE}`);
                 const textoResposta = await resposta.text();
 
-                // Verificar se é JSON válido
                 let resultado;
                 try {
                     resultado = JSON.parse(textoResposta);
@@ -199,47 +199,30 @@
                 }
 
                 todosPokemons = resultado.data;
-                todosPokemonsCompleto = resultado.data;
-                dadosCompletosCarregados = true;
-                temMaisPaginas = false;
+                todosPokemonsCompleto = [...resultado.data];
+                const totalServidor = resultado.total || resultado.data.length;
+                temMaisPaginas = resultado.hasMore === true;
+                dadosCompletosCarregados = !temMaisPaginas;
 
-                const tempoDecorrido = Date.now() - inicio;
-                console.log(`📥 Todos os Pokémon carregados em ${tempoDecorrido}ms:`, todosPokemons.length);
+                // Aplicar edições locais na fase 1
+                _aplicarEdicoesLocais();
 
-                // Se tem dados locais editados, aplicar as edições sobre os dados da planilha
-                const dadosLocais = localStorage.getItem('pokemons_editados');
-                if (dadosLocais && usuarioLogado) {
-                    const editados = JSON.parse(dadosLocais);
-                    console.log('💾 Mesclando', editados.length, 'edições locais');
+                const tempoFase1 = Date.now() - inicio;
+                console.log(`📥 Fase 1: ${todosPokemons.length}/${totalServidor} pokémon em ${tempoFase1}ms`);
 
-                    // Mesclar edições locais com dados atualizados da planilha
-                    editados.forEach(editado => {
-                        const nomeEV = normalizarNome(editado.EV || '');
-                        const nomePokemon = normalizarNome(editado.POKEMON || '');
-                        const nomeEditado = nomeEV || nomePokemon;
-
-                        const index = todosPokemons.findIndex(p => {
-                            const nomeEVOriginal = normalizarNome(p.EV || '');
-                            const nomePokemonOriginal = normalizarNome(p.POKEMON || '');
-                            const nomeOriginal = nomeEVOriginal || nomePokemonOriginal;
-                            return nomeOriginal === nomeEditado;
-                        });
-
-                        if (index !== -1) {
-                            todosPokemons[index] = { ...todosPokemons[index], ...editado };
-                        }
-                    });
-
-                    console.log('✓ Dados mesclados com edições locais');
-                }
-
-                document.getElementById('pokemonCount').textContent = todosPokemons.length;
+                document.getElementById('pokemonCount').textContent = todosPokemons.length + (temMaisPaginas ? '+' : '');
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
                 
                 // Carregar TMs da aba TMs para cross-reference na Pokédex
                 await carregarDadosTMs();
                 
                 renderizarPokemons(todosPokemons);
+                window.todosPokemons = todosPokemons;
+
+                // FASE 2: Carregar restante em background (se houver)
+                if (temMaisPaginas) {
+                    _carregarRestanteBackground(2);
+                }
             } catch (erro) {
                 const container = document.getElementById('pokemonContainer');
                 if (!container) return; // Sair se o elemento não existir
@@ -259,6 +242,76 @@
         
         // ⭐ Tornar carregarDados acessível globalmente
         window.carregarDados = carregarDados;
+
+        /**
+         * Aplicar edições locais sobre os dados carregados
+         */
+        function _aplicarEdicoesLocais() {
+            const dadosLocais = localStorage.getItem('pokemons_editados');
+            if (!dadosLocais || !usuarioLogado) return;
+            try {
+                const editados = JSON.parse(dadosLocais);
+                console.log('💾 Mesclando', editados.length, 'edições locais');
+                editados.forEach(editado => {
+                    const nomeEditado = normalizarNome(editado.EV || '') || normalizarNome(editado.POKEMON || '');
+                    const index = todosPokemons.findIndex(p => {
+                        const nomeOriginal = normalizarNome(p.EV || '') || normalizarNome(p.POKEMON || '');
+                        return nomeOriginal === nomeEditado;
+                    });
+                    if (index !== -1) {
+                        todosPokemons[index] = { ...todosPokemons[index], ...editado };
+                    }
+                });
+                console.log('✓ Dados mesclados com edições locais');
+            } catch (e) {
+                console.warn('⚠️ Erro ao mesclar edições locais:', e);
+            }
+        }
+
+        /**
+         * Carregar páginas restantes em background
+         */
+        async function _carregarRestanteBackground(pagina) {
+            try {
+                console.log(`⏳ Fase 2: carregando página ${pagina} (background)...`);
+                const resp = await fetch(`${URL_DADOS}&page=${pagina}&limit=${POKEMON_PAGE_SIZE}`);
+                const texto = await resp.text();
+                const res = JSON.parse(texto);
+
+                if (res.data && res.data.length > 0) {
+                    todosPokemons = todosPokemons.concat(res.data);
+                    todosPokemonsCompleto = [...todosPokemons];
+                    window.todosPokemons = todosPokemons;
+
+                    _aplicarEdicoesLocais();
+
+                    const hasMore = res.hasMore === true;
+                    temMaisPaginas = hasMore;
+                    dadosCompletosCarregados = !hasMore;
+                    document.getElementById('pokemonCount').textContent = todosPokemons.length + (hasMore ? '+' : '');
+
+                    // Atualizar a lista exibida
+                    const searchInput = document.getElementById('searchInput');
+                    const termoBusca = searchInput ? searchInput.value.trim() : '';
+                    if (termoBusca) {
+                        if (typeof filtrarPokemons === 'function') filtrarPokemons();
+                    } else {
+                        renderizarPokemons(todosPokemons);
+                    }
+
+                    console.log(`📥 Fase 2 página ${pagina}: +${res.data.length} pokémon (total: ${todosPokemons.length})`);
+
+                    if (hasMore) {
+                        _carregarRestanteBackground(pagina + 1);
+                    } else {
+                        console.log('✅ Carregamento completo:', todosPokemons.length, 'pokémon');
+                    }
+                }
+            } catch (e) {
+                console.error('❌ Erro no carregamento background (página ' + pagina + '):', e);
+                setTimeout(() => _carregarRestanteBackground(pagina), 3000);
+            }
+        }
         
         // Função auxiliar para buscar sugestão de localização independente do nome exato da coluna
         function obterSugestaoLocalizacao(pokemon) {
@@ -274,6 +327,35 @@
                 return ascii.includes('SUGEST') && ascii.includes('LOCAL');
             });
             return chave ? pokemon[chave] : '';
+        }
+
+        /**
+         * Formatar sugestão de localização como bullet points HTML
+         * "Battle City > 1un / Fuchsia < 2un" → "• Battle City → 1un\n• Fuchsia ← 2un"
+         */
+        function formatarSugestaoLocHTML(texto) {
+            if (!texto || !texto.trim()) return '';
+            const partes = texto.split(' / ').map(s => s.trim()).filter(Boolean);
+            if (partes.length === 0) return '';
+            if (partes.length === 1) {
+                return `<div style="line-height:1.8;">• ${_formatarEntradaLoc(partes[0])}</div>`;
+            }
+            return '<div style="line-height:1.8;">' + partes.map(p => `• ${_formatarEntradaLoc(p)}`).join('<br>') + '</div>';
+        }
+
+        function _formatarEntradaLoc(entry) {
+            // Substituir símbolos de direção por ícones bonitos
+            return entry
+                .replace(/\s>\/\s?/g, ' → ')
+                .replace(/(\s)>(\s)/g, '$1→$2')
+                .replace(/(^|\s)>/g, '$1→')
+                .replace(/\s<\/\s?/g, ' ← ')
+                .replace(/(\s)<(\s)/g, '$1←$2')
+                .replace(/(^|\s)</g, '$1←')
+                .replace(/\/\\/g, '↑')
+                .replace(/\\\/\//g, '↓')
+                .replace(/\/\\/g, '↑')
+                .replace(/\\\//g, '↓');
         }
 
         /**
@@ -378,7 +460,7 @@
                     <div class="suggestion-title">
                         <i class="fas fa-lightbulb"></i> Sugestão da Comunidade
                     </div>
-                    <div>${sugestaoLocalizacao}</div>
+                    ${formatarSugestaoLocHTML(sugestaoLocalizacao)}
                 </div>
                 ` : ''}
                 <div class="pokemon-tms">
@@ -1539,7 +1621,7 @@
                                 card.appendChild(sugDiv);
                             }
                         }
-                        sugDiv.innerHTML = `<div class="suggestion-title"><i class="fas fa-lightbulb"></i> Sugestão da Comunidade</div><div>${sugestaoLocalizacao}</div>`;
+                        sugDiv.innerHTML = `<div class="suggestion-title"><i class="fas fa-lightbulb"></i> Sugestão da Comunidade</div>${formatarSugestaoLocHTML(sugestaoLocalizacao)}`;
                     } else if (sugDiv) {
                         sugDiv.remove();
                     }
@@ -1772,6 +1854,9 @@
                                             <span class="cla-unit-suffix" style="font-size:13px;">un</span>
                                         </div>
                                     </div>
+                                    <div style="margin-top:6px;">
+                                        <input type="text" id="editLocObs" class="cla-loc-input" placeholder="📝 Observação (opcional): ex: na safari zone..." style="font-size:12px;padding:7px 10px;width:100%;" />
+                                    </div>
                                     <div style="display:flex;gap:6px;margin-top:6px;">
                                         <button type="button" id="btnConfirmLocEntry" class="edit-loc-confirm-btn"><i class="fas fa-check"></i> OK</button>
                                         <button type="button" id="btnCancelLocEntry" class="edit-loc-cancel-btn"><i class="fas fa-times"></i></button>
@@ -1816,7 +1901,7 @@
                                 </div>
                                 ${sugestaoLoc 
                                     ? `<div class="modal-suggestion-item loc">
-                                        <span class="suggestion-text">${sugestaoLoc}</span>
+                                        <span class="suggestion-text">${formatarSugestaoLocHTML(sugestaoLoc)}</span>
                                       </div>` 
                                     : `<div class="modal-no-suggestion">Nenhuma sugestão de localização</div>`
                                 }
@@ -1904,25 +1989,26 @@
             const dropdown = overlay.querySelector('#editLocCidadeDropdown');
             const dirBtns = overlay.querySelectorAll('.edit-loc-dir-btn');
             const unidadeInput = overlay.querySelector('#editLocUnidade');
+            const obsInput = overlay.querySelector('#editLocObs');
 
             if (!container) return;
 
-            // Estado: array de entradas {cidade, direcao, unidade}
+            // Estado: array de entradas {cidade, direcao, unidade, obs}
             let entries = [];
             let editingIndex = -1; // -1 = adicionando, >= 0 = editando
 
-            // Parsear localização existente (formato: "Cidade dir Xun / Cidade dir Xun")
+            // Parsear localização existente (formato: "Cidade dir Xun obs / Cidade dir Xun")
             if (locStr && locStr.trim()) {
                 locStr.split(' / ').forEach(part => {
                     part = part.trim();
                     if (!part) return;
-                    // Tentar parsear formato estruturado: "Cidade > 7un" ou "Cidade /\ 3un"
-                    const match = part.match(/^(.+?)\s*(>|<|\/\\|\\\/)\s*(\d+)un$/i);
+                    // Tentar parsear formato estruturado: "Cidade > 7un observação" ou "Cidade /\ 3un"
+                    const match = part.match(/^(.+?)\s*(>|<|\/\\|\\\/)\s*(\d+)un(?:\s+(.+))?$/i);
                     if (match) {
-                        entries.push({ cidade: match[1].trim(), direcao: match[2], unidade: match[3] });
+                        entries.push({ cidade: match[1].trim(), direcao: match[2], unidade: match[3], obs: (match[4] || '').trim() });
                     } else {
                         // Entrada não-estruturada: manter como texto livre na cidade
-                        entries.push({ cidade: part, direcao: '', unidade: '' });
+                        entries.push({ cidade: part, direcao: '', unidade: '', obs: '' });
                     }
                 });
             }
@@ -1934,9 +2020,10 @@
                 }
                 container.innerHTML = entries.map((e, i) => {
                     const icon = LOC_DIR_ICONS[e.direcao] || e.direcao || '';
+                    const obsDisplay = e.obs ? ` <span style="color:#aaa;font-style:italic;font-size:0.9em;">${e.obs}</span>` : '';
                     const display = e.direcao && e.unidade 
-                        ? `<span style="color:#ffd700;font-weight:600;">${e.cidade}</span> <span style="color:#88d3ff;">${icon}</span> <span style="color:#a0e7ff;">${e.unidade}un</span>`
-                        : `<span style="color:#ffd700;">${e.cidade}</span>`;
+                        ? `<span style="color:#ffd700;font-weight:600;">${e.cidade}</span> <span style="color:#88d3ff;">${icon}</span> <span style="color:#a0e7ff;">${e.unidade}un</span>${obsDisplay}`
+                        : `<span style="color:#ffd700;">${e.cidade}</span>${obsDisplay}`;
                     return `
                         <div class="edit-loc-entry" data-idx="${i}">
                             <span class="edit-loc-entry-text">${display}</span>
@@ -1966,6 +2053,7 @@
                 cidadeInput.value = e.cidade || '';
                 document.getElementById('editLocDirecao').value = e.direcao || '';
                 unidadeInput.value = e.unidade || '';
+                if (obsInput) obsInput.value = e.obs || '';
                 dirBtns.forEach(b => b.classList.toggle('active', b.dataset.dir === e.direcao));
                 form.style.display = '';
                 btnAdd.style.display = 'none';
@@ -1976,6 +2064,7 @@
                 cidadeInput.value = '';
                 document.getElementById('editLocDirecao').value = '';
                 unidadeInput.value = '';
+                if (obsInput) obsInput.value = '';
                 dirBtns.forEach(b => b.classList.remove('active'));
                 form.style.display = '';
                 btnAdd.style.display = 'none';
@@ -1992,12 +2081,13 @@
                 const cidade = cidadeInput.value.trim();
                 const direcao = document.getElementById('editLocDirecao').value;
                 const unidade = unidadeInput.value;
+                const obs = obsInput ? obsInput.value.trim() : '';
 
                 if (!cidade) { alert('Selecione uma cidade!'); return; }
                 if (!direcao) { alert('Selecione uma direção!'); return; }
                 if (!unidade || unidade < 1) { alert('Digite a unidade!'); return; }
 
-                const entry = { cidade, direcao, unidade: unidade.toString() };
+                const entry = { cidade, direcao, unidade: unidade.toString(), obs };
 
                 if (editingIndex >= 0) {
                     entries[editingIndex] = entry;
@@ -2071,9 +2161,10 @@
             window._getEditLocEntries = function() {
                 return entries.map(e => {
                     if (e.direcao && e.unidade) {
-                        return `${e.cidade} ${e.direcao} ${e.unidade}un`;
+                        const base = `${e.cidade} ${e.direcao} ${e.unidade}un`;
+                        return e.obs ? `${base} ${e.obs}` : base;
                     }
-                    return e.cidade;
+                    return e.obs ? `${e.cidade} ${e.obs}` : e.cidade;
                 }).join(' / ');
             };
 
@@ -2479,6 +2570,10 @@
                         <span class="cla-unit-suffix">un</span>
                     </div>
 
+                    <!-- Observação -->
+                    <label style="${modalStyles.label}">📝 Observação <span style="opacity:0.5;font-size:0.85em;">(opcional)</span>:</label>
+                    <input type="text" id="sugLocObs" class="cla-loc-input" placeholder="Ex: na safari zone, na leaf gale..." style="margin-bottom:15px;" />
+
                     <!-- Preview -->
                     <label style="${modalStyles.label}">👁️ Preview:</label>
                     <div id="sugLocPreview" class="cla-loc-preview" style="margin-bottom:15px;">—</div>
@@ -2564,18 +2659,25 @@
                 if (unidadeInput.value < 1) unidadeInput.value = '';
                 _updateSugLocPreview();
             });
+
+            const obsInput = document.getElementById('sugLocObs');
+            if (obsInput) {
+                obsInput.addEventListener('input', () => _updateSugLocPreview());
+            }
         }
 
         function _updateSugLocPreview() {
             const cidade = document.getElementById('sugLocCidade')?.value || '';
             const direcao = document.getElementById('sugLocDirecao')?.value || '';
             const unidade = document.getElementById('sugLocUnidade')?.value || '';
+            const obs = document.getElementById('sugLocObs')?.value?.trim() || '';
             const preview = document.getElementById('sugLocPreview');
             const btn = document.getElementById('btnSalvarSugLoc');
 
             if (cidade && direcao && unidade) {
                 const icon = LOC_DIR_ICONS[direcao] || direcao;
-                preview.innerHTML = `<span class="cla-loc-tag">${cidade} ${icon} ${unidade}un</span>`;
+                const obsStr = obs ? ` <span style="color:#aaa;font-style:italic;">${obs}</span>` : '';
+                preview.innerHTML = `<span class="cla-loc-tag">${cidade} ${icon} ${unidade}un${obsStr}</span>`;
                 preview.classList.add('filled');
                 if (btn) btn.disabled = false;
             } else {
@@ -2589,6 +2691,7 @@
             const cidade = document.getElementById('sugLocCidade')?.value?.trim();
             const direcao = document.getElementById('sugLocDirecao')?.value;
             const unidade = document.getElementById('sugLocUnidade')?.value;
+            const obs = document.getElementById('sugLocObs')?.value?.trim() || '';
 
             if (!cidade || !direcao || !unidade) { alert('Preencha todos os campos: Cidade, Direção e Unidade!'); return; }
 
@@ -2599,7 +2702,7 @@
                 return;
             }
 
-            const sugestao = `${cidade} ${direcao} ${unidade}un`;
+            const sugestao = obs ? `${cidade} ${direcao} ${unidade}un ${obs}` : `${cidade} ${direcao} ${unidade}un`;
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
@@ -2620,7 +2723,7 @@
                         const nPK = normalizarNome(p.POKEMON || '');
                         return (nEV && nEV === nomeNorm) || (nPK && nPK === nomeNorm);
                     });
-                    console.log('🔍 Push imediato - idx:', idx, 'nomeNorm:', nomeNorm);
+                    console.log('🔍 Push imediato - idx:', idx, 'nomeNorm:', nomeNorm, 'totalPokemons:', todosPokemons.length);
                     if (idx !== -1) {
                         // Append à sugestão existente ou criar nova
                         const atual = obterSugestaoLocalizacao(todosPokemons[idx]);
@@ -2631,10 +2734,25 @@
                             return ascii.includes('SUGEST') && ascii.includes('LOCAL');
                         }) || 'SUGESTAO_LOC';
                         todosPokemons[idx][chave] = novaStr;
+                        // Também atualizar SUGESTAO_LOC (chave ASCII usada pelo backend)
+                        todosPokemons[idx]['SUGESTAO_LOC'] = novaStr;
+                        // Sincronizar todosPokemonsCompleto
+                        if (todosPokemonsCompleto && todosPokemonsCompleto !== todosPokemons) {
+                            const idx2 = todosPokemonsCompleto.findIndex(p => {
+                                const nEV = normalizarNome(p.EV || '');
+                                const nPK = normalizarNome(p.POKEMON || '');
+                                return (nEV && nEV === nomeNorm) || (nPK && nPK === nomeNorm);
+                            });
+                            if (idx2 !== -1) {
+                                todosPokemonsCompleto[idx2][chave] = novaStr;
+                                todosPokemonsCompleto[idx2]['SUGESTAO_LOC'] = novaStr;
+                            }
+                        }
                         console.log('✅ Sugestão local atualizada:', chave, '=', novaStr);
                         atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
                     } else {
                         console.warn('⚠️ Pokémon não encontrado no array para push:', nomePokemon);
+                        console.warn('Primeiros 5 pokémons:', todosPokemons.slice(0, 5).map(p => ({EV: p.EV, POKEMON: p.POKEMON})));
                     }
                     document.getElementById('modalSugestao')?.remove();
                     mostrarToastSucesso('Sugestão de localização enviada!');

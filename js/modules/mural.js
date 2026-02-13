@@ -248,14 +248,36 @@ function editarVendaMural(vendaId) {
 
         // Reconstruir imagem e texto
         switch (item.tipo) {
-            case 'pokemon':
-                cartItem.imagem = 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png';
+            case 'pokemon': {
+                // Tentar buscar sprite real pelo nome do Pokémon
+                const nomePk = item.dados?.nome || item.nome || '';
+                let imgFound = '';
+                // Buscar no array global de pokémons
+                const allPk = (typeof todosPokemonsCompleto !== 'undefined' && todosPokemonsCompleto.length > 0)
+                    ? todosPokemonsCompleto
+                    : (typeof todosPokemons !== 'undefined' ? todosPokemons : []);
+                const pkData = allPk.find(p => {
+                    const ev = (p['EV'] || '').trim();
+                    const pk = (p['POKEMON'] || '').trim();
+                    return (ev || pk) === nomePk;
+                });
+                if (pkData && typeof obterImagemPokemonMarket === 'function') {
+                    imgFound = obterImagemPokemonMarket(pkData);
+                } else if (pkData && typeof obterImagemPokemon === 'function') {
+                    const ev = pkData['EV'] || '';
+                    const pk = pkData['POKEMON'] || '';
+                    imgFound = obterImagemPokemon(ev || pk, ev ? pk : '');
+                } else {
+                    imgFound = `IMAGENS/imagens-pokemon/sprite-pokemon/${nomePk.trim()}.png`;
+                }
+                cartItem.imagem = imgFound;
                 break;
+            }
             case 'tm':
-                cartItem.imagem = obterImagemTM ? obterImagemTM(item.dados?.tipagem || 'Normal') : '';
+                cartItem.imagem = typeof obterImagemTM === 'function' ? obterImagemTM(item.dados?.tipagem || 'Normal') : `IMAGENS/imagens-itens/tipagens de tm/${(item.dados?.tipagem || 'Normal').trim()}_type_tm_disk.png`;
                 break;
             case 'item':
-                cartItem.imagem = obterImagemItem ? obterImagemItem(item.dados?.nome || item.nome, item.dados?.tipo || '') : '';
+                cartItem.imagem = typeof obterImagemItem === 'function' ? obterImagemItem(item.dados?.nome || item.nome, item.dados?.tipo || '') : '';
                 break;
             case 'conta':
                 cartItem.imagem = '';
