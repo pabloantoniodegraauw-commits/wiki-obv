@@ -1828,7 +1828,30 @@
                                 <input type="number" id="edit-speed" value="${stats[5] || 0}" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ffd700; background: rgba(0,0,0,0.3); color: #fff;">
                             </div>
                         </div>
-                        
+
+                        <!-- SEÇÃO: EDIÇÃO DE ATACKS M1-M10 -->
+                        <div class="modal-section">
+                            <div class="modal-section-title">
+                                <i class="fas fa-fist-raised"></i> Atacks (M1 - M10)
+                            </div>
+                            <datalist id="datalistAtacks">
+                                ${atackDatalistOptions}
+                            </datalist>
+                            ${movesHTML}
+                        </div>
+
+                        <!-- SEÇÃO: EDIÇÃO DE TMs -->
+                        <div class="modal-section">
+                            <div class="modal-section-title" style="color: #a29bfe;">
+                                <i class="fas fa-compact-disc"></i> TMs do Pokémon
+                            </div>
+                            <datalist id="datalistTMs">
+                                ${tmDatalistOptions}
+                            </datalist>
+                            ${tmsEditHTML}
+                        </div>
+
+                        <!-- SEÇÃO: LOCALIZAÇÃO (EDITOR ADMIN) -->
                         <div>
                             <label style="color: #88d3ff; display: block; margin-bottom: 5px;">Localização:</label>
                             <div id="edit-local-container" class="edit-loc-container">
@@ -1863,28 +1886,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- SEÇÃO: EDIÇÃO DE ATACKS M1-M10 -->
-                        <div class="modal-section">
-                            <div class="modal-section-title">
-                                <i class="fas fa-fist-raised"></i> Atacks (M1 - M10)
-                            </div>
-                            <datalist id="datalistAtacks">
-                                ${atackDatalistOptions}
-                            </datalist>
-                            ${movesHTML}
-                        </div>
-
-                        <!-- SEÇÃO: EDIÇÃO DE TMs -->
-                        <div class="modal-section">
-                            <div class="modal-section-title" style="color: #a29bfe;">
-                                <i class="fas fa-compact-disc"></i> TMs do Pokémon
-                            </div>
-                            <datalist id="datalistTMs">
-                                ${tmDatalistOptions}
-                            </datalist>
-                            ${tmsEditHTML}
                         </div>
 
                         <!-- SEÇÃO: SUGESTÕES DOS MEMBROS -->
