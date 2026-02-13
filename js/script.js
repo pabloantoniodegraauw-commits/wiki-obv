@@ -1525,6 +1525,25 @@
                     const tmsDiv = card.querySelector('.tms-content');
                     if (tmsDiv) tmsDiv.innerHTML = gerarTMsHTML(tmsDoPokemons);
 
+                    // Atualizar sugestão de localização
+                    let sugDiv = card.querySelector('.pokemon-suggestion');
+                    if (sugestaoLocalizacao) {
+                        if (!sugDiv) {
+                            // Criar a div de sugestão se não existia
+                            sugDiv = document.createElement('div');
+                            sugDiv.className = 'pokemon-suggestion';
+                            const locDiv2 = card.querySelector('.pokemon-location');
+                            if (locDiv2 && locDiv2.nextSibling) {
+                                locDiv2.parentNode.insertBefore(sugDiv, locDiv2.nextSibling);
+                            } else {
+                                card.appendChild(sugDiv);
+                            }
+                        }
+                        sugDiv.innerHTML = `<div class="suggestion-title"><i class="fas fa-lightbulb"></i> Sugestão da Comunidade</div><div>${sugestaoLocalizacao}</div>`;
+                    } else if (sugDiv) {
+                        sugDiv.remove();
+                    }
+
                     // Flash visual de confirmação
                     card.style.transition = 'box-shadow 0.3s ease';
                     card.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.6)';
@@ -2591,6 +2610,24 @@
                 });
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
+                    // ⚡ Push imediato: atualizar dados locais e card no DOM
+                    const nomeNorm = normalizarNome(nomePokemon);
+                    const idx = todosPokemons.findIndex(p => {
+                        const n = normalizarNome(p.EV || '') || normalizarNome(p.POKEMON || '');
+                        return n === nomeNorm;
+                    });
+                    if (idx !== -1) {
+                        // Append à sugestão existente ou criar nova
+                        const atual = obterSugestaoLocalizacao(todosPokemons[idx]);
+                        const novaStr = atual ? `${atual} / ${sugestao}` : sugestao;
+                        // Atualizar no array local (tentar as chaves possíveis)
+                        const chave = Object.keys(todosPokemons[idx]).find(k => {
+                            const ascii = k.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+                            return ascii.includes('SUGEST') && ascii.includes('LOCAL');
+                        }) || 'SUGESTAO_LOC';
+                        todosPokemons[idx][chave] = novaStr;
+                        atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
+                    }
                     document.getElementById('modalSugestao').remove();
                     mostrarToastSucesso('Sugestão de localização enviada!');
                 } else {
@@ -2665,6 +2702,18 @@
                 });
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
+                    // ⚡ Push imediato: atualizar dados locais e card no DOM
+                    const nomeNorm = normalizarNome(nomePokemon);
+                    const idx = todosPokemons.findIndex(p => {
+                        const n = normalizarNome(p.EV || '') || normalizarNome(p.POKEMON || '');
+                        return n === nomeNorm;
+                    });
+                    if (idx !== -1) {
+                        // Atualizar slot do atack no array local
+                        const slotKey = slot.toUpperCase();
+                        todosPokemons[idx][slotKey] = nomeAtack;
+                        atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
+                    }
                     document.getElementById('modalSugestao').remove();
                     mostrarToastSucesso('Sugestão de atack enviada!');
                 } else {
@@ -2871,6 +2920,15 @@
                 });
                 const resultado = JSON.parse(await resp.text());
                 if (resultado.sucesso || resultado.success) {
+                    // ⚡ Push imediato: atualizar card no DOM
+                    const nomeNorm = normalizarNome(nomePokemon);
+                    const idx = todosPokemons.findIndex(p => {
+                        const n = normalizarNome(p.EV || '') || normalizarNome(p.POKEMON || '');
+                        return n === nomeNorm;
+                    });
+                    if (idx !== -1) {
+                        atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
+                    }
                     document.getElementById('modalSugestao').remove();
                     mostrarToastSucesso('Sugestão de TM enviada!');
                 } else {
