@@ -1962,12 +1962,21 @@
                             const partes = entrada.split(' / ').map(p => p.trim());
                             const slot = partes[0] || '';
                             const nomeMove = partes[1] || '';
-                            const origem = partes[2] || '';
-                            const tipo = partes[3] || '';
-                            const categoria = partes[4] || '';
+                            // Formato novo: M2 / Night Slash / Dark / Físico (4 campos)
+                            // Formato legacy: M2 / Night Slash / dash / Dark / Físico (5 campos)
+                            let tipo = '';
+                            let categoria = '';
+                            if (partes.length >= 5) {
+                                // Legacy: campo 2 = origem (ignorar), 3 = tipo, 4 = categoria
+                                tipo = partes[3] || '';
+                                categoria = partes[4] || '';
+                            } else {
+                                // Novo: campo 2 = tipo, 3 = categoria
+                                tipo = partes[2] || '';
+                                categoria = partes[3] || '';
+                            }
                             if (slot && nomeMove) {
                                 let descricao = `${nomeMove}`;
-                                if (origem) descricao += ` (${origem})`;
                                 if (tipo) descricao += ` — ${tipo}`;
                                 if (categoria) descricao += ` / ${categoria}`;
                                 atacksSugeridos.push(`<div class="modal-suggestion-item atack suggestion-with-delete"><span class="suggestion-type atack">${slot}</span> ${descricao}<button class="suggestion-delete-btn" onclick="apagarSugestaoAtack('${nomePrincipal.replace(/'/g, "\\'")}', '${slot.replace(/'/g, "\\'")}')" title="Apagar ${slot}"><i class="fas fa-trash-alt"></i></button></div>`);
@@ -2279,6 +2288,13 @@
             // Atualizar Pokémon existente (NUNCA adicionar novo)
             const temEV = todosPokemons[index].EV && todosPokemons[index].EV.trim() !== '';
             
+            // Construir objeto com M1-M10 atualizados
+            const atackUpdates = {};
+            for (let i = 1; i <= 10; i++) {
+                const el = document.getElementById(`edit-m${i}`);
+                if (el) atackUpdates[`M${i}`] = el.value.trim();
+            }
+
             todosPokemons[index] = {
                 ...todosPokemons[index],
                 // Se tem EV, atualiza coluna D. Senão, atualiza coluna C
@@ -2290,14 +2306,19 @@
                 'Sp.Attack': dados.spatk,
                 'Sp.Defense': dados.spdef,
                 Speed: dados.speed,
-                'LOCALIZAÇÃO': dados.localizacao
+                'LOCALIZAÇÃO': dados.localizacao,
+                ...atackUpdates
             };
             
-            // Salvar no localStorage
-            localStorage.setItem('pokemons_editados', JSON.stringify(todosPokemons));
-            
-            // ⚡ Atualizar apenas o card modificado no DOM (sem re-renderizar tudo)
+            // ⚡ Atualizar o card no DOM PRIMEIRO (antes de qualquer operação que possa falhar)
             atualizarCardNoDom(nomeOriginal, todosPokemons[index]);
+            
+            // Salvar no localStorage (pode falhar por quota, não bloquear o fluxo)
+            try {
+                localStorage.setItem('pokemons_editados', JSON.stringify(todosPokemons));
+            } catch (e) {
+                console.warn('⚠️ Não foi possível salvar no localStorage (quota excedida?):', e.message);
+            }
             
             // 🚀 SALVAR NO GOOGLE SHEETS
             if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== '') {
@@ -2812,9 +2833,6 @@
                         ${todosAtacks.map(a => '<option value="' + (a['ATACK'] || a.ATACK || '') + '">').join('')}
                     </datalist>
                     
-                    <label style="${modalStyles.label}">📍 Origem (como aprende):</label>
-                    <input id="origemAtackInput" type="text" placeholder="Ex: dash, pulo, level, tm..." style="${modalStyles.input}">
-                    
                     <div style="display:flex;gap:10px;">
                         <button onclick="salvarSugestaoAtack('${nomePokemon.replace(/'/g, "\\'")}'  , this)" style="${modalStyles.btnSalvar}">
                             <i class="fas fa-save"></i> Salvar
@@ -2835,20 +2853,19 @@
         window.salvarSugestaoAtack = async function(nomePokemon, botao) {
             const slot = document.getElementById('slotAtack').value.toUpperCase(); // ex: M1
             const nomeAtack = document.getElementById('nomeAtackInput').value.trim();
-            const origem = (document.getElementById('origemAtackInput')?.value || '').trim();
             if (!nomeAtack) { alert('Digite o nome do atack!'); return; }
             
-            // Buscar tipo e categoria do atack na base local
+            // Buscar tipo e categoria do atack na base local (auto-fill)
             let tipoAtack = '';
             let categoriaAtack = '';
             const atackInfo = todosAtacks.find(a => (a['ATACK'] || '').toLowerCase() === nomeAtack.toLowerCase());
             if (atackInfo) {
-                tipoAtack = (atackInfo['TYPE'] || atackInfo['TIPO'] || atackInfo['Type'] || '').toString().trim();
-                categoriaAtack = (atackInfo['CATEGORY'] || atackInfo['CATEGORIA'] || atackInfo['Category'] || '').toString().trim();
+                tipoAtack = (atackInfo['TYPE'] || '').toString().trim();
+                categoriaAtack = (atackInfo['CATEGORIA'] || '').toString().trim();
             }
             
-            // Formato: M2 / Night Slash / dash / Dark / Físico
-            const sugestaoFormatada = `${slot} / ${nomeAtack} / ${origem} / ${tipoAtack} / ${categoriaAtack}`;
+            // Formato: M2 / Night Slash / Dark / Físico
+            const sugestaoFormatada = `${slot} / ${nomeAtack} / ${tipoAtack} / ${categoriaAtack}`;
             
             const user = JSON.parse(localStorage.getItem('user') || '{}');
             botao.disabled = true;
