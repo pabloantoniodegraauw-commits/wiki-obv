@@ -2238,9 +2238,6 @@
                 ...atackUpdates
             };
             
-            // ⚡ Atualizar o card no DOM PRIMEIRO (antes de qualquer operação que possa falhar)
-            atualizarCardNoDom(nomeOriginal, todosPokemons[index]);
-            
             // Salvar no localStorage (pode falhar por quota, não bloquear o fluxo)
             try {
                 localStorage.setItem('pokemons_editados', JSON.stringify(todosPokemons));
@@ -2387,12 +2384,29 @@
                             modalContent.appendChild(successMsg);
                         }
                         
-                        // Fechar modal após breve delay (card já atualizado no DOM)
+                        // Fechar modal e atualizar card DEPOIS do save completo
                         setTimeout(() => {
                             const overlay = document.getElementById('modalEdicaoOverlay');
                             if (overlay) overlay.remove();
                             localStorage.removeItem('pokemons_editados');
                             _pendingSuggestionDeletes = [];
+                            
+                            // ⚡ Atualizar o card no DOM APÓS fechar o modal (mais confiável)
+                            const cardAtualizado = atualizarCardNoDom(nomeOriginal, todosPokemons[index]);
+                            if (!cardAtualizado) {
+                                // Fallback: card não encontrado (ex: re-render por lazy load)
+                                // Re-renderizar apenas os visíveis para refletir as mudanças
+                                console.warn('⚠️ Card não encontrado, re-renderizando lista...');
+                                const searchInput = document.getElementById('searchInput');
+                                const termoBusca = searchInput ? searchInput.value.trim() : '';
+                                if (!termoBusca) {
+                                    // Preservar posição de scroll
+                                    const scrollPos = window.scrollY;
+                                    renderizarPokemons(todosPokemons);
+                                    requestAnimationFrame(() => window.scrollTo(0, scrollPos));
+                                }
+                            }
+                            mostrarToastSucesso('Alterações salvas com sucesso!');
                             console.log('✅ Edição concluída, card atualizado no DOM.');
                         }, 800);
                     } catch (err) {
@@ -2413,6 +2427,20 @@
                             if (overlay) overlay.remove();
                             localStorage.removeItem('pokemons_editados');
                             _pendingSuggestionDeletes = [];
+                            
+                            // ⚡ Atualizar o card no DOM mesmo com avisos
+                            const cardAtualizado = atualizarCardNoDom(nomeOriginal, todosPokemons[index]);
+                            if (!cardAtualizado) {
+                                console.warn('⚠️ Card não encontrado, re-renderizando lista...');
+                                const searchInput = document.getElementById('searchInput');
+                                const termoBusca = searchInput ? searchInput.value.trim() : '';
+                                if (!termoBusca) {
+                                    const scrollPos = window.scrollY;
+                                    renderizarPokemons(todosPokemons);
+                                    requestAnimationFrame(() => window.scrollTo(0, scrollPos));
+                                }
+                            }
+                            mostrarToastSucesso('Salvo com avisos (verifique o console)');
                             console.log('⚠️ Edição concluída com avisos, card atualizado no DOM.');
                         }, 1200);
                     }
@@ -2431,6 +2459,8 @@
             } else {
                 const overlay = document.getElementById('modalEdicaoOverlay');
                 if (overlay) overlay.remove();
+                // Atualizar card mesmo no modo offline
+                atualizarCardNoDom(nomeOriginal, todosPokemons[index]);
             }
         }
         
