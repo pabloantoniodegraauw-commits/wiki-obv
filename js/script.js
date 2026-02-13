@@ -1249,6 +1249,10 @@
                     }
                 }, 250); // debounce 250ms
             });
+
+            // 🖼️ Re-configurar busca por imagem após clonar o input
+            // (o cloneNode remove event listeners, então o paste listener precisa ser re-adicionado)
+            configurarBuscaPorImagem();
         }
 
         function configurarBuscaTMs() {
