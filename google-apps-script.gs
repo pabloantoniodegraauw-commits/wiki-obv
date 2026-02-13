@@ -230,8 +230,9 @@ function doGet(e) {
         cabecalho.forEach((coluna, index) => {
           obj[coluna] = linha[index];
         });
-        // SEMPRE enviar sugestão de localização com chave ASCII limpa (coluna F = índice 5)
-        // Isso evita problemas de encoding com acentos no nome da coluna
+        // SEMPRE mapear chaves com nomes ASCII limpos para evitar encoding issues
+        obj['PS'] = (linha[0] !== undefined && linha[0] !== null && linha[0] !== '') ? linha[0].toString() : '';
+        // Coluna F (índice 5) = Sugestão de localização
         obj['SUGESTAO_LOC'] = (linha[5] || '').toString();
         // Coluna Y (índice 24) = Sugestão de atacks
         obj['SUGESTAO_ATACKS'] = (linha[24] || '').toString();
@@ -1502,7 +1503,10 @@ function handlePokemonUpdate(planilha, dados) {
         // L(12): Sp.Attack | M(13): Sp.Defense | N(14): Speed
         // O(15)-X(24): M1-M10
         
-        aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);     // A: PS
+        // A: PS — só atualizar se veio com valor (proteger contra apagar acidentalmente)
+        if (dados.pokemon.numero !== undefined && dados.pokemon.numero !== null && String(dados.pokemon.numero).trim() !== '') {
+          aba.getRange(linhaEncontrada, 1).setValue(dados.pokemon.numero);
+        }
         // Coluna B (GEN) não mexemos
         
         // Se tem EV, atualiza coluna D. Senão, atualiza coluna C
