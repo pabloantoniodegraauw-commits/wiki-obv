@@ -1,14 +1,8 @@
 // 👥 Módulo Clã - WIKI OBV
 
 function initCla() {
-    try {
-        console.log('👥 Inicializando Clã...');
-        // Clã é estático, já vem no HTML
-        // Nenhuma ação necessária
-        console.log('✅ Clã carregado (conteúdo estático)');
-    } catch (erro) {
-        console.error('❌ Erro ao inicializar Clã:', erro);
-    }
+    console.log('👥 Inicializando Clã...');
+    console.log('✅ Clã carregado (conteúdo estático)');
 }
 
 // Registrar inicializador

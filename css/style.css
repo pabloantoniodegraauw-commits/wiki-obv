@@ -2330,3 +2330,322 @@ footer {
         flex-wrap: wrap;
     }
 }
+
+/* ═══════════════════════════════════════════
+   LOCALIZAÇÃO POKÉMON - ESTILOS
+   ═══════════════════════════════════════════ */
+
+/* ---- Dropdown de cidades ---- */
+.cla-city-select-wrapper {
+    position: relative;
+}
+
+.cla-city-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 250px;
+    overflow-y: auto;
+    background: rgba(15, 18, 40, 0.98);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    z-index: 50;
+    backdrop-filter: blur(10px);
+}
+
+.cla-city-dropdown.active {
+    display: block;
+}
+
+.cla-city-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cla-city-dropdown::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 3px;
+}
+
+.cla-city-region {
+    padding: 6px 14px;
+    color: #ffd700;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    background: rgba(255, 215, 0, 0.06);
+    border-top: 1px solid rgba(255, 215, 0, 0.1);
+    position: sticky;
+    top: 0;
+}
+
+.cla-city-option {
+    padding: 10px 18px;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s;
+}
+
+.cla-city-option:hover {
+    background: rgba(255, 215, 0, 0.12);
+    color: #ffd700;
+}
+
+/* ---- Input base ---- */
+.cla-loc-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.3);
+    color: #fff;
+    font-size: 15px;
+    border-radius: 10px;
+    outline: none;
+    transition: all 0.25s ease;
+    box-sizing: border-box;
+}
+
+.cla-loc-input:focus {
+    border-color: #ffd700;
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.15);
+}
+
+.cla-loc-input::placeholder {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+/* ---- Botões de direção ---- */
+.cla-direction-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.cla-dir-btn {
+    padding: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.6);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    transition: all 0.25s ease;
+    text-align: center;
+    line-height: 1;
+}
+
+.cla-dir-btn:hover {
+    border-color: rgba(136, 211, 255, 0.4);
+    color: #88d3ff;
+    background: rgba(136, 211, 255, 0.08);
+}
+
+.cla-dir-btn.active {
+    border-color: #88d3ff;
+    color: #88d3ff;
+    background: rgba(136, 211, 255, 0.15);
+    box-shadow: 0 0 16px rgba(136, 211, 255, 0.2);
+}
+
+/* ---- Unidade ---- */
+.cla-unit-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cla-loc-unit {
+    flex: 1;
+}
+
+.cla-unit-suffix {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+/* ---- Preview (sugestão membro) ---- */
+.cla-loc-preview {
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px dashed rgba(255, 215, 0, 0.25);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.4);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.cla-loc-preview.filled {
+    border-color: rgba(255, 215, 0, 0.5);
+    color: #ffd700;
+    background: rgba(255, 215, 0, 0.06);
+}
+
+.cla-loc-tag {
+    color: #ffd700;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+/* ---- Editor CRUD de localização (admin modal) ---- */
+.edit-loc-container {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.edit-loc-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.edit-loc-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.edit-loc-entry:hover {
+    border-color: rgba(255, 215, 0, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.edit-loc-entry-text {
+    font-size: 14px;
+}
+
+.edit-loc-entry-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.edit-loc-entry-edit,
+.edit-loc-entry-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.edit-loc-entry-edit {
+    color: #88d3ff;
+}
+
+.edit-loc-entry-edit:hover {
+    background: rgba(136, 211, 255, 0.15);
+}
+
+.edit-loc-entry-delete {
+    color: #ff6b6b;
+}
+
+.edit-loc-entry-delete:hover {
+    background: rgba(255, 107, 107, 0.15);
+}
+
+.edit-loc-add-btn {
+    width: 100%;
+    padding: 10px;
+    background: rgba(255, 215, 0, 0.08);
+    border: 2px dashed rgba(255, 215, 0, 0.25);
+    color: #ffd700;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.edit-loc-add-btn:hover {
+    background: rgba(255, 215, 0, 0.15);
+    border-color: rgba(255, 215, 0, 0.5);
+}
+
+.edit-loc-form {
+    background: rgba(255, 215, 0, 0.04);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.edit-loc-form-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.edit-loc-dir-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.edit-loc-confirm-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #4caf50, #45a049);
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    flex: 1;
+}
+
+.edit-loc-confirm-btn:hover {
+    box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+}
+
+.edit-loc-cancel-btn {
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.edit-loc-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Responsivo ---- */
+@media (max-width: 600px) {
+    .cla-direction-btns {
+        grid-template-columns: 1fr 1fr;
+    }
+    .edit-loc-form-row {
+        flex-direction: column;
+    }
+    .edit-loc-dir-group {
+        width: 100%;
+    }
+}
