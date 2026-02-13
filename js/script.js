@@ -2608,14 +2608,19 @@
                     method: 'POST', headers: { 'Content-Type': 'text/plain' },
                     body: JSON.stringify({ action: 'atualizarSugestao', nomePokemon, sugestao, email: user.email, authToken: user.authToken })
                 });
-                const resultado = JSON.parse(await resp.text());
+                const texto = await resp.text();
+                console.log('📥 Resposta salvarSugestaoLoc:', texto);
+                let resultado;
+                try { resultado = JSON.parse(texto); } catch(_e) { resultado = { sucesso: false, mensagem: 'Resposta inválida do servidor' }; }
                 if (resultado.sucesso || resultado.success) {
                     // ⚡ Push imediato: atualizar dados locais e card no DOM
                     const nomeNorm = normalizarNome(nomePokemon);
                     const idx = todosPokemons.findIndex(p => {
-                        const n = normalizarNome(p.EV || '') || normalizarNome(p.POKEMON || '');
-                        return n === nomeNorm;
+                        const nEV = normalizarNome(p.EV || '');
+                        const nPK = normalizarNome(p.POKEMON || '');
+                        return (nEV && nEV === nomeNorm) || (nPK && nPK === nomeNorm);
                     });
+                    console.log('🔍 Push imediato - idx:', idx, 'nomeNorm:', nomeNorm);
                     if (idx !== -1) {
                         // Append à sugestão existente ou criar nova
                         const atual = obterSugestaoLocalizacao(todosPokemons[idx]);
@@ -2626,15 +2631,19 @@
                             return ascii.includes('SUGEST') && ascii.includes('LOCAL');
                         }) || 'SUGESTAO_LOC';
                         todosPokemons[idx][chave] = novaStr;
+                        console.log('✅ Sugestão local atualizada:', chave, '=', novaStr);
                         atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
+                    } else {
+                        console.warn('⚠️ Pokémon não encontrado no array para push:', nomePokemon);
                     }
-                    document.getElementById('modalSugestao').remove();
+                    document.getElementById('modalSugestao')?.remove();
                     mostrarToastSucesso('Sugestão de localização enviada!');
                 } else {
                     alert('Erro: ' + (resultado.mensagem || resultado.message));
                     botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
                 }
             } catch (e) {
+                console.error('❌ Erro salvarSugestaoLocalizacao:', e);
                 alert('Erro ao salvar. Tente novamente.');
                 botao.disabled = false; botao.innerHTML = '<i class="fas fa-save"></i> Salvar';
             }
@@ -2705,8 +2714,9 @@
                     // ⚡ Push imediato: atualizar dados locais e card no DOM
                     const nomeNorm = normalizarNome(nomePokemon);
                     const idx = todosPokemons.findIndex(p => {
-                        const n = normalizarNome(p.EV || '') || normalizarNome(p.POKEMON || '');
-                        return n === nomeNorm;
+                        const nEV = normalizarNome(p.EV || '');
+                        const nPK = normalizarNome(p.POKEMON || '');
+                        return (nEV && nEV === nomeNorm) || (nPK && nPK === nomeNorm);
                     });
                     if (idx !== -1) {
                         // Atualizar slot do atack no array local
@@ -2714,7 +2724,7 @@
                         todosPokemons[idx][slotKey] = nomeAtack;
                         atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
                     }
-                    document.getElementById('modalSugestao').remove();
+                    document.getElementById('modalSugestao')?.remove();
                     mostrarToastSucesso('Sugestão de atack enviada!');
                 } else {
                     alert('Erro: ' + (resultado.mensagem || resultado.message));
@@ -2923,13 +2933,14 @@
                     // ⚡ Push imediato: atualizar card no DOM
                     const nomeNorm = normalizarNome(nomePokemon);
                     const idx = todosPokemons.findIndex(p => {
-                        const n = normalizarNome(p.EV || '') || normalizarNome(p.POKEMON || '');
-                        return n === nomeNorm;
+                        const nEV = normalizarNome(p.EV || '');
+                        const nPK = normalizarNome(p.POKEMON || '');
+                        return (nEV && nEV === nomeNorm) || (nPK && nPK === nomeNorm);
                     });
                     if (idx !== -1) {
                         atualizarCardNoDom(nomePokemon, todosPokemons[idx]);
                     }
-                    document.getElementById('modalSugestao').remove();
+                    document.getElementById('modalSugestao')?.remove();
                     mostrarToastSucesso('Sugestão de TM enviada!');
                 } else {
                     alert('Erro: ' + (resultado.mensagem || resultado.message));

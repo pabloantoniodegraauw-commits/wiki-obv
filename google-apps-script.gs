@@ -954,9 +954,12 @@ function handleAtualizarSugestao(planilha, dados) {
         Logger.log('Coluna F (índice 5): ' + todosOsDados[i][5]);
         
         // COLUNA F = índice 5 (contando de 0: A=0, B=1, C=2, D=3, E=4, F=5)
-        aba.getRange(i + 1, 6).setValue(novaSugestao);
+        // APPEND: se já existir sugestão, concatenar com " / "
+        var valorAtual = (todosOsDados[i][5] || '').toString().trim();
+        var novoValor = valorAtual ? valorAtual + ' / ' + novaSugestao : novaSugestao;
+        aba.getRange(i + 1, 6).setValue(novoValor);
         
-        Logger.log('Sugestão salva com sucesso!');
+        Logger.log('Sugestão salva com sucesso! Valor final: ' + novoValor);
         
         return {
           sucesso: true,
