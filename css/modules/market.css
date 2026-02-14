@@ -306,6 +306,18 @@
     font-size: 1.2em;
 }
 
+.market-price-row-oferta {
+    background: rgba(255, 152, 0, 0.08);
+    border: 1px dashed rgba(255, 152, 0, 0.3);
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.market-price-row-oferta label span:last-child {
+    color: #ff9800;
+    font-weight: bold;
+}
+
 /* ---- Botão Adicionar ao Carrinho ---- */
 .btn-add-cart {
     width: 100%;
@@ -1129,6 +1141,26 @@
     color: #a0e7ff;
     font-size: 0.8em;
     margin-bottom: 8px;
+}
+
+.market-cart-card-oferta-badge {
+    background: linear-gradient(135deg, rgba(255, 87, 34, 0.3), rgba(255, 152, 0, 0.2));
+    color: #ff9800;
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 152, 0, 0.4);
+    margin-bottom: 6px;
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    animation: ofertaPulse 2s ease-in-out infinite;
+}
+
+@keyframes ofertaPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 152, 0, 0.2); }
+    50% { box-shadow: 0 0 15px rgba(255, 152, 0, 0.4); }
 }
 
 .market-cart-card-detail {

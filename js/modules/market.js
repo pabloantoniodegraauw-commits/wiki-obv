@@ -295,6 +295,8 @@ function resetarCard() {
     if (label) label.textContent = labels[marketTipoAtual] || 'SELECIONE';
 
     // Resetar preços
+    const ofertaCheck = document.getElementById('priceOfertaCheck');
+    if (ofertaCheck) ofertaCheck.checked = false;
     ['dinheiro', 'ponto', 'hd'].forEach(t => {
         const check = document.getElementById(`price${capitalize(t)}Check`);
         const val = document.getElementById(`price${capitalize(t)}Value`);
@@ -572,6 +574,8 @@ function selecionarItemMarket(tipo, identificador) {
     btnAdd.style.display = 'block';
 
     // Resetar preços
+    const ofertaCheckReset = document.getElementById('priceOfertaCheck');
+    if (ofertaCheckReset) ofertaCheckReset.checked = false;
     ['dinheiro', 'ponto', 'hd'].forEach(t => {
         const ck = document.getElementById(`price${capitalize(t)}Check`);
         const vl = document.getElementById(`price${capitalize(t)}Value`);
@@ -769,6 +773,20 @@ function renderizarCardTM(numero) {
             <input type="text" value="${tm.tipagem}" readonly style="opacity:0.7">
         </div>
         <div class="market-field">
+            <label><i class="fas fa-crosshairs"></i> Tipo de Drop</label>
+            <select id="mkTMDrop">
+                <option value="Desconhecido">Desconhecido</option>
+                <option value="Boss">Boss</option>
+                <option value="Eventos">Eventos</option>
+                <option value="Spawns">Spawns</option>
+                <option value="Craft">Craft</option>
+            </select>
+        </div>
+        <div class="market-field">
+            <label><i class="fas fa-map-marker-alt"></i> Origem do TM</label>
+            <input type="text" id="mkTMOrigem" placeholder="Ex: Boss tal, Evento X...">
+        </div>
+        <div class="market-field">
             <label><i class="fas fa-sort-numeric-up"></i> Quantidade</label>
             <input type="number" id="mkTMQty" placeholder="Qtd" min="1" value="1">
         </div>
@@ -877,8 +895,8 @@ function adicionarAoCarrinho() {
     }
 
     const precos = obterPrecos();
-    if (!precos.dinheiro && !precos.ponto && !precos.hd) {
-        alert('Informe pelo menos um valor de venda!');
+    if (!precos.dinheiro && !precos.ponto && !precos.hd && !precos.oferta) {
+        alert('Informe pelo menos um valor de venda ou marque como Oferta!');
         return;
     }
 
@@ -942,7 +960,8 @@ function obterPrecos() {
     return {
         dinheiro: document.getElementById('priceDinheiroCheck')?.checked ? (document.getElementById('priceDinheiroValue')?.value || '') : '',
         ponto: document.getElementById('pricePontoCheck')?.checked ? (document.getElementById('pricePontoValue')?.value || '') : '',
-        hd: document.getElementById('priceHdCheck')?.checked ? (document.getElementById('priceHdValue')?.value || '') : ''
+        hd: document.getElementById('priceHdCheck')?.checked ? (document.getElementById('priceHdValue')?.value || '') : '',
+        oferta: document.getElementById('priceOfertaCheck')?.checked || false
     };
 }
 
@@ -970,7 +989,9 @@ function coletarDadosTM() {
     const numLabel = tm.tipo === 'HM' ? 'HM' : 'TM';
     const label = numLabel + String(tm.numero).padStart(2, '0') + ' - ' + tm.nome;
     const qty = document.getElementById('mkTMQty')?.value || '1';
-    return { numero: tm.numero, nome: tm.nome, tipagem: tm.tipagem, tipo: tm.tipo, label, qty };
+    const tipoDrop = document.getElementById('mkTMDrop')?.value || 'Desconhecido';
+    const origemTM = document.getElementById('mkTMOrigem')?.value || '';
+    return { numero: tm.numero, nome: tm.nome, tipagem: tm.tipagem, tipo: tm.tipo, label, qty, tipoDrop, origemTM };
 }
 
 function coletarDadosItem() {
@@ -994,6 +1015,7 @@ function coletarDadosConta() {
 function gerarTextoItemCarrinho(item) {
     const p = item.precos;
     let precoStr = '';
+    if (p.oferta) precoStr += '📢 OFERTA ';
     if (p.hd) precoStr += `HD💶: ${p.hd} `;
     if (p.ponto) precoStr += `PONTO💎: ${p.ponto} `;
     if (p.dinheiro) precoStr += `💰R$: ${p.dinheiro}`;
@@ -1014,7 +1036,10 @@ function gerarTextoItemCarrinho(item) {
         }
         case 'tm': {
             const d = item.dados;
-            return `${d.qty}x ${d.label}\n${precoStr}`;
+            const dropStr = d.tipoDrop ? `Drop: ${d.tipoDrop}` : '';
+            const origemStr = d.origemTM ? `Origem: ${d.origemTM}` : '';
+            const tmExtras = [dropStr, origemStr].filter(Boolean).join(' | ');
+            return `${d.qty}x ${d.label}${tmExtras ? '\n' + tmExtras : ''}\n${precoStr}`;
         }
         case 'item': {
             const d = item.dados;
@@ -1111,6 +1136,10 @@ function editarItemCarrinho(index) {
                 setTimeout(() => {
                     const mkTMQty = document.getElementById('mkTMQty');
                     if (mkTMQty) mkTMQty.value = item.dados.qty || '1';
+                    const mkTMDrop = document.getElementById('mkTMDrop');
+                    if (mkTMDrop) mkTMDrop.value = item.dados.tipoDrop || 'Desconhecido';
+                    const mkTMOrigem = document.getElementById('mkTMOrigem');
+                    if (mkTMOrigem) mkTMOrigem.value = item.dados.origemTM || '';
                     preencherPrecosEdicao(item.precos);
                     const btn = document.getElementById('btnAddCart');
                     if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Salvar Alteração';
@@ -1157,6 +1186,10 @@ function editarItemCarrinho(index) {
 
 function preencherPrecosEdicao(precos) {
     if (!precos) return;
+    if (precos.oferta) {
+        const ck = document.getElementById('priceOfertaCheck');
+        if (ck) ck.checked = true;
+    }
     if (precos.dinheiro) {
         const ck = document.getElementById('priceDinheiroCheck');
         const vl = document.getElementById('priceDinheiroValue');
@@ -1253,7 +1286,9 @@ function renderizarCarrinho() {
                 if (d.addon) extras.push(d.addon);
                 if (extras.length) detailsHTML += `<div class="market-cart-card-extras">${extras.join(' · ')}</div>`;
             } else if (item.tipo === 'tm' && item.dados) {
-                detailsHTML = `<div class="market-cart-card-detail">${item.dados.tipagem} · x${item.dados.qty}</div>`;
+                const tmParts = [item.dados.tipagem, `x${item.dados.qty}`];
+                if (item.dados.origemTM) tmParts.push(item.dados.origemTM);
+                detailsHTML = `<div class="market-cart-card-detail">${tmParts.join(' · ')}</div>`;
             } else if (item.tipo === 'item' && item.dados) {
                 detailsHTML = `<div class="market-cart-card-detail">${item.dados.tipo} · x${item.dados.qty}</div>`;
             } else if (item.tipo === 'conta' && item.dados) {
@@ -1277,8 +1312,9 @@ function renderizarCarrinho() {
                     </div>
                     <div class="market-cart-card-name">${item.nome}</div>
                     <div class="market-cart-card-type">
-                        <i class="fas fa-tag"></i> ${tipoLabels[item.tipo] || item.tipo}
+                        <i class="fas fa-tag"></i> ${item.tipo === 'tm' && item.dados?.tipoDrop ? item.dados.tipoDrop : (tipoLabels[item.tipo] || item.tipo)}
                     </div>
+                    ${item.precos?.oferta ? '<div class="market-cart-card-oferta-badge"><i class="fas fa-bullhorn"></i> OFERTA</div>' : ''}
                     ${detailsHTML}
                     <div class="market-cart-card-prices">
                         ${precoDisplay.join('')}
@@ -1293,6 +1329,9 @@ function renderizarCarrinho() {
             if (item.precos.hd) precoDisplay.push(`💶${item.precos.hd}`);
             if (item.precos.ponto) precoDisplay.push(`💎${item.precos.ponto}`);
             if (item.precos.dinheiro) precoDisplay.push(`💲${item.precos.dinheiro}`);
+            if (item.precos.oferta) precoDisplay.push('📢OFERTA');
+
+            const listTypeLabel = item.tipo === 'tm' && item.dados?.tipoDrop ? item.dados.tipoDrop : (tipoLabels[item.tipo] || item.tipo);
 
             return `
                 <div class="market-cart-item">
@@ -1301,7 +1340,7 @@ function renderizarCarrinho() {
                     </div>
                     <div class="market-cart-item-info">
                         <div class="market-cart-item-name">${item.nome}</div>
-                        <div class="market-cart-item-details">${tipoLabels[item.tipo] || item.tipo}</div>
+                        <div class="market-cart-item-details">${listTypeLabel}</div>
                         <div class="market-cart-item-price">${precoDisplay.join(' ')}</div>
                     </div>
                     <div class="market-cart-item-actions">
