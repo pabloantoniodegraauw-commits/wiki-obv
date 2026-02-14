@@ -766,6 +766,9 @@ function renderizarCardTM(numero) {
     document.getElementById('marketCardName').textContent = `${numFormatted} - ${tm.nome}`;
     document.getElementById('marketCardTypeLabel').textContent = 'TM';
 
+    const tipoDrop = tm.categoria || 'Desconhecido';
+    const origemTM = tm.pokemon || '';
+
     const fields = document.getElementById('marketCardFields');
     fields.innerHTML = `
         <div class="market-field">
@@ -774,17 +777,11 @@ function renderizarCardTM(numero) {
         </div>
         <div class="market-field">
             <label><i class="fas fa-crosshairs"></i> Tipo de Drop</label>
-            <select id="mkTMDrop">
-                <option value="Desconhecido">Desconhecido</option>
-                <option value="Boss">Boss</option>
-                <option value="Eventos">Eventos</option>
-                <option value="Spawns">Spawns</option>
-                <option value="Craft">Craft</option>
-            </select>
+            <input type="text" id="mkTMDrop" value="${tipoDrop}" readonly style="opacity:0.7">
         </div>
         <div class="market-field">
             <label><i class="fas fa-map-marker-alt"></i> Origem do TM</label>
-            <input type="text" id="mkTMOrigem" placeholder="Ex: Boss tal, Evento X...">
+            <input type="text" id="mkTMOrigem" value="${origemTM}" readonly style="opacity:0.7">
         </div>
         <div class="market-field">
             <label><i class="fas fa-sort-numeric-up"></i> Quantidade</label>
@@ -989,8 +986,8 @@ function coletarDadosTM() {
     const numLabel = tm.tipo === 'HM' ? 'HM' : 'TM';
     const label = numLabel + String(tm.numero).padStart(2, '0') + ' - ' + tm.nome;
     const qty = document.getElementById('mkTMQty')?.value || '1';
-    const tipoDrop = document.getElementById('mkTMDrop')?.value || 'Desconhecido';
-    const origemTM = document.getElementById('mkTMOrigem')?.value || '';
+    const tipoDrop = tm.categoria || 'Desconhecido';
+    const origemTM = tm.pokemon || '';
     return { numero: tm.numero, nome: tm.nome, tipagem: tm.tipagem, tipo: tm.tipo, label, qty, tipoDrop, origemTM };
 }
 
