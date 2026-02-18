@@ -36,7 +36,7 @@
             'Hoenn': ['Littleroot','Oldale','Slateport','Mauville','Lavaridge','Petalburg','Rustboro','Paciflidlog','Fortree','Lilycove','Sootopolis','Dewford','Mossdeep'],
             'Sinnoh': ['Twinleaf','Sandgem','Jubilife','Canavale','Oreburgh','Floaroma','Eterna','Celestic','Solaceon','Hearthome','Pastoria','Sunyshore','Veilstone'],
             'Unova': ['Nuavema','Accumula','Striaton','Nacrene','Castelia','Nimbasa','Black','Undella','Lacunosa','Opelucid','Icirrus','Driftveil','Mistralton','Virbank','Floccesy','Aspertia'],
-            'Kalos': ['Kiloude','Aquacorde','Santalune','Camphrier','Ambrette','Cyllage','Shalour','Geosenge','Coumarine','Lumiose','Laverre','Dendemille','Anistar','Snowbelle']
+            'Kalos': ['Kiloude','Aquacorde','Santalune','Camphrier','Ambrette','Cyllage','Shalour','Geosenge','Coumarine','Lumiose','Lavarre','Dendemille','Anistar','Snowbelle']
         };
         const LOC_DIR_ICONS = { '>': '→', '<': '←', '/\\': '↑', '\\/': '↓' };
         const LOC_DIR_LABELS = { '>': 'Direita →', '<': 'Esquerda ←', '/\\': 'Cima ↑', '\\/': 'Baixo ↓' };
