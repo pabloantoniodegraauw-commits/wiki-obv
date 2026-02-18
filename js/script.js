@@ -2148,13 +2148,19 @@
                 if (el) {
                     const nomeAtack = el.value.trim();
                     if (nomeAtack) {
-                        // Buscar informações do ataque no banco global
-                        let atackInfo = todosAtacks.find(a => (a['ATACK'] || a['NOME'] || '').toLowerCase().trim() === nomeAtack.toLowerCase());
-                        let acao = atackInfo && atackInfo['AÇÃO'] ? atackInfo['AÇÃO'] : '';
-                        let tipo = atackInfo && atackInfo['TYPE'] ? atackInfo['TYPE'] : '';
-                        let categoria = atackInfo && atackInfo['CATEGORIA'] ? atackInfo['CATEGORIA'] : '';
-                        const atackFormatado = `${nomeAtack} / ${acao} / ${tipo} / ${categoria}`;
-                        atacksMudados.push({ slot: `m${i}`, nome: atackFormatado });
+                        // Se já está no formato correto (tem 3 barras), não reformatar
+                        const partes = nomeAtack.split('/').map(p => p.trim());
+                        if (partes.length === 4 && partes.every(p => p.length > 0)) {
+                            atacksMudados.push({ slot: `m${i}`, nome: nomeAtack });
+                        } else {
+                            // Buscar informações do ataque no banco global
+                            let atackInfo = todosAtacks.find(a => (a['ATACK'] || a['NOME'] || '').toLowerCase().trim() === nomeAtack.toLowerCase());
+                            let acao = atackInfo && atackInfo['AÇÃO'] ? atackInfo['AÇÃO'] : '';
+                            let tipo = atackInfo && atackInfo['TYPE'] ? atackInfo['TYPE'] : '';
+                            let categoria = atackInfo && atackInfo['CATEGORIA'] ? atackInfo['CATEGORIA'] : '';
+                            const atackFormatado = `${nomeAtack} / ${acao} / ${tipo} / ${categoria}`;
+                            atacksMudados.push({ slot: `m${i}`, nome: atackFormatado });
+                        }
                     } else {
                         atacksMudados.push({ slot: `m${i}`, nome: '' });
                     }
