@@ -2141,13 +2141,23 @@
                 localizacao: typeof window._getEditLocEntries === 'function' ? window._getEditLocEntries() : ''
             };
 
-            // Coletar atacks M1-M10
+            // Coletar atacks M1-M10 e salvar no formato 'Nome / Ação / Tipo / Categoria'
             const atacksMudados = [];
             for (let i = 1; i <= 10; i++) {
                 const el = document.getElementById(`edit-m${i}`);
                 if (el) {
-                    const novoAtack = el.value.trim();
-                    atacksMudados.push({ slot: `m${i}`, nome: novoAtack });
+                    const nomeAtack = el.value.trim();
+                    if (nomeAtack) {
+                        // Buscar informações do ataque no banco global
+                        let atackInfo = todosAtacks.find(a => (a['ATACK'] || a['NOME'] || '').toLowerCase().trim() === nomeAtack.toLowerCase());
+                        let acao = atackInfo && atackInfo['AÇÃO'] ? atackInfo['AÇÃO'] : '';
+                        let tipo = atackInfo && atackInfo['TYPE'] ? atackInfo['TYPE'] : '';
+                        let categoria = atackInfo && atackInfo['CATEGORIA'] ? atackInfo['CATEGORIA'] : '';
+                        const atackFormatado = `${nomeAtack} / ${acao} / ${tipo} / ${categoria}`;
+                        atacksMudados.push({ slot: `m${i}`, nome: atackFormatado });
+                    } else {
+                        atacksMudados.push({ slot: `m${i}`, nome: '' });
+                    }
                 }
             }
 
