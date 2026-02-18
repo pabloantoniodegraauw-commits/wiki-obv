@@ -545,7 +545,7 @@ function atualizarPreviewBuild() {
     }
     
     const buildText = smeargleSelectedMoves.map((move, index) => 
-        `m${index + 1} - ${move.nome} - ${move.origem}`
+        `m${index + 1} - ${move.nome} / ${move.acao} / ${move.tipo} / ${move.categoria}`
     ).join(' / ');
     
     preview.innerHTML = `<strong>Preview:</strong> ${buildText}`;
@@ -572,11 +572,12 @@ window.salvarBuildAtual = async function() {
         const user = userStr ? JSON.parse(userStr) : null;
         const usuario = user && user.nickname ? user.nickname : 'Anônimo';
         
-        // Usar URLSearchParams para enviar como form data (evita preflight CORS)
+        // Salvar ataques no formato "Nome / Ação / Tipo / Categoria"
+        const movesFormatados = smeargleSelectedMoves.map(move => `${move.nome} / ${move.acao} / ${move.tipo} / ${move.categoria}`);
         const formData = new URLSearchParams({
             action: 'salvarBuild',
             nomeBuild: nomeBuild,
-            moves: JSON.stringify(smeargleSelectedMoves),
+            moves: JSON.stringify(movesFormatados),
             usuario: usuario
         });
         
