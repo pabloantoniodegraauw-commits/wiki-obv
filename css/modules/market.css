@@ -49,15 +49,9 @@
 
 /* ---- Card Dinâmico (Esquerda) ---- */
 .market-card-wrapper {
-    position: fixed;
+    position: sticky;
     top: 20px;
-    left: 20px;
-    width: 360px;
     height: fit-content;
-    z-index: 10;
-    background: linear-gradient(145deg, rgba(30, 60, 114, 0.7), rgba(15, 30, 60, 0.9));
-    border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(30,60,114,0.15);
 }
 
 .market-card {
