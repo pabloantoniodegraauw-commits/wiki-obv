@@ -49,9 +49,11 @@
 
 /* ---- Card Dinâmico (Esquerda) ---- */
 .market-card-wrapper {
-    position: sticky;
-    top: 20px;
+    position: relative;
+    top: 0;
     height: fit-content;
+    align-self: flex-start;
+    grid-column: 1;
 }
 
 .market-card {
