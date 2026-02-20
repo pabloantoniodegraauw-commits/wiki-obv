@@ -489,6 +489,11 @@
     border-radius: 20px;
     padding: 25px;
     margin-top: 25px;
+        grid-column: 1 / -1;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 0;
 }
 
 .market-cart-header {
@@ -1039,7 +1044,7 @@
 /* ---- Cart Cards Grid View ---- */
 .market-cart-cards-grid {
     display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 18px;
     width: 100%;
     margin: 0;
