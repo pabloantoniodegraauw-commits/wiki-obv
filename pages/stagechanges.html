@@ -101,20 +101,24 @@
             </tbody>
             </table>
         </div>
-    <script>
-        const toggleBtn = document.getElementById('toggleStageTableBtn');
-        const tableContainer = document.getElementById('stageTableContainer');
-        let tableVisible = false;
-        toggleBtn.addEventListener('click', function() {
-            tableVisible = !tableVisible;
-            if (tableVisible) {
-                tableContainer.style.display = '';
-                toggleBtn.textContent = 'Ocultar Tabela';
-            } else {
-                tableContainer.style.display = 'none';
-                toggleBtn.textContent = 'Mostrar Tabela';
-            }
-        });
-    </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const toggleBtn = document.getElementById('toggleStageTableBtn');
+                const tableContainer = document.getElementById('stageTableContainer');
+                let tableVisible = false;
+                if (toggleBtn && tableContainer) {
+                    toggleBtn.addEventListener('click', function() {
+                        tableVisible = !tableVisible;
+                        if (tableVisible) {
+                            tableContainer.style.display = '';
+                            toggleBtn.textContent = 'Ocultar Tabela';
+                        } else {
+                            tableContainer.style.display = 'none';
+                            toggleBtn.textContent = 'Mostrar Tabela';
+                        }
+                    });
+                }
+            });
+        </script>
     </div>
 </div>
