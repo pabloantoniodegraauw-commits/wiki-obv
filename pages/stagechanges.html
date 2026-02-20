@@ -229,24 +229,22 @@
                 var stagePage = document.getElementById('stagePage');
                 var effectsPage = document.getElementById('effectsPage');
                 if (btnStage && btnEffects && stagePage && effectsPage) {
-                    btnStage.onclick = function(e) {
+                    btnStage.addEventListener('mousedown', function(e) {
                         e.preventDefault();
                         btnStage.classList.add('active');
                         btnEffects.classList.remove('active');
                         stagePage.style.display = 'block';
                         effectsPage.style.display = 'none';
-                    };
-                    btnEffects.onclick = function(e) {
+                    });
+                    btnEffects.addEventListener('mousedown', function(e) {
                         e.preventDefault();
                         btnEffects.classList.add('active');
                         btnStage.classList.remove('active');
                         stagePage.style.display = 'none';
                         effectsPage.style.display = 'block';
-                    };
+                    });
                 }
             }
-            // Executa imediatamente
             setupStageTabs();
-            // E também ao carregar o DOM
             document.addEventListener('DOMContentLoaded', setupStageTabs);
 })();
