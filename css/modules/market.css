@@ -1058,6 +1058,19 @@
     position: relative;
 }
 
+.market-cart-card {
+    background: linear-gradient(145deg, rgba(30, 60, 114, 0.7), rgba(15, 30, 60, 0.9));
+    border-radius: 20px;
+    padding: 25px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    transition: all 0.5s ease;
+    animation: fadeIn 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
 .market-cart-card:hover {
     transform: translateY(-6px);
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.4);
