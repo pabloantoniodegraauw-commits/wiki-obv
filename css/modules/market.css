@@ -1039,21 +1039,13 @@
 /* ---- Cart Cards Grid View ---- */
 .market-cart-cards-grid {
     display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
     width: 100%;
-    max-width: unset;
-    margin-left: 0;
-    margin-right: 0;
-    flex-direction: unset !important;
-}
-
-.market-cart-card {
-    background: linear-gradient(145deg, rgba(30, 60, 114, 0.7), rgba(15, 30, 60, 0.9));
-    border-radius: 15px;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    text-align: center;
+    margin: 0;
+    box-sizing: border-box;
+    align-items: stretch;
+    justify-items: stretch;
     transition: all 0.3s;
     animation: fadeIn 0.5s ease-out;
     position: relative;
