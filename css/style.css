@@ -5,6 +5,22 @@
     font-family: Arial, sans-serif;
 }
 
+    /* Logo do cabeçalho responsiva */
+    .header-logo-obv {
+        height: 180px;
+        max-width: 90vw;
+        width: auto;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        transition: height 0.3s, max-width 0.3s;
+    }
+
+    @media (max-width: 768px) {
+        .header-logo-obv {
+            height: 90px;
+            max-width: 98vw;
+        }
+    }
+
 body {
     background: url('../assets/fundo-site.png') center center / cover no-repeat fixed;
     color: #fff;
@@ -879,6 +895,29 @@ footer {
     .pokemon-grid, .tms-grid, .tasks-grid {
         grid-template-columns: 1fr;
     }
+
+    /* Responsividade dos cards de tasks */
+    .task-card {
+        grid-template-columns: 1fr !important;
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .task-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .task-pokemon-large img {
+        width: 90px;
+        height: 90px;
+    }
+
+    .task-rewards {
+        grid-template-columns: 1fr;
+    }
+}
     
     #searchInput, #searchInputTMs {
         width: 95%;
