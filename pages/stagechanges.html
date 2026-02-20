@@ -1,104 +1,241 @@
 <!-- Stage Changes - Nova aba do site -->
 <div class="stage-changes-container">
     <h2>Stage Changes</h2>
-    <div class="stage-changes-header" style="margin-bottom: 24px;">
-        <p style="font-size:1.1em;line-height:1.6;">
-            <b>Ir para navegação</b> | <b>Ir para pesquisar</b><br><br>
-            O sistema de Stage Changes para o otPokémon permite que os jogadores alterem temporariamente os atributos de seus Pokémon através de movimentos especiais. Alguns desses movimentos podem aumentar ou diminuir os atributos de <b>Attack</b>, <b>Sp Attack</b>, <b>Defense</b>, <b>Sp Def</b> e <b>Speed</b> em um ou mais estágios.<br><br>
-            Essas alterações são persistentes e não são canceladas quando o Pokémon é recolhido em sua Poké Ball, permitindo que o Pokémon mantenha o bônus ou penalidade durante a batalha. Cada estágio de alteração de atributo tem uma duração de 15 segundos.<br><br>
-            Os jogadores devem usar esses movimentos estrategicamente, pois eles podem ser uma vantagem significativa em batalha. No entanto, o efeito da mudança de estágio pode ser revertido pelos movimentos que alteram os estágios opostos, portanto, os jogadores devem estar cientes das fraquezas de seus próprios Pokémon e dos adversários para obter o máximo benefício dos movimentos Stage Changes.
-        </p>
-        
+    <div style="display: flex; gap: 16px; justify-content: center; margin-bottom: 24px;">
+        <button id="btnStage" class="tab-btn active" style="min-width: 180px;">Stage Changes</button>
+        <button id="btnEffects" class="tab-btn" style="min-width: 180px;">Efeitos</button>
     </div>
-    <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
-        <table class="stage-changes-table">
-            <thead>
-                <tr>
-                    <th>Movimento</th>
-                    <th>Attack</th>
-                    <th>Sp. Attack</th>
-                    <th>Defense</th>
-                    <th>Sp. Defense</th>
-                    <th>Speed</th>
-                    <th>Chance</th>
-                    <th>Observação</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr><td>Steel Wing</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Bulldoze</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
-                <tr><td>Bug Buzz</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Energy Ball</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Superpower</td><td>-1</td><td></td><td>-1</td><td></td><td></td><td>100%</td><td>O pokémon que usar o superpower levará um debuff de ATK - 1 e  DEF - 1, não o alvo</td></tr>
-                <tr><td>Ominous Wind</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>10%</td><td></td></tr>
-                <tr><td>Electroweb</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
-                <tr><td>Focus Blast</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Acid</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Agility</td><td></td><td></td><td></td><td></td><td>+2</td><td>100%</td><td></td></tr>
-                <tr><td>Ancient Power</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>10%</td><td></td></tr>
-                <tr><td>Aurora Beam</td><td>-1</td><td></td><td></td><td></td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Bubble Beam</td><td></td><td></td><td></td><td></td><td>-1</td><td>10%</td><td></td></tr>
-                <tr><td>Bubble</td><td></td><td></td><td></td><td></td><td>-1</td><td>10%</td><td></td></tr>
-                <tr><td>Calm Mind</td><td></td><td>+1</td><td></td><td>+1</td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Charge Beam</td><td></td><td>+1</td><td></td><td></td><td></td><td>70%</td><td></td></tr>
-                <tr><td>Flash Cannon</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Draco Meteor</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Earth Power</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Scary Face</td><td></td><td></td><td></td><td></td><td>-2</td><td>100%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -2 SPD, não o usuário.</td></tr>
-                <tr><td>Hammer Arm</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
-                <tr><td>Bulk Up</td><td>+1</td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Charm</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -1 ATK, não o usuário.</td></tr>
-                <tr><td>Harden</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Icy Wind</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
-                <tr><td>Iron Tail</td><td></td><td></td><td>-1</td><td></td><td></td><td>30%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -1 DEF, não o usuário.</td></tr>
-                <tr><td>Leaf Storm</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Low Sweep</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
-                <tr><td>Meteor Mash</td><td>+1</td><td></td><td></td><td></td><td></td><td>20%</td><td></td></tr>
-                <tr><td>Moonblast</td><td></td><td>-1</td><td></td><td></td><td></td><td>30%</td><td></td></tr>
-                <tr><td>Mud Shot</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
-                <tr><td>Play Rough</td><td>-1</td><td></td><td></td><td></td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Rock Polish</td><td></td><td></td><td></td><td></td><td>+2</td><td>100%</td><td></td></tr>
-                <tr><td>Psychic</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
-                <tr><td>Rapid Spin</td><td></td><td></td><td></td><td></td><td>+1</td><td>100%</td><td></td></tr>
-                <tr><td>Rock Tomb</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
-                <tr><td>Shadow Ball</td><td></td><td></td><td></td><td>-1</td><td></td><td>20%</td><td></td></tr>
-                <tr><td>Skull Bash</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>String Shot</td><td></td><td></td><td></td><td></td><td>-2</td><td>100%</td><td></td></tr>
-                <tr><td>Crunch</td><td></td><td></td><td>-1</td><td></td><td></td><td>20%</td><td></td></tr>
-                <tr><td>Feather Dance</td><td>-2</td><td></td><td></td><td></td><td></td><td>100%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -2 ATK.</td></tr>
-                <tr><td>Metal Claw</td><td>+1</td><td></td><td></td><td></td><td></td><td>90%</td><td></td></tr>
-                <tr><td>Fiery Dance</td><td></td><td>+1</td><td></td><td></td><td></td><td>50%</td><td></td></tr>
-                <tr><td>Razor Shell</td><td></td><td></td><td>-1</td><td></td><td></td><td>50%</td><td></td></tr>
-                <tr><td>Struggle Bug</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Close Combat</td><td></td><td></td><td>-1</td><td>-1</td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Play Nice</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Swords Dance</td><td>+2</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Flame Charge</td><td></td><td></td><td></td><td></td><td>+1</td><td>100%</td><td></td></tr>
-                <tr><td>Overheat</td><td></td><td>-2</td><td></td><td></td><td></td><td>100%</td><td>O pokémon que usar o Overheat levará um debuff de SPATK - 2, não o alvo</td></tr>
-                <tr><td>Swagger</td><td>+2</td><td></td><td></td><td></td><td></td><td>100%</td><td>O alvo do move Swagger vai receber o buff de ATK + 2</td></tr>
-                <tr><td>Liquidation</td><td></td><td></td><td>-1</td><td></td><td></td><td>20%</td><td></td></tr>
-                <tr><td>Eerie Impulse</td><td></td><td>-2</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Noble Roar</td><td>-1</td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Acid Spray</td><td></td><td></td><td></td><td>-2</td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Defense Curl</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Aromatic Mist</td><td></td><td></td><td></td><td>+2</td><td></td><td>100%</td><td>Todos os alvos na área vão receber o buff de SPDEF + 2</td></tr>
-                <tr><td>Powerup Punch</td><td>+1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Howl</td><td>+1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Mystical Fire</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Metal Sound</td><td></td><td></td><td></td><td>-2</td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Cotton Guard</td><td></td><td></td><td>+3</td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Fake Tears</td><td></td><td></td><td></td><td>-2</td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Nasty Plot</td><td></td><td>+2</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Snarl</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Breaking Swipe</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Meteor Beam</td><td></td><td>+1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Skitter Smack</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Dragon Dance</td><td>+1</td><td></td><td></td><td></td><td>+1</td><td>100%</td><td></td></tr>
-                <tr><td>Work Up</td><td>+1</td><td>+1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
-                <tr><td>Shell Smash</td><td>+2</td><td>+2</td><td>+2</td><td>-2</td><td>-2</td><td>100%</td><td></td></tr>
-                <tr><td>Trop Kick</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td>O alvo do move Trop Kick receberá um debuff de -1 de ATK</td></tr>
-            </tbody>
+    <div id="stagePage" style="display:block;">
+        <div class="stage-changes-header" style="margin-bottom: 24px;">
+            <p style="font-size:1.1em;line-height:1.6;">
+                <b>Ir para navegação</b> | <b>Ir para pesquisar</b><br><br>
+                O sistema de Stage Changes para o otPokémon permite que os jogadores alterem temporariamente os atributos de seus Pokémon através de movimentos especiais. Alguns desses movimentos podem aumentar ou diminuir os atributos de <b>Attack</b>, <b>Sp Attack</b>, <b>Defense</b>, <b>Sp Def</b> e <b>Speed</b> em um ou mais estágios.<br><br>
+                Essas alterações são persistentes e não são canceladas quando o Pokémon é recolhido em sua Poké Ball, permitindo que o Pokémon mantenha o bônus ou penalidade durante a batalha. Cada estágio de alteração de atributo tem uma duração de 15 segundos.<br><br>
+                Os jogadores devem usar esses movimentos estrategicamente, pois eles podem ser uma vantagem significativa em batalha. No entanto, o efeito da mudança de estágio pode ser revertido pelos movimentos que alteram os estágios opostos, portanto, os jogadores devem estar cientes das fraquezas de seus próprios Pokémon e dos adversários para obter o máximo benefício dos movimentos Stage Changes.
+            </p>
+        </div>
+        <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
+            <table class="stage-changes-table">
+                <thead>
+                    <tr>
+                        <th>Movimento</th>
+                        <th>Attack</th>
+                        <th>Sp. Attack</th>
+                        <th>Defense</th>
+                        <th>Sp. Defense</th>
+                        <th>Speed</th>
+                        <th>Chance</th>
+                        <th>Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>Steel Wing</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Bulldoze</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
+                    <tr><td>Bug Buzz</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Energy Ball</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Superpower</td><td>-1</td><td></td><td>-1</td><td></td><td></td><td>100%</td><td>O pokémon que usar o superpower levará um debuff de ATK - 1 e  DEF - 1, não o alvo</td></tr>
+                    <tr><td>Ominous Wind</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>10%</td><td></td></tr>
+                    <tr><td>Electroweb</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
+                    <tr><td>Focus Blast</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Acid</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Agility</td><td></td><td></td><td></td><td></td><td>+2</td><td>100%</td><td></td></tr>
+                    <tr><td>Ancient Power</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>+1</td><td>10%</td><td></td></tr>
+                    <tr><td>Aurora Beam</td><td>-1</td><td></td><td></td><td></td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Bubble Beam</td><td></td><td></td><td></td><td></td><td>-1</td><td>10%</td><td></td></tr>
+                    <tr><td>Bubble</td><td></td><td></td><td></td><td></td><td>-1</td><td>10%</td><td></td></tr>
+                    <tr><td>Calm Mind</td><td></td><td>+1</td><td></td><td>+1</td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Charge Beam</td><td></td><td>+1</td><td></td><td></td><td></td><td>70%</td><td></td></tr>
+                    <tr><td>Flash Cannon</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Draco Meteor</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Earth Power</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Scary Face</td><td></td><td></td><td></td><td></td><td>-2</td><td>100%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -2 SPD, não o usuário.</td></tr>
+                    <tr><td>Hammer Arm</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
+                    <tr><td>Bulk Up</td><td>+1</td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Charm</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -1 ATK, não o usuário.</td></tr>
+                    <tr><td>Harden</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Icy Wind</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
+                    <tr><td>Iron Tail</td><td></td><td></td><td>-1</td><td></td><td></td><td>30%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -1 DEF, não o usuário.</td></tr>
+                    <tr><td>Leaf Storm</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Low Sweep</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
+                    <tr><td>Meteor Mash</td><td>+1</td><td></td><td></td><td></td><td></td><td>20%</td><td></td></tr>
+                    <tr><td>Moonblast</td><td></td><td>-1</td><td></td><td></td><td></td><td>30%</td><td></td></tr>
+                    <tr><td>Mud Shot</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
+                    <tr><td>Play Rough</td><td>-1</td><td></td><td></td><td></td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Rock Polish</td><td></td><td></td><td></td><td></td><td>+2</td><td>100%</td><td></td></tr>
+                    <tr><td>Psychic</td><td></td><td></td><td></td><td>-1</td><td></td><td>10%</td><td></td></tr>
+                    <tr><td>Rapid Spin</td><td></td><td></td><td></td><td></td><td>+1</td><td>100%</td><td></td></tr>
+                    <tr><td>Rock Tomb</td><td></td><td></td><td></td><td></td><td>-1</td><td>100%</td><td></td></tr>
+                    <tr><td>Shadow Ball</td><td></td><td></td><td></td><td>-1</td><td></td><td>20%</td><td></td></tr>
+                    <tr><td>Skull Bash</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>String Shot</td><td></td><td></td><td></td><td></td><td>-2</td><td>100%</td><td></td></tr>
+                    <tr><td>Crunch</td><td></td><td></td><td>-1</td><td></td><td></td><td>20%</td><td></td></tr>
+                    <tr><td>Feather Dance</td><td>-2</td><td></td><td></td><td></td><td></td><td>100%</td><td>O Pokémon alvo que for atingido vai receber o debuff de -2 ATK.</td></tr>
+                    <tr><td>Metal Claw</td><td>+1</td><td></td><td></td><td></td><td></td><td>90%</td><td></td></tr>
+                    <tr><td>Fiery Dance</td><td></td><td>+1</td><td></td><td></td><td></td><td>50%</td><td></td></tr>
+                    <tr><td>Razor Shell</td><td></td><td></td><td>-1</td><td></td><td></td><td>50%</td><td></td></tr>
+                    <tr><td>Struggle Bug</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Close Combat</td><td></td><td></td><td>-1</td><td>-1</td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Play Nice</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Swords Dance</td><td>+2</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Flame Charge</td><td></td><td></td><td></td><td></td><td>+1</td><td>100%</td><td></td></tr>
+                    <tr><td>Overheat</td><td></td><td>-2</td><td></td><td></td><td></td><td>100%</td><td>O pokémon que usar o Overheat levará um debuff de SPATK - 2, não o alvo</td></tr>
+                    <tr><td>Swagger</td><td>+2</td><td></td><td></td><td></td><td></td><td>100%</td><td>O alvo do move Swagger vai receber o buff de ATK + 2</td></tr>
+                    <tr><td>Liquidation</td><td></td><td></td><td>-1</td><td></td><td></td><td>20%</td><td></td></tr>
+                    <tr><td>Eerie Impulse</td><td></td><td>-2</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Noble Roar</td><td>-1</td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Acid Spray</td><td></td><td></td><td></td><td>-2</td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Defense Curl</td><td></td><td></td><td>+1</td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Aromatic Mist</td><td></td><td></td><td></td><td>+2</td><td></td><td>100%</td><td>Todos os alvos na área vão receber o buff de SPDEF + 2</td></tr>
+                    <tr><td>Powerup Punch</td><td>+1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Howl</td><td>+1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Mystical Fire</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Metal Sound</td><td></td><td></td><td></td><td>-2</td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Cotton Guard</td><td></td><td></td><td>+3</td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Fake Tears</td><td></td><td></td><td></td><td>-2</td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Nasty Plot</td><td></td><td>+2</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Snarl</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Breaking Swipe</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Meteor Beam</td><td></td><td>+1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Skitter Smack</td><td></td><td>-1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Dragon Dance</td><td>+1</td><td></td><td></td><td></td><td>+1</td><td>100%</td><td></td></tr>
+                    <tr><td>Work Up</td><td>+1</td><td>+1</td><td></td><td></td><td></td><td>100%</td><td></td></tr>
+                    <tr><td>Shell Smash</td><td>+2</td><td>+2</td><td>+2</td><td>-2</td><td>-2</td><td>100%</td><td></td></tr>
+                    <tr><td>Trop Kick</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td>O alvo do move Trop Kick receberá um debuff de -1 de ATK</td></tr>
+                </tbody>
             </table>
-    
+        </div>
     </div>
+    <div id="effectsPage" style="display:none;">
+        <div class="stage-changes-header" style="margin-bottom: 24px;">
+            <h3 style="color:#ff6464;margin-bottom:12px;">⚠️ Efeitos Negativos em Batalha</h3>
+            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
+                <li>❄️ <b>Freeze:</b> Paralisa o Pokémon por 5 segundos. Se o Pokémon retornar para a Pokébola, o tempo é reiniciado.</li>
+                <li>⚡ <b>Paralyze:</b> Paralisa o Pokémon por 10 segundos. Se o Pokémon retornar para a Pokébola, o tempo é reiniciado.</li>
+                <li>💤 <b>Sleep:</b> O Pokémon adormece por 5 segundos. Se o Pokémon retornar para a Pokébola, o tempo é reiniciado.</li>
+                <li>❌ <b>Importante:</b> Esses efeitos não funcionam em Pokémon lendários, míticos ou bosses.</li>
+                <li>🛡️ <b>Safeguard:</b> A habilidade impede todos os efeitos negativos.</li>
+            </ul>
+            <h3 style="color:#ffd700;margin-bottom:12px;">❤️ Recuperação</h3>
+            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
+                <li><b>Nurse Joy NPC:</b> Visite um Centro Pokémon e fale com a Enfermeira Joy para curar completamente seus Pokémon.</li>
+                <li><b>Full Heal Potions:</b> Use potions específicas para o efeito ou utilize uma Full Heal para curar qualquer condição.</li>
+            </ul>
+            <h3 style="color:#a0e7ff;margin-bottom:12px;">🧪 Moves que causam Poison</h3>
+            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
+                <li>Toxic – 100%</li>
+                <li>Poison Sting – 30%</li>
+                <li>Sludge – 30%</li>
+                <li>Sludge Bomb – 30%</li>
+                <li>Cross Poison – 10%</li>
+                <li>Poison Jab – 30%</li>
+                <li>Dire Claw – 50%</li>
+                <li>Poison Fang – 50%</li>
+                <li>Venoshock – Não causa Poison (causa 2x de dano se o alvo já estiver envenenado)</li>
+            </ul>
+            <h3 style="color:#ff6464;margin-bottom:12px;">🔥 Moves que causam Burn</h3>
+            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
+                <li>Ember – 10%</li>
+                <li>Flamethrower – 10%</li>
+                <li>Fire Blast – 10%</li>
+                <li>Heat Wave – 10%</li>
+                <li>Flame Wheel – 10%</li>
+                <li>Flame Charge – 10%</li>
+                <li>Sacred Fire – 50%</li>
+                <li>Inferno – 100%</li>
+                <li>Scald – 30%</li>
+                <li>Tri Attack – 6,67% (entre Burn / Freeze / Paralyze)</li>
+                <li>Fire Punch – 10%</li>
+                <li>Blaze Kick – 10%</li>
+            </ul>
+            <h4 style="color:#ffd700;margin-bottom:8px;">ATENÇÃO OS ATCKS A BAIXO SÃO PELA FRANQUIA!</h4>
+            <h3 style="color:#88d3ff;margin-bottom:12px;">💠 Moves que causam Freeze</h3>
+            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
+                <li>Blizzard</li>
+                <li>Freeze-Dry</li>
+                <li>Freezing Glare</li>
+                <li>Ice Beam</li>
+                <li>Ice Fang</li>
+                <li>Ice Punch</li>
+                <li>Powder Snow</li>
+                <li>Secret Power</li>
+                <li>Shadow Chill</li>
+                <li>Sheer Cold</li>
+                <li>Tri Attack</li>
+            </ul>
+            <h3 style="color:#ffd700;margin-bottom:12px;">⚡ Moves que causam Paralysis</h3>
+            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
+                <li>Body Slam</li>
+                <li>Bolt Strike</li>
+                <li>Bounce</li>
+                <li>Buzzy Buzz</li>
+                <li>Combat Torque</li>
+                <li>Dire Claw</li>
+                <li>Discharge</li>
+                <li>Dragon Breath</li>
+                <li>Fling</li>
+                <li>Force Palm</li>
+                <li>Freeze Shock</li>
+                <li>G-Max Befuddle</li>
+                <li>G-Max Stun Shock</li>
+                <li>G-Max Volt Crash</li>
+                <li>Glare</li>
+                <li>Lick</li>
+                <li>Nuzzle</li>
+                <li>Psycho Shift</li>
+                <li>Secret Power</li>
+                <li>Shadow Bolt</li>
+                <li>Spark</li>
+                <li>Splishy Splash</li>
+                <li>Stoked Sparksurfer</li>
+                <li>Stun Spore</li>
+                <li>Thunder</li>
+                <li>Thunder Fang</li>
+                <li>Thunder Punch</li>
+                <li>Thunder Shock</li>
+                <li>Thunder Wave</li>
+                <li>Thunderbolt</li>
+                <li>Tri Attack</li>
+                <li>Volt Tackle</li>
+                <li>Wildbolt Storm</li>
+                <li>Zap Cannon</li>
+            </ul>
+            <h3 style="color:#a0e7ff;margin-bottom:12px;">💤 Moves que causam Sleep</h3>
+            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
+                <li>Dark Void</li>
+                <li>Dire Claw</li>
+                <li>G-Max Befuddle</li>
+                <li>G-Max Snooze</li>
+                <li>Grass Whistle</li>
+                <li>Hypnosis</li>
+                <li>Lovely Kiss</li>
+                <li>Psycho Shift</li>
+                <li>Relic Song</li>
+                <li>Rest</li>
+                <li>Secret Power</li>
+                <li>Sing</li>
+                <li>Sleep Powder</li>
+                <li>Spore</li>
+                <li>Wicked Torque</li>
+                <li>Yawn</li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        const btnStage = document.getElementById('btnStage');
+        const btnEffects = document.getElementById('btnEffects');
+        const stagePage = document.getElementById('stagePage');
+        const effectsPage = document.getElementById('effectsPage');
+        btnStage.addEventListener('click', function() {
+            btnStage.classList.add('active');
+            btnEffects.classList.remove('active');
+            stagePage.style.display = 'block';
+            effectsPage.style.display = 'none';
+        });
+        btnEffects.addEventListener('click', function() {
+            btnEffects.classList.add('active');
+            btnStage.classList.remove('active');
+            stagePage.style.display = 'none';
+            effectsPage.style.display = 'block';
+        });
+    </script>
 </div>
