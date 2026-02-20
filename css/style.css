@@ -1,3 +1,48 @@
+/* ====== Stage Changes Table ====== */
+.stage-changes-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: rgba(30, 60, 114, 0.7);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    margin-bottom: 24px;
+}
+.stage-changes-table th, .stage-changes-table td {
+    padding: 12px 10px;
+    text-align: center;
+    font-size: 1em;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: #fff;
+}
+.stage-changes-table th {
+    background: linear-gradient(90deg, #ffd700 0%, #88d3ff 100%);
+    color: #1e2746;
+    font-weight: 700;
+    font-size: 1.08em;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #ffd700;
+}
+.stage-changes-table td {
+    background: rgba(255,255,255,0.03);
+    font-weight: 500;
+}
+.stage-changes-table tr:last-child td {
+    border-bottom: none;
+}
+.stage-changes-table td span, .stage-changes-table th span {
+    color: inherit !important;
+}
+.stage-changes-table td[style*="color:Red"] {
+    color: #ff6464 !important;
+    font-weight: 600;
+}
+.stage-changes-table-wrapper {
+    border-radius: 14px;
+    overflow-x: auto;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
 * {
     margin: 0;
     padding: 0;
