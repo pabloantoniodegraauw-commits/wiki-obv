@@ -61,8 +61,10 @@
     border: 2px solid rgba(255, 255, 255, 0.1);
     text-align: center;
     transition: all 0.5s ease;
+    animation: fadeIn 0.5s ease-out;
     position: relative;
     overflow: hidden;
+    z-index: 1;
 }
 
 .market-card::before {
