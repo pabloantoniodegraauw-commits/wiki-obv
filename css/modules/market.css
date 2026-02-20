@@ -1039,8 +1039,9 @@
 /* ---- Cart Cards Grid View ---- */
 .market-cart-cards-grid {
     display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+    width: 100%;
     flex-direction: unset !important;
 }
 
