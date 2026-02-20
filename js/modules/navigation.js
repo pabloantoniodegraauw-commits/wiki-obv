@@ -74,6 +74,12 @@ function registerPageInitializer(pageName, initFunction) {
     pageInitializers[pageName] = initFunction;
 }
 
+// Inicializador da página Stage Changes (pode ser expandido futuramente)
+registerPageInitializer('stagechanges', function() {
+    console.log('Stage Changes carregado!');
+    // Aqui você pode adicionar código JS específico para a aba Stage Changes
+});
+
 // Configurar navegação por abas
 function setupNavigation() {
     const tabButtons = document.querySelectorAll('.tab-btn');

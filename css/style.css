@@ -39,6 +39,21 @@ body {
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
 }
 
+.stage-changes-container {
+    padding: 30px 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 16px;
+    margin-top: 20px;
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.stage-changes-container h2 {
+    color: #ffd700;
+    margin-bottom: 18px;
+    text-align: center;
+}
+}
+
 header {
     text-align: center;
     margin-bottom: 30px;
