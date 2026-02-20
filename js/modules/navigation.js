@@ -107,6 +107,38 @@ registerPageInitializer('stagechanges', function() {
     setupStageTabs();
 });
 
+// Inicializador da página Market/Mural
+registerPageInitializer('marketmural', function() {
+    console.log('Market/Mural carregado!');
+    function setupMarketMuralTabs() {
+        const btnMarket = document.getElementById('btnMarket');
+        const btnMural = document.getElementById('btnMural');
+        const marketPage = document.getElementById('marketPage');
+        const muralPage = document.getElementById('muralPage');
+        if (btnMarket && btnMural && marketPage && muralPage) {
+            btnMarket.onclick = function(e) {
+                e.preventDefault();
+                setTimeout(function(){
+                  btnMarket.classList.add('active');
+                  btnMural.classList.remove('active');
+                  marketPage.style.display = 'block';
+                  muralPage.style.display = 'none';
+                }, 10);
+            };
+            btnMural.onclick = function(e) {
+                e.preventDefault();
+                setTimeout(function(){
+                  btnMural.classList.add('active');
+                  btnMarket.classList.remove('active');
+                  marketPage.style.display = 'none';
+                  muralPage.style.display = 'block';
+                }, 10);
+            };
+        }
+    }
+    setupMarketMuralTabs();
+});
+
 // Configurar navegação por abas
 function setupNavigation() {
     const tabButtons = document.querySelectorAll('.tab-btn');
