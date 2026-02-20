@@ -123,6 +123,7 @@ registerPageInitializer('marketmural', function() {
                   btnMural.classList.remove('active');
                   marketPage.style.display = 'block';
                   muralPage.style.display = 'none';
+                  if (typeof initMarket === 'function') initMarket();
                 }, 10);
             };
             btnMural.onclick = function(e) {
@@ -132,8 +133,11 @@ registerPageInitializer('marketmural', function() {
                   btnMarket.classList.remove('active');
                   marketPage.style.display = 'none';
                   muralPage.style.display = 'block';
+                  if (typeof initMural === 'function') initMural();
                 }, 10);
             };
+            // Inicializar Market ao abrir a aba unificada
+            if (typeof initMarket === 'function') initMarket();
         }
     }
     setupMarketMuralTabs();
