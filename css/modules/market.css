@@ -4,10 +4,11 @@
 
 /* ---- Layout Principal Market ---- */
 .market-container {
-    display: grid;
-    grid-template-columns: 380px 1fr;
+    display: flex;
+    flex-wrap: wrap;
     gap: 25px;
     margin-bottom: 30px;
+    width: 100%;
 }
 
 /* ---- Abas de Tipo (Pokémon / TM / Item / Conta) ---- */
