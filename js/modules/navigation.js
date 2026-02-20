@@ -77,7 +77,34 @@ function registerPageInitializer(pageName, initFunction) {
 // Inicializador da página Stage Changes (pode ser expandido futuramente)
 registerPageInitializer('stagechanges', function() {
     console.log('Stage Changes carregado!');
-    // Aqui você pode adicionar código JS específico para a aba Stage Changes
+    // Alternância Stage/Efeitos
+    function setupStageTabs() {
+        const btnStage = document.getElementById('btnStage');
+        const btnEffects = document.getElementById('btnEffects');
+        const stagePage = document.getElementById('stagePage');
+        const effectsPage = document.getElementById('effectsPage');
+        if (btnStage && btnEffects && stagePage && effectsPage) {
+            btnStage.onclick = function(e) {
+                e.preventDefault();
+                setTimeout(function(){
+                  btnStage.classList.add('active');
+                  btnEffects.classList.remove('active');
+                  stagePage.style.display = 'block';
+                  effectsPage.style.display = 'none';
+                }, 10);
+            };
+            btnEffects.onclick = function(e) {
+                e.preventDefault();
+                setTimeout(function(){
+                  btnEffects.classList.add('active');
+                  btnStage.classList.remove('active');
+                  stagePage.style.display = 'none';
+                  effectsPage.style.display = 'block';
+                }, 10);
+            };
+        }
+    }
+    setupStageTabs();
 });
 
 // Configurar navegação por abas
