@@ -229,14 +229,14 @@
                 var stagePage = document.getElementById('stagePage');
                 var effectsPage = document.getElementById('effectsPage');
                 if (btnStage && btnEffects && stagePage && effectsPage) {
-                    btnStage.addEventListener('mousedown', function(e) {
+                    btnStage.addEventListener('click', function(e) {
                         e.preventDefault();
                         btnStage.classList.add('active');
                         btnEffects.classList.remove('active');
                         stagePage.style.display = 'block';
                         effectsPage.style.display = 'none';
                     });
-                    btnEffects.addEventListener('mousedown', function(e) {
+                    btnEffects.addEventListener('click', function(e) {
                         e.preventDefault();
                         btnEffects.classList.add('active');
                         btnStage.classList.remove('active');
