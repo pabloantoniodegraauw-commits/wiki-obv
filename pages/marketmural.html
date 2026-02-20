@@ -8,13 +8,160 @@
     <div id="marketPage" style="display:block;">
         <!-- Conteúdo original da aba Market -->
         <div class="market-container">
-            <!-- ...existing code from market.html... -->
+            <!-- 🛒 ABA MARKET - WIKI OBV -->
+            <div class="market-card-wrapper">
+                <div class="market-card" id="marketCard">
+                    <div class="market-card-header">
+                        <span class="market-card-type-label" id="marketCardTypeLabel">SELECIONE UM TIPO</span>
+                    </div>
+                    <div class="market-card-placeholder" id="marketCardPlaceholder">
+                        <i class="fas fa-store"></i>
+                        Selecione um tipo acima e clique em um item no grid para começar
+                    </div>
+                    <div class="market-card-img-container" id="marketCardImgContainer" style="display:none">
+                        <img src="" alt="" class="market-card-img" id="marketCardImg">
+                    </div>
+                    <h3 class="market-card-name" id="marketCardName" style="display:none"></h3>
+                    <div class="market-card-fields" id="marketCardFields" style="display:none"></div>
+                    <div class="market-pricing" id="marketPricing" style="display:none">
+                        <div class="market-pricing-title">
+                            <i class="fas fa-tags"></i> Valor de Venda
+                        </div>
+                        <div class="market-price-row market-price-row-oferta">
+                            <label>
+                                <input type="checkbox" id="priceOfertaCheck">
+                                <span class="market-price-emoji">📢</span>
+                                <span>Oferta</span>
+                            </label>
+                        </div>
+                        <div class="market-price-row">
+                            <label>
+                                <input type="checkbox" id="priceDinheiroCheck" onchange="togglePriceInput('dinheiro')">
+                                <span class="market-price-emoji">💲</span>
+                                <span>Dinheiro</span>
+                            </label>
+                            <input type="text" id="priceDinheiroValue" placeholder="Ex: R$ 55">
+                        </div>
+                        <div class="market-price-row">
+                            <label>
+                                <input type="checkbox" id="pricePontoCheck" onchange="togglePriceInput('ponto')">
+                                <span class="market-price-emoji">💎</span>
+                                <span>Ponto</span>
+                            </label>
+                            <input type="text" id="pricePontoValue" placeholder="Ex: 50">
+                        </div>
+                        <div class="market-price-row">
+                            <label>
+                                <input type="checkbox" id="priceHdCheck" onchange="togglePriceInput('hd')">
+                                <span class="market-price-emoji">💶</span>
+                                <span>HD</span>
+                            </label>
+                            <input type="text" id="priceHdValue" placeholder="Ex: 1K">
+                        </div>
+                    </div>
+                    <button class="btn-add-cart" id="btnAddCart" style="display:none" onclick="adicionarAoCarrinho()">
+                        <i class="fas fa-cart-plus"></i> Adicionar ao Carrinho
+                    </button>
+                </div>
+            </div>
+            <div class="market-search-panel">
+                <div class="market-panel-header">
+                    <h2><i class="fas fa-store"></i> Market</h2>
+                    <p class="market-hint">
+                        <i class="fas fa-info-circle"></i> Monte sua lista de vendas com Pokémons, TMs, Itens e Contas
+                    </p>
+                </div>
+                <div class="market-type-tabs" id="marketTypeTabs">
+                    <button class="market-type-tab active" data-type="pokemon" onclick="trocarTipoMarket('pokemon')">
+                        <i class="fas fa-paw"></i> Pokémons
+                    </button>
+                    <button class="market-type-tab" data-type="tm" onclick="trocarTipoMarket('tm')">
+                        <i class="fas fa-compact-disc"></i> TMs
+                    </button>
+                    <button class="market-type-tab" data-type="item" onclick="trocarTipoMarket('item')">
+                        <i class="fas fa-box-open"></i> Itens
+                    </button>
+                    <button class="market-type-tab" data-type="conta" onclick="trocarTipoMarket('conta')">
+                        <i class="fas fa-user-circle"></i> Contas
+                    </button>
+                </div>
+                <div class="market-filters" id="marketFilters"></div>
+                <div class="market-grid" id="marketGrid">
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Selecione um tipo para buscar...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="market-cart-section" id="marketCartSection">
+                <div class="market-cart-header">
+                    <h2>
+                        <i class="fas fa-shopping-cart"></i> Carrinho de Vendas
+                        <span class="market-cart-count" id="cartCount">0</span>
+                    </h2>
+                    <div class="market-cart-header-actions">
+                        <div class="market-cart-view-toggle">
+                            <button class="market-cart-view-btn" data-view="lista" onclick="alternarVistaCarrinho('lista')" title="Vista em lista">
+                                <i class="fas fa-list"></i>
+                            </button>
+                            <button class="market-cart-view-btn active" data-view="cards" onclick="alternarVistaCarrinho('cards')" title="Vista em cards">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                        </div>
+                        <button class="btn-clear-cart" onclick="limparCarrinho()">
+                            <i class="fas fa-trash"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+                <div class="market-cart-list" id="marketCartList">
+                    <div class="market-cart-empty" id="cartEmpty">
+                        <i class="fas fa-shopping-cart"></i>
+                        Seu carrinho está vazio. Adicione itens para montar sua lista de vendas.
+                    </div>
+                </div>
+                <div class="market-cart-actions" id="cartActions" style="display:none">
+                    <div class="market-field" style="flex:1; min-width:200px;">
+                        <label><i class="fas fa-phone"></i> Telefone para contato</label>
+                        <input type="text" id="inputTelefone" placeholder="(XX) XXXXX-XXXX">
+                    </div>
+                    <button class="btn-save-sale" onclick="salvarVenda()">
+                        <i class="fas fa-save"></i> Salvar Venda
+                    </button>
+                    <button class="btn-copy-sale" onclick="copiarTextoVenda()">
+                        <i class="fas fa-copy"></i> Copiar Texto
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <div id="muralPage" style="display:none;">
         <!-- Conteúdo original da aba Mural -->
         <div class="mural-container">
-            <!-- ...existing code from mural.html... -->
+            <!-- 📋 ABA MURAL DE VENDAS - WIKI OBV -->
+            <div class="mural-header">
+                <h2><i class="fas fa-scroll"></i> Mural de Vendas</h2>
+                <p>Vendas publicadas pelos membros do clã. Copie o texto ou entre em contato pelo telefone.</p>
+            </div>
+            <div class="mural-filters">
+                <input type="text" id="muralSearchInput" placeholder="Buscar por nome, pokémon, item..."
+                       oninput="filtrarMural()">
+                <select id="muralFilterTipo" onchange="filtrarMural()">
+                    <option value="">Todos os tipos</option>
+                    <option value="pokemon">Pokémons</option>
+                    <option value="tm">TMs</option>
+                    <option value="item">Itens</option>
+                    <option value="conta">Contas</option>
+                </select>
+                <button class="btn-mural-refresh" onclick="carregarVendasMural()">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </div>
+            <div class="mural-grid" id="muralGrid">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Carregando vendas...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
