@@ -221,21 +221,25 @@
         </div>
     </div>
     <script>
-        const btnStage = document.getElementById('btnStage');
-        const btnEffects = document.getElementById('btnEffects');
-        const stagePage = document.getElementById('stagePage');
-        const effectsPage = document.getElementById('effectsPage');
-        btnStage.addEventListener('click', function() {
-            btnStage.classList.add('active');
-            btnEffects.classList.remove('active');
-            stagePage.style.display = 'block';
-            effectsPage.style.display = 'none';
-        });
-        btnEffects.addEventListener('click', function() {
-            btnEffects.classList.add('active');
-            btnStage.classList.remove('active');
-            stagePage.style.display = 'none';
-            effectsPage.style.display = 'block';
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnStage = document.getElementById('btnStage');
+            const btnEffects = document.getElementById('btnEffects');
+            const stagePage = document.getElementById('stagePage');
+            const effectsPage = document.getElementById('effectsPage');
+            if (btnStage && btnEffects && stagePage && effectsPage) {
+                btnStage.addEventListener('click', function() {
+                    btnStage.classList.add('active');
+                    btnEffects.classList.remove('active');
+                    stagePage.style.display = 'block';
+                    effectsPage.style.display = 'none';
+                });
+                btnEffects.addEventListener('click', function() {
+                    btnEffects.classList.add('active');
+                    btnStage.classList.remove('active');
+                    stagePage.style.display = 'none';
+                    effectsPage.style.display = 'block';
+                });
+            }
         });
     </script>
 </div>
