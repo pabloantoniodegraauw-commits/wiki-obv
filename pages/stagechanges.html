@@ -229,20 +229,24 @@
                 var stagePage = document.getElementById('stagePage');
                 var effectsPage = document.getElementById('effectsPage');
                 if (btnStage && btnEffects && stagePage && effectsPage) {
-                    btnStage.addEventListener('click', function(e) {
+                    btnStage.onclick = function(e) {
                         e.preventDefault();
-                        btnStage.classList.add('active');
-                        btnEffects.classList.remove('active');
-                        stagePage.style.display = 'block';
-                        effectsPage.style.display = 'none';
-                    });
-                    btnEffects.addEventListener('click', function(e) {
+                        setTimeout(function(){
+                          btnStage.classList.add('active');
+                          btnEffects.classList.remove('active');
+                          stagePage.style.display = 'block';
+                          effectsPage.style.display = 'none';
+                        }, 10);
+                    };
+                    btnEffects.onclick = function(e) {
                         e.preventDefault();
-                        btnEffects.classList.add('active');
-                        btnStage.classList.remove('active');
-                        stagePage.style.display = 'none';
-                        effectsPage.style.display = 'block';
-                    });
+                        setTimeout(function(){
+                          btnEffects.classList.add('active');
+                          btnStage.classList.remove('active');
+                          stagePage.style.display = 'none';
+                          effectsPage.style.display = 'block';
+                        }, 10);
+                    };
                 }
             }
             setupStageTabs();
