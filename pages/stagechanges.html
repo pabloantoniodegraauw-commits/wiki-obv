@@ -8,9 +8,11 @@
             Essas alterações são persistentes e não são canceladas quando o Pokémon é recolhido em sua Poké Ball, permitindo que o Pokémon mantenha o bônus ou penalidade durante a batalha. Cada estágio de alteração de atributo tem uma duração de 15 segundos.<br><br>
             Os jogadores devem usar esses movimentos estrategicamente, pois eles podem ser uma vantagem significativa em batalha. No entanto, o efeito da mudança de estágio pode ser revertido pelos movimentos que alteram os estágios opostos, portanto, os jogadores devem estar cientes das fraquezas de seus próprios Pokémon e dos adversários para obter o máximo benefício dos movimentos Stage Changes.
         </p>
+        <button id="toggleStageTableBtn" style="margin: 0 auto 18px auto; display: block; background: linear-gradient(90deg, #ffd700 0%, #88d3ff 100%); color: #1e2746; font-weight: 700; border: none; border-radius: 8px; padding: 10px 28px; font-size: 1.1em; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.10); transition: background 0.2s;">Mostrar Tabela</button>
     </div>
     <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
-        <table class="stage-changes-table">
+        <div id="stageTableContainer" style="display:none;">
+            <table class="stage-changes-table">
             <thead>
                 <tr>
                     <th>Movimento</th>
@@ -97,6 +99,22 @@
                 <tr><td>Shell Smash</td><td>+2</td><td>+2</td><td>+2</td><td>-2</td><td>-2</td><td>100%</td><td></td></tr>
                 <tr><td>Trop Kick</td><td>-1</td><td></td><td></td><td></td><td></td><td>100%</td><td>O alvo do move Trop Kick receberá um debuff de -1 de ATK</td></tr>
             </tbody>
-        </table>
+            </table>
+        </div>
+    <script>
+        const toggleBtn = document.getElementById('toggleStageTableBtn');
+        const tableContainer = document.getElementById('stageTableContainer');
+        let tableVisible = false;
+        toggleBtn.addEventListener('click', function() {
+            tableVisible = !tableVisible;
+            if (tableVisible) {
+                tableContainer.style.display = '';
+                toggleBtn.textContent = 'Ocultar Tabela';
+            } else {
+                tableContainer.style.display = 'none';
+                toggleBtn.textContent = 'Mostrar Tabela';
+            }
+        });
+    </script>
     </div>
 </div>
