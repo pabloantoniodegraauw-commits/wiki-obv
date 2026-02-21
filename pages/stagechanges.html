@@ -111,21 +111,25 @@
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script>
-            $(document).ready(function() {
-                $('#stageTable').DataTable({
-                    language: {
-                        search: "Pesquisar ataque:",
-                        lengthMenu: "Mostrar _MENU_ registros",
-                        info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                        paginate: {
-                            first: "Primeiro",
-                            last: "Último",
-                            next: "Próximo",
-                            previous: "Anterior"
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (window.jQuery && $('#stageTable').length) {
+                    $('#stageTable').DataTable({
+                        language: {
+                            search: "Pesquisar ataque:",
+                            lengthMenu: "Mostrar _MENU_ registros",
+                            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                            paginate: {
+                                first: "Primeiro",
+                                last: "Último",
+                                next: "Próximo",
+                                previous: "Anterior"
+                            }
                         }
-                    }
-                });
-            });
+                    });
+                }
+            }, 300);
+        });
         </script>
     </div>
     <div id="effectsPage" style="display:none;">
