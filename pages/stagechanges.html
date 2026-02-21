@@ -111,9 +111,10 @@
         <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script>
-        window.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 if (window.jQuery && $('#stageTable').length) {
+                    console.log('DataTables inicializando...');
                     $('#stageTable').DataTable({
                         language: {
                             search: "Pesquisar ataque:",
@@ -127,8 +128,10 @@
                             }
                         }
                     });
+                } else {
+                    console.log('DataTables NÃO inicializou. jQuery:', !!window.jQuery, 'Tabela:', $('#stageTable').length);
                 }
-            }, 300);
+            }, 500);
         });
         </script>
     </div>
@@ -248,34 +251,28 @@
         </div>
     </div>
     <script>
-        (function(){
-            // Garante funcionamento mesmo com carregamento dinâmico
-            function setupStageTabs() {
-                var btnStage = document.getElementById('btnStage');
-                var btnEffects = document.getElementById('btnEffects');
-                var stagePage = document.getElementById('stagePage');
-                var effectsPage = document.getElementById('effectsPage');
-                if (btnStage && btnEffects && stagePage && effectsPage) {
-                    btnStage.onclick = function(e) {
-                        e.preventDefault();
-                        setTimeout(function(){
-                          btnStage.classList.add('active');
-                          btnEffects.classList.remove('active');
-                          stagePage.style.display = 'block';
-                          effectsPage.style.display = 'none';
-                        }, 10);
-                    };
-                    btnEffects.onclick = function(e) {
-                        e.preventDefault();
-                        setTimeout(function(){
-                          btnEffects.classList.add('active');
-                          btnStage.classList.remove('active');
-                          stagePage.style.display = 'none';
-                          effectsPage.style.display = 'block';
-                        }, 10);
-                    };
-                }
+        // Script das abas, sem conflito com DataTables
+        function setupStageTabs() {
+            var btnStage = document.getElementById('btnStage');
+            var btnEffects = document.getElementById('btnEffects');
+            var stagePage = document.getElementById('stagePage');
+            var effectsPage = document.getElementById('effectsPage');
+            if (btnStage && btnEffects && stagePage && effectsPage) {
+                btnStage.onclick = function(e) {
+                    e.preventDefault();
+                    btnStage.classList.add('active');
+                    btnEffects.classList.remove('active');
+                    stagePage.style.display = 'block';
+                    effectsPage.style.display = 'none';
+                };
+                btnEffects.onclick = function(e) {
+                    e.preventDefault();
+                    btnEffects.classList.add('active');
+                    btnStage.classList.remove('active');
+                    stagePage.style.display = 'none';
+                    effectsPage.style.display = 'block';
+                };
             }
-            setupStageTabs();
-            document.addEventListener('DOMContentLoaded', setupStageTabs);
-})();
+        }
+        document.addEventListener('DOMContentLoaded', setupStageTabs);
+    </script>
