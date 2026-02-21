@@ -86,25 +86,43 @@ registerPageInitializer('stagechanges', function() {
         if (btnStage && btnEffects && stagePage && effectsPage) {
             btnStage.onclick = function(e) {
                 e.preventDefault();
-                setTimeout(function(){
-                  btnStage.classList.add('active');
-                  btnEffects.classList.remove('active');
-                  stagePage.style.display = 'block';
-                  effectsPage.style.display = 'none';
-                }, 10);
+                btnStage.classList.add('active');
+                btnEffects.classList.remove('active');
+                stagePage.style.display = 'block';
+                effectsPage.style.display = 'none';
             };
             btnEffects.onclick = function(e) {
                 e.preventDefault();
-                setTimeout(function(){
-                  btnEffects.classList.add('active');
-                  btnStage.classList.remove('active');
-                  stagePage.style.display = 'none';
-                  effectsPage.style.display = 'block';
-                }, 10);
+                btnEffects.classList.add('active');
+                btnStage.classList.remove('active');
+                stagePage.style.display = 'none';
+                effectsPage.style.display = 'block';
             };
         }
     }
     setupStageTabs();
+
+    // Inicializar DataTables após carregamento dinâmico
+    setTimeout(function() {
+        if (window.jQuery && $('#stageTable').length) {
+            console.log('DataTables inicializando via navigation.js...');
+            $('#stageTable').DataTable({
+                language: {
+                    search: "Pesquisar ataque:",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                    paginate: {
+                        first: "Primeiro",
+                        last: "Último",
+                        next: "Próximo",
+                        previous: "Anterior"
+                    }
+                }
+            });
+        } else {
+            console.log('DataTables NÃO inicializou. jQuery:', !!window.jQuery, 'Tabela:', $('#stageTable').length);
+        }
+    }, 500);
 });
 
 // Inicializador da página Market/Mural
