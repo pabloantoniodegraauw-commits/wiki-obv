@@ -1,4 +1,6 @@
 <!-- Stage Changes - Nova aba do site -->
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <div class="stage-changes-container">
     <h2>Stage Changes</h2>
     <div style="display: flex; gap: 16px; justify-content: center; margin-bottom: 24px;">
@@ -16,7 +18,7 @@
         </div>
         <!-- Removido: div de pokemons -->
         <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
-            <table class="stage-changes-table">
+            <table class="stage-changes-table" id="stageTable">
                 <thead>
                     <tr>
                         <th>Movimento</th>
@@ -105,6 +107,26 @@
                 </tbody>
             </table>
         </div>
+        <!-- DataTables JS -->
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                $('#stageTable').DataTable({
+                    language: {
+                        search: "Pesquisar ataque:",
+                        lengthMenu: "Mostrar _MENU_ registros",
+                        info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+                        paginate: {
+                            first: "Primeiro",
+                            last: "Último",
+                            next: "Próximo",
+                            previous: "Anterior"
+                        }
+                    }
+                });
+            });
+        </script>
     </div>
     <div id="effectsPage" style="display:none;">
         <div class="stage-changes-header" style="margin-bottom: 24px;">
