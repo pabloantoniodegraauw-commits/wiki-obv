@@ -107,33 +107,7 @@
                 </tbody>
             </table>
         </div>
-        <!-- DataTables JS -->
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
-                if (window.jQuery && $('#stageTable').length) {
-                    console.log('DataTables inicializando...');
-                    $('#stageTable').DataTable({
-                        language: {
-                            search: "Pesquisar ataque:",
-                            lengthMenu: "Mostrar _MENU_ registros",
-                            info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                            paginate: {
-                                first: "Primeiro",
-                                last: "Último",
-                                next: "Próximo",
-                                previous: "Anterior"
-                            }
-                        }
-                    });
-                } else {
-                    console.log('DataTables NÃO inicializou. jQuery:', !!window.jQuery, 'Tabela:', $('#stageTable').length);
-                }
-            }, 500);
-        });
-        </script>
+
     </div>
     <div id="effectsPage" style="display:none;">
         <div class="stage-changes-header" style="margin-bottom: 24px;">
