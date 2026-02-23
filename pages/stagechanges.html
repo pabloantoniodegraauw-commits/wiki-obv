@@ -61,25 +61,7 @@
     }
     </script>
 
-        function renderizarTabelaStageOuEfeitos(tipo, dados) {
-            let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
-            let table = document.getElementById(tableId);
-            if (!table) {
-                // Criar tabela se não existir
-                const wrapper = document.getElementById(tipo === 'stage' ? 'stagePage' : 'effectsPage');
-                table = document.createElement('table');
-                table.id = tableId;
-                table.className = 'stage-changes-table';
-                wrapper.appendChild(table);
-            }
-            table.innerHTML = '';
-            if (!dados.length) {
-                table.innerHTML = '<tr><td>Nenhum ataque encontrado.</td></tr>';
-                return;
-            }
-            // Cabeçalhos fixos e ordenados
-            const colunas = ['ATACK','AÇÃO','EFEITO','TYPE','CATEGORIA','PP','POWER','ACCURACY','GEN'];
-            const thead = document.createElement('thead');
+        // Removido: todo JS fora de <script>
         function renderizarTabelaStageOuEfeitos(tipo, dados) {
             let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
             let table = document.getElementById(tableId);
