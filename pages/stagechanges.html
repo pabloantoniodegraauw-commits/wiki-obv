@@ -123,9 +123,11 @@
             var stagePage = document.getElementById('stagePage');
             var effectsPage = document.getElementById('effectsPage');
             var atacksPage = document.getElementById('atacksPage');
+            console.log('[Tabs] Inicializando tabs:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
             if (btnStage && btnEffects && btnAtacks && stagePage && effectsPage && atacksPage) {
                 btnStage.onclick = function(e) {
                     e.preventDefault();
+                    console.log('[Tabs] Clicou em Stage');
                     btnStage.classList.add('active');
                     btnEffects.classList.remove('active');
                     btnAtacks.classList.remove('active');
@@ -135,6 +137,7 @@
                 };
                 btnEffects.onclick = function(e) {
                     e.preventDefault();
+                    console.log('[Tabs] Clicou em Efeitos');
                     btnEffects.classList.add('active');
                     btnStage.classList.remove('active');
                     btnAtacks.classList.remove('active');
@@ -144,6 +147,7 @@
                 };
                 btnAtacks.onclick = function(e) {
                     e.preventDefault();
+                    console.log('[Tabs] Clicou em Atacks');
                     btnAtacks.classList.add('active');
                     btnStage.classList.remove('active');
                     btnEffects.classList.remove('active');
@@ -151,9 +155,12 @@
                     effectsPage.style.display = 'none';
                     atacksPage.style.display = 'block';
                 };
+            } else {
+                console.error('[Tabs] Elementos de tabs não encontrados:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
             }
         }
-        document.addEventListener('DOMContentLoaded', setupStageTabs);
+        // Chamar sempre após carregamento dinâmico
+        setupStageTabs();
         // --- ABA ATACKS ---
         let atacksTableInstance = null;
         let atacksData = [];
