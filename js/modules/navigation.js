@@ -50,9 +50,20 @@ async function loadPage(pageName) {
             console.warn(`⚠️ Nenhum inicializador encontrado para ${pageName}`);
         }
             // Inicializar tabs se for stagechanges
-            if (pageName === 'stagechanges' && window.setupStageTabs) {
-                console.log('[Tabs] Chamando setupStageTabs após carregamento dinâmico');
-                window.setupStageTabs();
+            if (pageName === 'stagechanges') {
+                // Carregar dinamicamente o script das abas se necessário
+                if (!window.setupStageTabs) {
+                    var script = document.createElement('script');
+                    script.src = 'js/modules/stagechanges-tabs.js';
+                    script.onload = function() {
+                        console.log('[Tabs] Script das abas carregado dinamicamente');
+                        if (window.setupStageTabs) window.setupStageTabs();
+                    };
+                    document.body.appendChild(script);
+                } else {
+                    console.log('[Tabs] Chamando setupStageTabs após carregamento dinâmico');
+                    window.setupStageTabs();
+                }
             }
         
         console.log(`✅ Página ${pageName} carregada com sucesso`);
