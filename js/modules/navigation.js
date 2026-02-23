@@ -49,6 +49,11 @@ async function loadPage(pageName) {
         } else {
             console.warn(`⚠️ Nenhum inicializador encontrado para ${pageName}`);
         }
+            // Inicializar tabs se for stagechanges
+            if (pageName === 'stagechanges' && window.setupStageTabs) {
+                console.log('[Tabs] Chamando setupStageTabs após carregamento dinâmico');
+                window.setupStageTabs();
+            }
         
         console.log(`✅ Página ${pageName} carregada com sucesso`);
         
