@@ -4,62 +4,11 @@
 <div class="stage-changes-container">
     <h2>Stage Changes</h2>
     <div style="display: flex; gap: 16px; justify-content: center; margin-bottom: 24px;">
-        <button id="btnStage" class="tab-btn active" style="min-width: 180px;">Stage Changes</button>
-        <button id="btnEffects" class="tab-btn" style="min-width: 180px;">Efeitos</button>
-        <button id="btnAtacks" class="tab-btn" style="min-width: 180px;">Atacks</button>
-    </div>
-    <div id="stagePage" style="display:block;">
-        <div class="stage-changes-table-wrapper" style="overflow-x:auto;"></div>
-    </div>
-    <div id="effectsPage" style="display:none;">
-        <div class="stage-changes-table-wrapper" style="overflow-x:auto;"></div>
-    </div>
-    <div id="atacksPage" style="display:none;">
-        <div class="stage-changes-header" style="margin-bottom: 24px;">
-            <h3>Atacks (Admin Editável)</h3>
-            <p style="font-size:1.1em;line-height:1.6;">Aqui você pode visualizar e, se for admin, editar todos os ataques diretamente da planilha.</p>
-        </div>
-        <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
-            <table id="atacksTable" class="stage-changes-table">
-                <thead id="atacksTableHead"></thead>
-                <tbody id="atacksTableBody"></tbody>
-            </table>
+        <div class="besteirage">
+            <h2>Stage Changes</h2>
+            <p>Vamos recomeçar do zero. Só estrutura básica.</p>
         </div>
     </div>
-    <!-- Definição única da função global -->
-    <script>
-    window.stageEffectsData = [];
-    window.carregarStageOuEfeitos = async function(tipo) {
-        console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
-        if (!window.stageEffectsData.length) {
-            try {
-                const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
-                const resultado = await resp.json();
-                console.log('[StageChanges] Resultado do fetch:', resultado);
-                if (resultado.success && resultado.data && resultado.data.length > 0) {
-                    window.stageEffectsData = resultado.data;
-                    console.log('[StageChanges] Dados carregados:', window.stageEffectsData.length);
-                } else {
-                    alert('Erro ao carregar ataques!');
-                    return;
-                }
-            } catch (e) {
-                alert('Erro ao carregar ataques: ' + e.message);
-                return;
-            }
-        }
-        let filtrados = [];
-        if (tipo === 'stage') {
-            filtrados = window.stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
-            console.log('[StageChanges] Filtrados STAGE:', filtrados.length);
-        } else if (tipo === 'efeitos') {
-            const efeitos = ['POISON','BURN','FREEZE','PARALYZE','SLEEP'];
-            filtrados = window.stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
-            console.log('[StageChanges] Filtrados Efeitos:', filtrados.length);
-        }
-        renderizarTabelaStageOuEfeitos(tipo, filtrados);
-    }
-    </script>
 
     <script>
     function renderizarTabelaStageOuEfeitos(tipo, dados) {
