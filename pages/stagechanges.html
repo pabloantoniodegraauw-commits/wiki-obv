@@ -19,7 +19,12 @@
             <h3>Atacks (Admin Editável)</h3>
             <p style="font-size:1.1em;line-height:1.6;">Aqui você pode visualizar e, se for admin, editar todos os ataques diretamente da planilha.</p>
         </div>
-        <div class="stage-changes-table-wrapper" style="overflow-x:auto;"></div>
+        <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
+            <table id="atacksTable" class="stage-changes-table">
+                <thead id="atacksTableHead"></thead>
+                <tbody id="atacksTableBody"></tbody>
+            </table>
+        </div>
     </div>
     <script>
                 // --- FILTROS PARA STAGE CHANGES E EFEITOS ---
