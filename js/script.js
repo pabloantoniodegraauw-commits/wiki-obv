@@ -53,12 +53,16 @@ window.addEventListener('DOMContentLoaded', function() {
     if (isAdmin && isAdmin()) {
         const btn = document.createElement('button');
         btn.textContent = 'Limpar ataques antigos';
-        btn.style = 'margin-top:10px;background:#ffd700;color:#1a2980;padding:10px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15)';
+        btn.style = 'margin-top:10px;background:#ffd700;color:#1a2980;padding:10px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15);position:fixed;right:30px;top:90px;z-index:9999;';
         btn.onclick = window.limparAtaquesAntigos;
-        // Procurar botão de recarregar planilha
-        const btnReload = document.querySelector('button[data-reload-planilha], #btnReloadPlanilha');
-        if (btnReload && btnReload.parentNode) {
-            btnReload.parentNode.insertBefore(btn, btnReload.nextSibling);
+        // Procurar botão vermelho de recarregar planilha
+        const btnReload = document.querySelector('.pokemons-reload-btn, button[data-reload-planilha], #btnReloadPlanilha');
+        if (btnReload) {
+            // Pega posição do botão e ajusta o botão de limpeza logo abaixo
+            const rect = btnReload.getBoundingClientRect();
+            btn.style.top = (rect.bottom + 10) + 'px';
+            btn.style.right = (window.innerWidth - rect.right) + 'px';
+            document.body.appendChild(btn);
         } else {
             document.body.appendChild(btn);
         }
