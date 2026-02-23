@@ -8,21 +8,14 @@ window.limparAtaquesAntigos = async function() {
     let alterados = 0;
     for (let i = 0; i < todosPokemons.length; i++) {
         let alterou = false;
-        let pokemonOriginal = { ...todosPokemons[i] };
         for (let m = 1; m <= 10; m++) {
             const campo = `M${m}`;
-            if (pokemonOriginal[campo] && pokemonOriginal[campo].includes('/')) {
-                const nome = pokemonOriginal[campo].split('/')[0].trim();
-                if (pokemonOriginal[campo] !== nome) {
+            if (todosPokemons[i][campo] && todosPokemons[i][campo].includes('/')) {
+                const nome = todosPokemons[i][campo].split('/')[0].trim();
+                if (todosPokemons[i][campo] !== nome) {
                     todosPokemons[i][campo] = nome;
                     alterou = true;
                 }
-            }
-        }
-        // Garantir que demais campos não sejam alterados
-        for (const key in pokemonOriginal) {
-            if (!key.startsWith('M') && todosPokemons[i][key] !== pokemonOriginal[key]) {
-                todosPokemons[i][key] = pokemonOriginal[key];
             }
         }
         if (alterou) alterados++;
@@ -60,9 +53,15 @@ window.addEventListener('DOMContentLoaded', function() {
     if (isAdmin && isAdmin()) {
         const btn = document.createElement('button');
         btn.textContent = 'Limpar ataques antigos';
-        btn.style = 'position:fixed;top:10px;right:10px;z-index:9999;background:#ffd700;color:#1a2980;padding:10px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15)';
+        btn.style = 'margin-top:10px;background:#ffd700;color:#1a2980;padding:10px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15)';
         btn.onclick = window.limparAtaquesAntigos;
-        document.body.appendChild(btn);
+        // Procurar botão de recarregar planilha
+        const btnReload = document.querySelector('button[data-reload-planilha], #btnReloadPlanilha');
+        if (btnReload && btnReload.parentNode) {
+            btnReload.parentNode.insertBefore(btn, btnReload.nextSibling);
+        } else {
+            document.body.appendChild(btn);
+        }
     }
 });
 // 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
