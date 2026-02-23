@@ -26,141 +26,98 @@
             </table>
         </div>
     </div>
+    <script src="js/modules/stagechanges-tabs.js"></script>
     <script>
-                // --- FILTROS PARA STAGE CHANGES E EFEITOS ---
-                // Reaproveita atacksData se já carregado, senão busca
-                async function carregarStageOuEfeitos(tipo) {
-                    if (!atacksData.length) {
-                        try {
-                            const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
-                            const resultado = await resp.json();
-                            if (resultado.success && resultado.data && resultado.data.length > 0) {
-                                atacksData = resultado.data;
-                            } else {
-                                alert('Erro ao carregar ataques!');
-                                return;
-                            }
-                        } catch (e) {
-                            alert('Erro ao carregar ataques: ' + e.message);
-                            return;
-                        }
-                    }
-                    let filtrados = [];
-                    if (tipo === 'stage') {
-                        filtrados = atacksData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
-                    } else if (tipo === 'efeitos') {
-                        const efeitos = ['POISON','BURN','FREEZE','PARALYSIS','SLEEP'];
-                        filtrados = atacksData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
-                    }
-                    renderizarTabelaStageOuEfeitos(tipo, filtrados);
-                }
-
-                function renderizarTabelaStageOuEfeitos(tipo, dados) {
-                    let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
-                    let table = document.getElementById(tableId);
-                    if (!table) {
-                        // Criar tabela se não existir
-                        const wrapper = document.getElementById(tipo === 'stage' ? 'stagePage' : 'effectsPage');
-                        table = document.createElement('table');
-                        table.id = tableId;
-                        table.className = 'stage-changes-table';
-                        wrapper.appendChild(table);
-                    }
-                    table.innerHTML = '';
-                    if (!dados.length) {
-                        table.innerHTML = '<tr><td>Nenhum ataque encontrado.</td></tr>';
+        // --- FILTROS PARA STAGE CHANGES E EFEITOS ---
+        // Reaproveita atacksData se já carregado, senão busca
+        async function carregarStageOuEfeitos(tipo) {
+            if (!atacksData.length) {
+                try {
+                    const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
+                    const resultado = await resp.json();
+                    if (resultado.success && resultado.data && resultado.data.length > 0) {
+                        atacksData = resultado.data;
+                    } else {
+                        alert('Erro ao carregar ataques!');
                         return;
                     }
-                    // Cabeçalhos
-                    const colunas = Object.keys(dados[0]);
-                    const thead = document.createElement('thead');
-                    const trh = document.createElement('tr');
-                    colunas.forEach(col => {
-                        const th = document.createElement('th');
-                        th.textContent = col;
-                        trh.appendChild(th);
-                    });
-                    thead.appendChild(trh);
-                    table.appendChild(thead);
-                    // Corpo
-                    const tbody = document.createElement('tbody');
-                    dados.forEach(row => {
-                        const tr = document.createElement('tr');
-                        colunas.forEach(col => {
-                            const td = document.createElement('td');
-                            td.textContent = row[col];
-                            tr.appendChild(td);
-                        });
-                        tbody.appendChild(tr);
-                    });
-                    table.appendChild(tbody);
-                    // DataTable
-                    if ($.fn.DataTable.isDataTable(table)) {
-                        $(table).DataTable().destroy();
-                    }
-                    $(table).DataTable({
-                        responsive: true,
-                        pageLength: 25,
-                        order: [[0, 'asc']],
-                        language: {
-                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
-                        }
-                    });
+                } catch (e) {
+                    alert('Erro ao carregar ataques: ' + e.message);
+                    return;
                 }
-
-                // Carregar ao abrir as abas
-                document.getElementById('btnStage').addEventListener('click', function() {
-                    carregarStageOuEfeitos('stage');
-                });
-                document.getElementById('btnEffects').addEventListener('click', function() {
-                    carregarStageOuEfeitos('efeitos');
-                });
-        // Script das abas, sem conflito com DataTables
-        function setupStageTabs() {
-            var btnStage = document.getElementById('btnStage');
-            var btnEffects = document.getElementById('btnEffects');
-            var btnAtacks = document.getElementById('btnAtacks');
-            var stagePage = document.getElementById('stagePage');
-            var effectsPage = document.getElementById('effectsPage');
-            var atacksPage = document.getElementById('atacksPage');
-            console.log('[Tabs] Inicializando tabs:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
-            if (btnStage && btnEffects && btnAtacks && stagePage && effectsPage && atacksPage) {
-                btnStage.onclick = function(e) {
-                    e.preventDefault();
-                    console.log('[Tabs] Clicou em Stage');
-                    btnStage.classList.add('active');
-                    btnEffects.classList.remove('active');
-                    btnAtacks.classList.remove('active');
-                    stagePage.style.display = 'block';
-                    effectsPage.style.display = 'none';
-                    atacksPage.style.display = 'none';
-                };
-                btnEffects.onclick = function(e) {
-                    e.preventDefault();
-                    console.log('[Tabs] Clicou em Efeitos');
-                    btnEffects.classList.add('active');
-                    btnStage.classList.remove('active');
-                    btnAtacks.classList.remove('active');
-                    stagePage.style.display = 'none';
-                    effectsPage.style.display = 'block';
-                    atacksPage.style.display = 'none';
-                };
-                btnAtacks.onclick = function(e) {
-                    e.preventDefault();
-                    console.log('[Tabs] Clicou em Atacks');
-                    btnAtacks.classList.add('active');
-                    btnStage.classList.remove('active');
-                    btnEffects.classList.remove('active');
-                    stagePage.style.display = 'none';
-                    effectsPage.style.display = 'none';
-                    atacksPage.style.display = 'block';
-                };
-            } else {
-                console.error('[Tabs] Elementos de tabs não encontrados:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
             }
+            let filtrados = [];
+            if (tipo === 'stage') {
+                filtrados = atacksData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
+            } else if (tipo === 'efeitos') {
+                const efeitos = ['POISON','BURN','FREEZE','PARALYSIS','SLEEP'];
+                filtrados = atacksData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
+            }
+            renderizarTabelaStageOuEfeitos(tipo, filtrados);
         }
+
+        function renderizarTabelaStageOuEfeitos(tipo, dados) {
+            let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
+            let table = document.getElementById(tableId);
+            if (!table) {
+                // Criar tabela se não existir
+                const wrapper = document.getElementById(tipo === 'stage' ? 'stagePage' : 'effectsPage');
+                table = document.createElement('table');
+                table.id = tableId;
+                table.className = 'stage-changes-table';
+                wrapper.appendChild(table);
+            }
+            table.innerHTML = '';
+            if (!dados.length) {
+                table.innerHTML = '<tr><td>Nenhum ataque encontrado.</td></tr>';
+                return;
+            }
+            // Cabeçalhos
+            const colunas = Object.keys(dados[0]);
+            const thead = document.createElement('thead');
+            const trh = document.createElement('tr');
+            colunas.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                trh.appendChild(th);
+            });
+            thead.appendChild(trh);
+            table.appendChild(thead);
+            // Corpo
+            const tbody = document.createElement('tbody');
+            dados.forEach(row => {
+                const tr = document.createElement('tr');
+                colunas.forEach(col => {
+                    const td = document.createElement('td');
+                    td.textContent = row[col];
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            // DataTable
+            if ($.fn.DataTable.isDataTable(table)) {
+                $(table).DataTable().destroy();
+            }
+            $(table).DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'asc']],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
+                }
+            });
+        }
+
+        // Carregar ao abrir as abas
+        document.getElementById('btnStage').addEventListener('click', function() {
+            carregarStageOuEfeitos('stage');
+        });
+        document.getElementById('btnEffects').addEventListener('click', function() {
+            carregarStageOuEfeitos('efeitos');
+        });
         // Chamar sempre após carregamento dinâmico
-        setupStageTabs();
+        if (window.setupStageTabs) window.setupStageTabs();
         // Carregar Stage por padrão ao abrir a página
         carregarStageOuEfeitos('stage');
         // --- ABA ATACKS ---
