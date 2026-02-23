@@ -8,14 +8,21 @@ window.limparAtaquesAntigos = async function() {
     let alterados = 0;
     for (let i = 0; i < todosPokemons.length; i++) {
         let alterou = false;
+        let pokemonOriginal = { ...todosPokemons[i] };
         for (let m = 1; m <= 10; m++) {
             const campo = `M${m}`;
-            if (todosPokemons[i][campo] && todosPokemons[i][campo].includes('/')) {
-                const nome = todosPokemons[i][campo].split('/')[0].trim();
-                if (todosPokemons[i][campo] !== nome) {
+            if (pokemonOriginal[campo] && pokemonOriginal[campo].includes('/')) {
+                const nome = pokemonOriginal[campo].split('/')[0].trim();
+                if (pokemonOriginal[campo] !== nome) {
                     todosPokemons[i][campo] = nome;
                     alterou = true;
                 }
+            }
+        }
+        // Garantir que demais campos não sejam alterados
+        for (const key in pokemonOriginal) {
+            if (!key.startsWith('M') && todosPokemons[i][key] !== pokemonOriginal[key]) {
+                todosPokemons[i][key] = pokemonOriginal[key];
             }
         }
         if (alterou) alterados++;
