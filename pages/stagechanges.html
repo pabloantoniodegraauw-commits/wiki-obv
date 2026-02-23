@@ -26,43 +26,40 @@
             </table>
         </div>
     </div>
+    <!-- Definição única da função global -->
     <script>
-        // --- FILTROS PARA STAGE CHANGES E EFEITOS ---
-        // Reaproveita atacksData se já carregado, senão busca
-        window.stageEffectsData = [];
-        window.carregarStageOuEfeitos = async function(tipo) {
-                        // ...existing code...
-                        }
-                        window.carregarStageOuEfeitos = carregarStageOuEfeitos;
-                        console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
-            if (!stageEffectsData.length) {
-                try {
-                    const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
-                    const resultado = await resp.json();
-                    console.log('[StageChanges] Resultado do fetch:', resultado);
-                    if (resultado.success && resultado.data && resultado.data.length > 0) {
-                        stageEffectsData = resultado.data;
-                        console.log('[StageChanges] Dados carregados:', stageEffectsData.length);
-                    } else {
-                        alert('Erro ao carregar ataques!');
-                        return;
-                    }
-                } catch (e) {
-                    alert('Erro ao carregar ataques: ' + e.message);
+    window.stageEffectsData = [];
+    window.carregarStageOuEfeitos = async function(tipo) {
+        console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
+        if (!window.stageEffectsData.length) {
+            try {
+                const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
+                const resultado = await resp.json();
+                console.log('[StageChanges] Resultado do fetch:', resultado);
+                if (resultado.success && resultado.data && resultado.data.length > 0) {
+                    window.stageEffectsData = resultado.data;
+                    console.log('[StageChanges] Dados carregados:', window.stageEffectsData.length);
+                } else {
+                    alert('Erro ao carregar ataques!');
                     return;
                 }
+            } catch (e) {
+                alert('Erro ao carregar ataques: ' + e.message);
+                return;
             }
-            let filtrados = [];
-            if (tipo === 'stage') {
-                filtrados = stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
-                console.log('[StageChanges] Filtrados STAGE:', filtrados.length);
-            } else if (tipo === 'efeitos') {
-                const efeitos = ['POISON','BURN','FREEZE','PARALYZE','SLEEP'];
-                filtrados = stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
-                console.log('[StageChanges] Filtrados Efeitos:', filtrados.length);
-            }
-            renderizarTabelaStageOuEfeitos(tipo, filtrados);
         }
+        let filtrados = [];
+        if (tipo === 'stage') {
+            filtrados = window.stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
+            console.log('[StageChanges] Filtrados STAGE:', filtrados.length);
+        } else if (tipo === 'efeitos') {
+            const efeitos = ['POISON','BURN','FREEZE','PARALYZE','SLEEP'];
+            filtrados = window.stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
+            console.log('[StageChanges] Filtrados Efeitos:', filtrados.length);
+        }
+        renderizarTabelaStageOuEfeitos(tipo, filtrados);
+    }
+    </script>
 
         function renderizarTabelaStageOuEfeitos(tipo, dados) {
             let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
@@ -244,11 +241,4 @@
             if (!atacksData.length) carregarAtacksParaTabela();
         });
         </script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                if (typeof setupStageTabs === 'function') setupStageTabs();
-            });
-        </script>
         <script src="js/modules/stagechanges-tabs.js"></script>
-    <!-- ...outro código... -->
-    <script src="js/modules/stagechanges-tabs.js"></script>
