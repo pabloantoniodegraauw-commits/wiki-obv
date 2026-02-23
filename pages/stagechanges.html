@@ -30,13 +30,14 @@
     <script>
         // --- FILTROS PARA STAGE CHANGES E EFEITOS ---
         // Reaproveita atacksData se já carregado, senão busca
+        let stageEffectsData = [];
         async function carregarStageOuEfeitos(tipo) {
-            if (!atacksData.length) {
+            if (!stageEffectsData.length) {
                 try {
                     const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
                     const resultado = await resp.json();
                     if (resultado.success && resultado.data && resultado.data.length > 0) {
-                        atacksData = resultado.data;
+                        stageEffectsData = resultado.data;
                     } else {
                         alert('Erro ao carregar ataques!');
                         return;
@@ -48,10 +49,10 @@
             }
             let filtrados = [];
             if (tipo === 'stage') {
-                filtrados = atacksData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
+                filtrados = stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
             } else if (tipo === 'efeitos') {
                 const efeitos = ['POISON','BURN','FREEZE','PARALYSIS','SLEEP'];
-                filtrados = atacksData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
+                filtrados = stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
             }
             renderizarTabelaStageOuEfeitos(tipo, filtrados);
         }
