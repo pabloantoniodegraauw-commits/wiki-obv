@@ -8,6 +8,7 @@ window.setupStageTabs = function() {
     var atacksPage = document.getElementById('atacksPage');
     console.log('[Tabs] Inicializando tabs:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
     if (btnStage && btnEffects && btnAtacks && stagePage && effectsPage && atacksPage) {
+        console.log('[Tabs] Valor de window.carregarStageOuEfeitos:', window.carregarStageOuEfeitos);
         btnStage.onclick = function(e) {
             e.preventDefault();
             console.log('[Tabs] Clicou em Stage');
@@ -17,7 +18,10 @@ window.setupStageTabs = function() {
             stagePage.style.display = 'block';
             effectsPage.style.display = 'none';
             atacksPage.style.display = 'none';
-            if (typeof carregarStageOuEfeitos === 'function') carregarStageOuEfeitos('stage');
+            if (typeof window.carregarStageOuEfeitos === 'function') {
+                console.log('[Tabs] Chamando window.carregarStageOuEfeitos("stage")');
+                window.carregarStageOuEfeitos('stage');
+            }
         };
         btnEffects.onclick = function(e) {
             e.preventDefault();
@@ -28,7 +32,10 @@ window.setupStageTabs = function() {
             stagePage.style.display = 'none';
             effectsPage.style.display = 'block';
             atacksPage.style.display = 'none';
-            if (typeof carregarStageOuEfeitos === 'function') carregarStageOuEfeitos('efeitos');
+            if (typeof window.carregarStageOuEfeitos === 'function') {
+                console.log('[Tabs] Chamando window.carregarStageOuEfeitos("efeitos")');
+                window.carregarStageOuEfeitos('efeitos');
+            }
         };
         btnAtacks.onclick = function(e) {
             e.preventDefault();
