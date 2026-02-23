@@ -32,6 +32,7 @@
         // Reaproveita atacksData se já carregado, senão busca
         let stageEffectsData = [];
         async function carregarStageOuEfeitos(tipo) {
+                        console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
             if (!stageEffectsData.length) {
                 try {
                     const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
