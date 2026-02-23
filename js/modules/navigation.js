@@ -102,27 +102,6 @@ registerPageInitializer('stagechanges', function() {
     }
     setupStageTabs();
 
-    // Inicializar DataTables após carregamento dinâmico
-    setTimeout(function() {
-        if (window.jQuery && $('#stageTable').length) {
-            console.log('DataTables inicializando via navigation.js...');
-            $('#stageTable').DataTable({
-                language: {
-                    search: "Pesquisar ataque:",
-                    lengthMenu: "Mostrar _MENU_ registros",
-                    info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
-                    paginate: {
-                        first: "Primeiro",
-                        last: "Último",
-                        next: "Próximo",
-                        previous: "Anterior"
-                    }
-                }
-            });
-        } else {
-            console.log('DataTables NÃO inicializou. jQuery:', !!window.jQuery, 'Tabela:', $('#stageTable').length);
-        }
-    }, 500);
 });
 
 // Inicializador da página Market/Mural
