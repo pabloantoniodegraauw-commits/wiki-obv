@@ -77,30 +77,7 @@ function registerPageInitializer(pageName, initFunction) {
 // Inicializador da página Stage Changes (pode ser expandido futuramente)
 registerPageInitializer('stagechanges', function() {
     console.log('Stage Changes carregado!');
-    // Alternância Stage/Efeitos
-    function setupStageTabs() {
-        const btnStage = document.getElementById('btnStage');
-        const btnEffects = document.getElementById('btnEffects');
-        const stagePage = document.getElementById('stagePage');
-        const effectsPage = document.getElementById('effectsPage');
-        if (btnStage && btnEffects && stagePage && effectsPage) {
-            btnStage.onclick = function(e) {
-                e.preventDefault();
-                btnStage.classList.add('active');
-                btnEffects.classList.remove('active');
-                stagePage.style.display = 'block';
-                effectsPage.style.display = 'none';
-            };
-            btnEffects.onclick = function(e) {
-                e.preventDefault();
-                btnEffects.classList.add('active');
-                btnStage.classList.remove('active');
-                stagePage.style.display = 'none';
-                effectsPage.style.display = 'block';
-            };
-        }
-    }
-    setupStageTabs();
+    // Controle de abas agora é feito exclusivamente pelo HTML da página stagechanges.html
 
 });
 
