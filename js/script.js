@@ -30,10 +30,20 @@ window.limparAtaquesAntigos = async function() {
     if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== '') {
         for (let i = 0; i < todosPokemons.length; i++) {
             const p = todosPokemons[i];
+            // Monta objeto só com nome, localização e M1-M10
+            const pokemonLimpo = {
+                POKEMON: p.POKEMON,
+                EV: p.EV,
+                LOCALIZAÇÃO: p.LOCALIZAÇÃO,
+            };
+            for (let m = 1; m <= 10; m++) {
+                const campo = `M${m}`;
+                pokemonLimpo[campo] = p[campo];
+            }
             const payload = {
                 acao: 'atualizar',
                 nomeOriginal: p.EV || p.POKEMON,
-                pokemon: p,
+                pokemon: pokemonLimpo,
                 authToken: (JSON.parse(localStorage.getItem('user') || '{}')).authToken,
                 adminEmail: (JSON.parse(localStorage.getItem('user') || '{}')).email
             };
