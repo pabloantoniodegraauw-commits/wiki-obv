@@ -9,142 +9,16 @@
         <button id="btnAtacks" class="tab-btn" style="min-width: 180px;">Atacks</button>
     </div>
     <div id="stagePage" style="display:block;">
-                </tbody>
-            </table>
-        </div>
+        <div class="stage-changes-table-wrapper" style="overflow-x:auto;"></div>
 
     </div>
     <div id="effectsPage" style="display:none;">
-            <div id="atacksPage" style="display:none;">
-                <div class="stage-changes-header" style="margin-bottom: 24px;">
-                    <h3>Atacks (Admin Editável)</h3>
-                    <p style="font-size:1.1em;line-height:1.6;">Aqui você pode visualizar e, se for admin, editar todos os ataques diretamente da planilha.</p>
-                </div>
-                <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
-                    <table class="stage-changes-table" id="atacksTable">
-                        <thead>
-                            <tr id="atacksTableHead">
-                                <!-- Cabeçalhos serão preenchidos via JS -->
-                            </tr>
-                        </thead>
-                        <tbody id="atacksTableBody">
-                            <!-- Dados serão preenchidos via JS -->
-                        </tbody>
-                    </table>
-                </div>
+        <div id="atacksPage" style="display:none;">
+            <div class="stage-changes-header" style="margin-bottom: 24px;">
+                <h3>Atacks (Admin Editável)</h3>
+                <p style="font-size:1.1em;line-height:1.6;">Aqui você pode visualizar e, se for admin, editar todos os ataques diretamente da planilha.</p>
             </div>
-        <div class="stage-changes-header" style="margin-bottom: 24px;">
-            <h3 style="color:#ff6464;margin-bottom:12px;">⚠️ Efeitos Negativos em Batalha</h3>
-            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
-                <li>❄️ <b>Freeze:</b> Paralisa o Pokémon por 5 segundos. Se o Pokémon retornar para a Pokébola, o tempo é reiniciado.</li>
-                <li>⚡ <b>Paralyze:</b> Paralisa o Pokémon por 10 segundos. Se o Pokémon retornar para a Pokébola, o tempo é reiniciado.</li>
-                <li>💤 <b>Sleep:</b> O Pokémon adormece por 5 segundos. Se o Pokémon retornar para a Pokébola, o tempo é reiniciado.</li>
-                <li>❌ <b>Importante:</b> Esses efeitos não funcionam em Pokémon lendários, míticos ou bosses.</li>
-                <li>🛡️ <b>Safeguard:</b> A habilidade impede todos os efeitos negativos.</li>
-            </ul>
-            <h3 style="color:#ffd700;margin-bottom:12px;">❤️ Recuperação</h3>
-            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
-                <li><b>Nurse Joy NPC:</b> Visite um Centro Pokémon e fale com a Enfermeira Joy para curar completamente seus Pokémon.</li>
-                <li><b>Full Heal Potions:</b> Use potions específicas para o efeito ou utilize uma Full Heal para curar qualquer condição.</li>
-            </ul>
-            <h3 style="color:#a0e7ff;margin-bottom:12px;">🧪 Moves que causam Poison</h3>
-            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
-                <li>Toxic – 100%</li>
-                <li>Poison Sting – 30%</li>
-                <li>Sludge – 30%</li>
-                <li>Sludge Bomb – 30%</li>
-                <li>Cross Poison – 10%</li>
-                <li>Poison Jab – 30%</li>
-                <li>Dire Claw – 50%</li>
-                <li>Poison Fang – 50%</li>
-                <li>Venoshock – Não causa Poison (causa 2x de dano se o alvo já estiver envenenado)</li>
-            </ul>
-            <h3 style="color:#ff6464;margin-bottom:12px;">🔥 Moves que causam Burn</h3>
-            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
-                <li>Ember – 10%</li>
-                <li>Flamethrower – 10%</li>
-                <li>Fire Blast – 10%</li>
-                <li>Heat Wave – 10%</li>
-                <li>Flame Wheel – 10%</li>
-                <li>Flame Charge – 10%</li>
-                <li>Sacred Fire – 50%</li>
-                <li>Inferno – 100%</li>
-                <li>Scald – 30%</li>
-                <li>Tri Attack – 6,67% (entre Burn / Freeze / Paralyze)</li>
-                <li>Fire Punch – 10%</li>
-                <li>Blaze Kick – 10%</li>
-            </ul>
-            <h4 style="color:#ffd700;margin-bottom:8px;">ATENÇÃO OS ATCKS A BAIXO SÃO PELA FRANQUIA!</h4>
-            <h3 style="color:#88d3ff;margin-bottom:12px;">💠 Moves que causam Freeze</h3>
-            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
-                <li>Blizzard</li>
-                <li>Freeze-Dry</li>
-                <li>Freezing Glare</li>
-                <li>Ice Beam</li>
-                <li>Ice Fang</li>
-                <li>Ice Punch</li>
-                <li>Powder Snow</li>
-                <li>Secret Power</li>
-                <li>Shadow Chill</li>
-                <li>Sheer Cold</li>
-                <li>Tri Attack</li>
-            </ul>
-            <h3 style="color:#ffd700;margin-bottom:12px;">⚡ Moves que causam Paralysis</h3>
-            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
-                <li>Body Slam</li>
-                <li>Bolt Strike</li>
-                <li>Bounce</li>
-                <li>Buzzy Buzz</li>
-                <li>Combat Torque</li>
-                <li>Dire Claw</li>
-                <li>Discharge</li>
-                <li>Dragon Breath</li>
-                <li>Fling</li>
-                <li>Force Palm</li>
-                <li>Freeze Shock</li>
-                <li>G-Max Befuddle</li>
-                <li>G-Max Stun Shock</li>
-                <li>G-Max Volt Crash</li>
-                <li>Glare</li>
-                <li>Lick</li>
-                <li>Nuzzle</li>
-                <li>Psycho Shift</li>
-                <li>Secret Power</li>
-                <li>Shadow Bolt</li>
-                <li>Spark</li>
-                <li>Splishy Splash</li>
-                <li>Stoked Sparksurfer</li>
-                <li>Stun Spore</li>
-                <li>Thunder</li>
-                <li>Thunder Fang</li>
-                <li>Thunder Punch</li>
-                <li>Thunder Shock</li>
-                <li>Thunder Wave</li>
-                <li>Thunderbolt</li>
-                <li>Tri Attack</li>
-                <li>Volt Tackle</li>
-                <li>Wildbolt Storm</li>
-                <li>Zap Cannon</li>
-            </ul>
-            <h3 style="color:#a0e7ff;margin-bottom:12px;">💤 Moves que causam Sleep</h3>
-            <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
-                <li>Dark Void</li>
-                <li>Dire Claw</li>
-                <li>G-Max Befuddle</li>
-                <li>G-Max Snooze</li>
-                <li>Grass Whistle</li>
-                <li>Hypnosis</li>
-                <li>Lovely Kiss</li>
-                <li>Psycho Shift</li>
-                <li>Relic Song</li>
-                <li>Rest</li>
-                <li>Secret Power</li>
-                <li>Sing</li>
-                <li>Sleep Powder</li>
-                <li>Spore</li>
-                <li>Wicked Torque</li>
-                <li>Yawn</li>
-            </ul>
+            <div class="stage-changes-table-wrapper" style="overflow-x:auto;"></div>
         </div>
     </div>
     <script>
