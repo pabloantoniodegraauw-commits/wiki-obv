@@ -8,16 +8,19 @@ window.limparAtaquesAntigos = async function() {
     let alterados = 0;
     for (let i = 0; i < todosPokemons.length; i++) {
         let alterou = false;
+        // Copia todos os campos do Pokémon
+        let pokemonCompleto = { ...todosPokemons[i] };
         for (let m = 1; m <= 10; m++) {
             const campo = `M${m}`;
-            if (todosPokemons[i][campo] && todosPokemons[i][campo].includes('/')) {
-                const nome = todosPokemons[i][campo].split('/')[0].trim();
-                if (todosPokemons[i][campo] !== nome) {
-                    todosPokemons[i][campo] = nome;
+            if (pokemonCompleto[campo] && pokemonCompleto[campo].includes('/')) {
+                const nome = pokemonCompleto[campo].split('/')[0].trim();
+                if (pokemonCompleto[campo] !== nome) {
+                    pokemonCompleto[campo] = nome;
                     alterou = true;
                 }
             }
         }
+        todosPokemons[i] = pokemonCompleto;
         if (alterou) alterados++;
     }
     // Salvar no localStorage e na planilha
@@ -30,20 +33,10 @@ window.limparAtaquesAntigos = async function() {
     if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== '') {
         for (let i = 0; i < todosPokemons.length; i++) {
             const p = todosPokemons[i];
-            // Monta objeto só com nome, localização e M1-M10
-            const pokemonLimpo = {
-                POKEMON: p.POKEMON,
-                EV: p.EV,
-                LOCALIZAÇÃO: p.LOCALIZAÇÃO,
-            };
-            for (let m = 1; m <= 10; m++) {
-                const campo = `M${m}`;
-                pokemonLimpo[campo] = p[campo];
-            }
             const payload = {
                 acao: 'atualizar',
                 nomeOriginal: p.EV || p.POKEMON,
-                pokemon: pokemonLimpo,
+                pokemon: p,
                 authToken: (JSON.parse(localStorage.getItem('user') || '{}')).authToken,
                 adminEmail: (JSON.parse(localStorage.getItem('user') || '{}')).email
             };
