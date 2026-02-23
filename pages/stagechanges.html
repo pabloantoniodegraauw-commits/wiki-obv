@@ -80,6 +80,25 @@
             // Cabeçalhos fixos e ordenados
             const colunas = ['ATACK','AÇÃO','EFEITO','TYPE','CATEGORIA','PP','POWER','ACCURACY','GEN'];
             const thead = document.createElement('thead');
+        function renderizarTabelaStageOuEfeitos(tipo, dados) {
+            let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
+            let table = document.getElementById(tableId);
+            if (!table) {
+                // Criar tabela se não existir
+                const wrapper = document.getElementById(tipo === 'stage' ? 'stagePage' : 'effectsPage');
+                table = document.createElement('table');
+                table.id = tableId;
+                table.className = 'stage-changes-table';
+                wrapper.appendChild(table);
+            }
+            table.innerHTML = '';
+            if (!dados.length) {
+                table.innerHTML = '<tr><td>Nenhum ataque encontrado.</td></tr>';
+                return;
+            }
+            // Cabeçalhos fixos e ordenados
+            const colunas = ['ATACK','AÇÃO','EFEITO','TYPE','CATEGORIA','PP','POWER','ACCURACY','GEN'];
+            const thead = document.createElement('thead');
             const trh = document.createElement('tr');
             colunas.forEach(col => {
                 const th = document.createElement('th');
@@ -108,30 +127,11 @@
                 responsive: true,
                 pageLength: 25,
                 order: [[0, 'asc']],
-                <!-- ...outro código... -->
-                <script>
-                window.stageEffectsData = [];
-                window.carregarStageOuEfeitos = async function(tipo) {
-                    console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
-                    if (!window.stageEffectsData.length) {
-                        try {
-                            const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
-                            const resultado = await resp.json();
-                            console.log('[StageChanges] Resultado do fetch:', resultado);
-                            if (resultado.success && resultado.data && resultado.data.length > 0) {
-                                window.stageEffectsData = resultado.data;
-                                console.log('[StageChanges] Dados carregados:', window.stageEffectsData.length);
-                            } else {
-                                alert('Erro ao carregar ataques!');
-                                return;
-                            }
-                        } catch (e) {
-                            alert('Erro ao carregar ataques: ' + e.message);
-                            return;
-                        }
-                    }
-                    let filtrados = [];
-                    if (tipo === 'stage') {
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
+                }
+            });
+        }
                         filtrados = window.stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
                         console.log('[StageChanges] Filtrados STAGE:', filtrados.length);
                     } else if (tipo === 'efeitos') {
