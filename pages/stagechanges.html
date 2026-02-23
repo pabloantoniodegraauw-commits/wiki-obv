@@ -36,8 +36,10 @@
                 try {
                     const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
                     const resultado = await resp.json();
+                    console.log('[StageChanges] Resultado do fetch:', resultado);
                     if (resultado.success && resultado.data && resultado.data.length > 0) {
                         stageEffectsData = resultado.data;
+                        console.log('[StageChanges] Dados carregados:', stageEffectsData.length);
                     } else {
                         alert('Erro ao carregar ataques!');
                         return;
@@ -50,9 +52,11 @@
             let filtrados = [];
             if (tipo === 'stage') {
                 filtrados = stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
+                console.log('[StageChanges] Filtrados STAGE:', filtrados.length);
             } else if (tipo === 'efeitos') {
-                const efeitos = ['POISON','BURN','FREEZE','PARALYSIS','SLEEP'];
+                const efeitos = ['POISON','BURN','FREEZE','PARALYZE','SLEEP'];
                 filtrados = stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
+                console.log('[StageChanges] Filtrados Efeitos:', filtrados.length);
             }
             renderizarTabelaStageOuEfeitos(tipo, filtrados);
         }
@@ -73,8 +77,8 @@
                 table.innerHTML = '<tr><td>Nenhum ataque encontrado.</td></tr>';
                 return;
             }
-            // Cabeçalhos
-            const colunas = Object.keys(dados[0]);
+            // Cabeçalhos fixos e ordenados
+            const colunas = ['ATACK','AÇÃO','EFEITO','TYPE','CATEGORIA','PP','POWER','ACCURACY','GEN'];
             const thead = document.createElement('thead');
             const trh = document.createElement('tr');
             colunas.forEach(col => {
@@ -90,7 +94,7 @@
                 const tr = document.createElement('tr');
                 colunas.forEach(col => {
                     const td = document.createElement('td');
-                    td.textContent = row[col];
+                    td.textContent = row[col] || '';
                     tr.appendChild(td);
                 });
                 tbody.appendChild(tr);
