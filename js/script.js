@@ -1,4 +1,64 @@
-﻿// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
+﻿// Função administrativa: limpar ataques antigos (deixar só o nome)
+window.limparAtaquesAntigos = async function() {
+    if (!isAdmin || !isAdmin()) {
+        alert('Apenas administradores podem executar esta ação.');
+        return;
+    }
+    if (!confirm('Tem certeza que deseja limpar todos os ataques antigos? Essa ação não pode ser desfeita!')) return;
+    let alterados = 0;
+    for (let i = 0; i < todosPokemons.length; i++) {
+        let alterou = false;
+        for (let m = 1; m <= 10; m++) {
+            const campo = `M${m}`;
+            if (todosPokemons[i][campo] && todosPokemons[i][campo].includes('/')) {
+                const nome = todosPokemons[i][campo].split('/')[0].trim();
+                if (todosPokemons[i][campo] !== nome) {
+                    todosPokemons[i][campo] = nome;
+                    alterou = true;
+                }
+            }
+        }
+        if (alterou) alterados++;
+    }
+    // Salvar no localStorage e na planilha
+    try {
+        localStorage.setItem('pokemons_editados', JSON.stringify(todosPokemons));
+    } catch (e) {
+        console.warn('Não foi possível salvar no localStorage:', e.message);
+    }
+    // Atualizar todos no backend (Google Sheets)
+    if (APPS_SCRIPT_URL && APPS_SCRIPT_URL.trim() !== '') {
+        for (let i = 0; i < todosPokemons.length; i++) {
+            const p = todosPokemons[i];
+            const payload = {
+                acao: 'atualizar',
+                nomeOriginal: p.EV || p.POKEMON,
+                pokemon: p,
+                authToken: (JSON.parse(localStorage.getItem('user') || '{}')).authToken,
+                adminEmail: (JSON.parse(localStorage.getItem('user') || '{}')).email
+            };
+            await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload)
+            });
+        }
+    }
+    alert(`Limpeza concluída! ${alterados} Pokémon(s) tiveram ataques atualizados.`);
+    // Atualizar DOM
+    renderizarPokemons(todosPokemons);
+};
+// Adicionar botão administrativo na interface (exemplo: no topo da Pokédex)
+window.addEventListener('DOMContentLoaded', function() {
+    if (isAdmin && isAdmin()) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Limpar ataques antigos';
+        btn.style = 'position:fixed;top:10px;right:10px;z-index:9999;background:#ffd700;color:#1a2980;padding:10px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.15)';
+        btn.onclick = window.limparAtaquesAntigos;
+        document.body.appendChild(btn);
+    }
+});
+// 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
         
         // 🤖 OCR COM TESSERACT.JS - Totalmente gratuito e local!
@@ -2141,29 +2201,14 @@
                 localizacao: typeof window._getEditLocEntries === 'function' ? window._getEditLocEntries() : ''
             };
 
-            // Coletar atacks M1-M10 e salvar no formato 'Nome / Ação / Tipo / Categoria'
+            // Coletar atacks M1-M10 e salvar apenas o nome do ataque
             const atacksMudados = [];
             for (let i = 1; i <= 10; i++) {
                 const el = document.getElementById(`edit-m${i}`);
                 if (el) {
                     const nomeAtack = el.value.trim();
-                    if (nomeAtack) {
-                        // Se já está no formato correto (tem 3 barras), não reformatar
-                        const partes = nomeAtack.split('/').map(p => p.trim());
-                        if (partes.length === 4 && partes.every(p => p.length > 0)) {
-                            atacksMudados.push({ slot: `m${i}`, nome: nomeAtack });
-                        } else {
-                            // Buscar informações do ataque no banco global
-                            let atackInfo = todosAtacks.find(a => (a['ATACK'] || a['NOME'] || '').toLowerCase().trim() === nomeAtack.toLowerCase());
-                            let acao = atackInfo && atackInfo['AÇÃO'] ? atackInfo['AÇÃO'] : '';
-                            let tipo = atackInfo && atackInfo['TYPE'] ? atackInfo['TYPE'] : '';
-                            let categoria = atackInfo && atackInfo['CATEGORIA'] ? atackInfo['CATEGORIA'] : '';
-                            const atackFormatado = `${nomeAtack} / ${acao} / ${tipo} / ${categoria}`;
-                            atacksMudados.push({ slot: `m${i}`, nome: atackFormatado });
-                        }
-                    } else {
-                        atacksMudados.push({ slot: `m${i}`, nome: '' });
-                    }
+                    // Sempre salva apenas o nome do ataque, sem detalhes
+                    atacksMudados.push({ slot: `m${i}`, nome: nomeAtack });
                 }
             }
 

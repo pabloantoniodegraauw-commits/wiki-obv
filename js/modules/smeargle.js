@@ -13,6 +13,7 @@ const SHEETS_BASE_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVv
 
 let smearglePokemonData = [];
 let smeargleMovesData = [];
+let smeargleAtacksData = [];
 let smeargleSelectedMoves = [];
 
 // Ícones por tipo
@@ -52,52 +53,52 @@ async function carregarDadosSmeargle() {
     }
     
     try {
+        // 1. Buscar dados da Pokédex (Pokémon e ataques)
         console.log('📡 Fazendo fetch da URL:', SHEETS_URL);
         const response = await fetch(SHEETS_URL);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         const textoResposta = await response.text();
-        console.log('📄 Texto recebido (primeiros 200 chars):', textoResposta.substring(0, 200));
-        
-        // Parse do JSON
         let resultado;
         try {
             resultado = JSON.parse(textoResposta);
-            console.log('✅ JSON parseado. Tipo:', typeof resultado);
-            console.log('📋 Propriedades:', Object.keys(resultado));
         } catch (e) {
             throw new Error('Resposta não é JSON válido: ' + e.message);
         }
-        
-        // Verificar se a resposta tem formato paginado ou array direto
         let dados;
         if (Array.isArray(resultado)) {
             dados = resultado;
-            console.log('📦 Formato: Array direto');
         } else if (resultado.data && Array.isArray(resultado.data)) {
             dados = resultado.data;
-            console.log('📦 Formato: Objeto com data[]');
         } else {
-            console.error('❌ Formato não reconhecido:', resultado);
             throw new Error('Formato de resposta não reconhecido');
         }
-        
-        console.log('📦 Dados recebidos:', dados.length, 'linhas');
-        console.log('📊 Primeira linha:', dados[0]);
-        
         smearglePokemonData = dados;
+
+        // 2. Buscar dados da aba de ataques
+        const ATACKS_URL = SHEETS_BASE_URL + '?acao=obter_atacks&page=1&limit=10000';
+        const atacksResp = await fetch(ATACKS_URL);
+        if (!atacksResp.ok) throw new Error(`HTTP ${atacksResp.status}: ${atacksResp.statusText}`);
+        const atacksText = await atacksResp.text();
+        let atacksResult;
+        try {
+            atacksResult = JSON.parse(atacksText);
+        } catch (e) {
+            throw new Error('Resposta de ataques não é JSON válido: ' + e.message);
+        }
+        let atacksData;
+        if (Array.isArray(atacksResult)) {
+            atacksData = atacksResult;
+        } else if (atacksResult.data && Array.isArray(atacksResult.data)) {
+            atacksData = atacksResult.data;
+        } else {
+            throw new Error('Formato de resposta de ataques não reconhecido');
+        }
+        smeargleAtacksData = atacksData;
+
         extrairGolpesSmeargle(dados);
         popularFiltrosSmeargle();
         renderizarGolpesSmeargle(smeargleMovesData);
-        
         configurarEventosSmeargle();
-        
-        console.log('✅ Dados carregados:', smearglePokemonData.length, 'Pokémons');
-        console.log('✅ Golpes únicos:', smeargleMovesData.length);
-        
     } catch (erro) {
         console.error('❌ Erro ao carregar dados:', erro);
         grid.innerHTML = `
@@ -123,18 +124,25 @@ function extrairGolpesSmeargle(pokemons) {
         for (let i = 1; i <= 10; i++) {
             const coluna = `M${i}`;
             const celula = pokemon[coluna];
-            
-            if (celula) { // Extrair TODOS os golpes (M1 até M10)
+            if (celula) {
                 if (i === 1) totalM1++;
-                
-                if (index < 3 && i === 1) { // Log dos primeiros 3 para debug
+                if (index < 3 && i === 1) {
                     console.log(`M1 de ${pokemon['POKEMON']}:`, celula);
                 }
-                
-                const golpe = parseMove(celula, pokemon['POKEMON'], coluna);
-                if (golpe) {
+                // Buscar detalhes do ataque na aba de ataques
+                const nomeAtaque = celula.split('/')[0].trim();
+                const atackDetalhes = smeargleAtacksData.find(a => (a['ATACK'] || '').toLowerCase() === nomeAtaque.toLowerCase());
+                if (atackDetalhes) {
+                    const golpe = {
+                        nome: atackDetalhes['ATACK'] || nomeAtaque,
+                        acao: atackDetalhes['AÇÃO'] || '',
+                        efeito: atackDetalhes['EFEITO'] || '',
+                        tipo: atackDetalhes['TYPE'] || '',
+                        categoria: atackDetalhes['CATEGORIA'] || '',
+                        origem: pokemon['POKEMON'],
+                        local: coluna
+                    };
                     golpesValidos++;
-                    // Chave única: nome do golpe + origem do Pokémon
                     const key = golpe.nome.toLowerCase() + '_' + golpe.origem.toLowerCase();
                     if (!golpesMap.has(key)) {
                         golpesMap.set(key, golpe);
@@ -217,7 +225,6 @@ function renderizarGolpesSmeargle(golpes) {
     grid.innerHTML = golpes.map(golpe => {
         const estaSelecionado = nomesSelecionados.includes(golpe.nome.toLowerCase());
         const classeExtra = estaSelecionado ? ' move-card-selected' : '';
-        
         return `
             <div class="move-card type-${golpe.tipo.toLowerCase()}${classeExtra}" 
                  data-move='${JSON.stringify(golpe)}'
@@ -232,6 +239,9 @@ function renderizarGolpesSmeargle(golpes) {
                 </div>
                 <div class="move-acao">
                     <i class="fas fa-running"></i> ${golpe.acao}
+                </div>
+                <div class="move-efeito">
+                    <i class="fas fa-magic"></i> ${golpe.efeito}
                 </div>
                 <div class="move-origem">
                     <i class="fas fa-paw"></i> ${golpe.origem}
