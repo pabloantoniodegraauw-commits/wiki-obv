@@ -29,8 +29,8 @@
     <script>
         // --- FILTROS PARA STAGE CHANGES E EFEITOS ---
         // Reaproveita atacksData se já carregado, senão busca
-        let stageEffectsData = [];
-        async function carregarStageOuEfeitos(tipo) {
+        window.stageEffectsData = [];
+        window.carregarStageOuEfeitos = async function(tipo) {
                         // ...existing code...
                         }
                         window.carregarStageOuEfeitos = carregarStageOuEfeitos;
@@ -242,5 +242,11 @@
         document.getElementById('btnAtacks').addEventListener('click', function() {
             if (!atacksData.length) carregarAtacksParaTabela();
         });
-    </script>
+        </script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                if (typeof setupStageTabs === 'function') setupStageTabs();
+            });
+        </script>
+        <script src="js/modules/stagechanges-tabs.js"></script>
     <script src="js/modules/stagechanges-tabs.js"></script>
