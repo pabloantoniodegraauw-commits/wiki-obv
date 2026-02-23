@@ -17,6 +17,7 @@ window.setupStageTabs = function() {
             stagePage.style.display = 'block';
             effectsPage.style.display = 'none';
             atacksPage.style.display = 'none';
+            if (typeof carregarStageOuEfeitos === 'function') carregarStageOuEfeitos('stage');
         };
         btnEffects.onclick = function(e) {
             e.preventDefault();
@@ -27,6 +28,7 @@ window.setupStageTabs = function() {
             stagePage.style.display = 'none';
             effectsPage.style.display = 'block';
             atacksPage.style.display = 'none';
+            if (typeof carregarStageOuEfeitos === 'function') carregarStageOuEfeitos('efeitos');
         };
         btnAtacks.onclick = function(e) {
             e.preventDefault();
@@ -37,6 +39,7 @@ window.setupStageTabs = function() {
             stagePage.style.display = 'none';
             effectsPage.style.display = 'none';
             atacksPage.style.display = 'block';
+            if (typeof carregarAtacksParaTabela === 'function') carregarAtacksParaTabela();
         };
     } else {
         console.error('[Tabs] Elementos de tabs não encontrados:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});

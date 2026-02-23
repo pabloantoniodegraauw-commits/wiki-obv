@@ -110,13 +110,7 @@
             });
         }
 
-        // Carregar ao abrir as abas
-        document.getElementById('btnStage').addEventListener('click', function() {
-            carregarStageOuEfeitos('stage');
-        });
-        document.getElementById('btnEffects').addEventListener('click', function() {
-            carregarStageOuEfeitos('efeitos');
-        });
+        // Controle de abas agora é feito pelo JS externo (stagechanges-tabs.js)
         // Chamar sempre após carregamento dinâmico
         if (window.setupStageTabs) window.setupStageTabs();
         // Carregar Stage por padrão ao abrir a página
