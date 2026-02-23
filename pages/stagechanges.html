@@ -111,39 +111,40 @@
                 responsive: true,
                 pageLength: 25,
                 order: [[0, 'asc']],
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
+                <!-- ...outro código... -->
+                <script>
+                window.stageEffectsData = [];
+                window.carregarStageOuEfeitos = async function(tipo) {
+                    console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
+                    if (!window.stageEffectsData.length) {
+                        try {
+                            const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
+                            const resultado = await resp.json();
+                            console.log('[StageChanges] Resultado do fetch:', resultado);
+                            if (resultado.success && resultado.data && resultado.data.length > 0) {
+                                window.stageEffectsData = resultado.data;
+                                console.log('[StageChanges] Dados carregados:', window.stageEffectsData.length);
+                            } else {
+                                alert('Erro ao carregar ataques!');
+                                return;
+                            }
+                        } catch (e) {
+                            alert('Erro ao carregar ataques: ' + e.message);
+                            return;
+                        }
+                    }
+                    let filtrados = [];
+                    if (tipo === 'stage') {
+                        filtrados = window.stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
+                        console.log('[StageChanges] Filtrados STAGE:', filtrados.length);
+                    } else if (tipo === 'efeitos') {
+                        const efeitos = ['POISON','BURN','FREEZE','PARALYZE','SLEEP'];
+                        filtrados = window.stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
+                        console.log('[StageChanges] Filtrados Efeitos:', filtrados.length);
+                    }
+                    renderizarTabelaStageOuEfeitos(tipo, filtrados);
                 }
-            });
-        }
-
-        // Controle de abas agora é feito pelo JS externo (stagechanges-tabs.js)
-        // Chamar sempre após carregamento dinâmico
-        if (window.setupStageTabs) window.setupStageTabs();
-        // Carregar Stage por padrão ao abrir a página
-        carregarStageOuEfeitos('stage');
-        // --- ABA ATACKS ---
-        let atacksTableInstance = null;
-        let atacksData = [];
-
-        async function carregarAtacksParaTabela() {
-            try {
-                const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
-                const resultado = await resp.json();
-                if (resultado.success && resultado.data && resultado.data.length > 0) {
-                    atacksData = resultado.data;
-                    renderizarTabelaAtacks();
-                } else {
-                    alert('Erro ao carregar ataques!');
-                }
-            } catch (e) {
-                alert('Erro ao carregar ataques: ' + e.message);
-            }
-        }
-
-        function isAdmin() {
-            try {
-                const u = JSON.parse(localStorage.getItem('user') || '{}');
+                </script>
                 return !!u && u.role === 'admin';
             } catch (e) { return false; }
         }
