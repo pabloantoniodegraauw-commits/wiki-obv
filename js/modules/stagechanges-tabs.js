@@ -41,6 +41,8 @@ window.setupStageTabs = function() {
             atacksPage.style.display = 'block';
             if (typeof carregarAtacksParaTabela === 'function') carregarAtacksParaTabela();
         };
+        // Carregar Stage por padrão ao abrir a página
+        if (typeof carregarStageOuEfeitos === 'function') carregarStageOuEfeitos('stage');
     } else {
         console.error('[Tabs] Elementos de tabs não encontrados:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
     }
