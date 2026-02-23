@@ -6,6 +6,7 @@
     <div style="display: flex; gap: 16px; justify-content: center; margin-bottom: 24px;">
         <button id="btnStage" class="tab-btn active" style="min-width: 180px;">Stage Changes</button>
         <button id="btnEffects" class="tab-btn" style="min-width: 180px;">Efeitos</button>
+        <button id="btnAtacks" class="tab-btn" style="min-width: 180px;">Atacks</button>
     </div>
     <div id="stagePage" style="display:block;">
         <div class="stage-changes-header" style="margin-bottom: 24px;">
@@ -110,6 +111,24 @@
 
     </div>
     <div id="effectsPage" style="display:none;">
+            <div id="atacksPage" style="display:none;">
+                <div class="stage-changes-header" style="margin-bottom: 24px;">
+                    <h3>Atacks (Admin Editável)</h3>
+                    <p style="font-size:1.1em;line-height:1.6;">Aqui você pode visualizar e, se for admin, editar todos os ataques diretamente da planilha.</p>
+                </div>
+                <div class="stage-changes-table-wrapper" style="overflow-x:auto;">
+                    <table class="stage-changes-table" id="atacksTable">
+                        <thead>
+                            <tr id="atacksTableHead">
+                                <!-- Cabeçalhos serão preenchidos via JS -->
+                            </tr>
+                        </thead>
+                        <tbody id="atacksTableBody">
+                            <!-- Dados serão preenchidos via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         <div class="stage-changes-header" style="margin-bottom: 24px;">
             <h3 style="color:#ff6464;margin-bottom:12px;">⚠️ Efeitos Negativos em Batalha</h3>
             <ul style="font-size:1.1em;line-height:1.6;margin-bottom:18px;">
@@ -225,28 +244,251 @@
         </div>
     </div>
     <script>
+                // --- FILTROS PARA STAGE CHANGES E EFEITOS ---
+                // Reaproveita atacksData se já carregado, senão busca
+                async function carregarStageOuEfeitos(tipo) {
+                    if (!atacksData.length) {
+                        try {
+                            const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
+                            const resultado = await resp.json();
+                            if (resultado.success && resultado.data && resultado.data.length > 0) {
+                                atacksData = resultado.data;
+                            } else {
+                                alert('Erro ao carregar ataques!');
+                                return;
+                            }
+                        } catch (e) {
+                            alert('Erro ao carregar ataques: ' + e.message);
+                            return;
+                        }
+                    }
+                    let filtrados = [];
+                    if (tipo === 'stage') {
+                        filtrados = atacksData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
+                    } else if (tipo === 'efeitos') {
+                        const efeitos = ['POISON','BURN','FREEZE','PARALYSIS','SLEEP'];
+                        filtrados = atacksData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
+                    }
+                    renderizarTabelaStageOuEfeitos(tipo, filtrados);
+                }
+
+                function renderizarTabelaStageOuEfeitos(tipo, dados) {
+                    let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
+                    let table = document.getElementById(tableId);
+                    if (!table) {
+                        // Criar tabela se não existir
+                        const wrapper = document.getElementById(tipo === 'stage' ? 'stagePage' : 'effectsPage');
+                        table = document.createElement('table');
+                        table.id = tableId;
+                        table.className = 'stage-changes-table';
+                        wrapper.appendChild(table);
+                    }
+                    table.innerHTML = '';
+                    if (!dados.length) {
+                        table.innerHTML = '<tr><td>Nenhum ataque encontrado.</td></tr>';
+                        return;
+                    }
+                    // Cabeçalhos
+                    const colunas = Object.keys(dados[0]);
+                    const thead = document.createElement('thead');
+                    const trh = document.createElement('tr');
+                    colunas.forEach(col => {
+                        const th = document.createElement('th');
+                        th.textContent = col;
+                        trh.appendChild(th);
+                    });
+                    thead.appendChild(trh);
+                    table.appendChild(thead);
+                    // Corpo
+                    const tbody = document.createElement('tbody');
+                    dados.forEach(row => {
+                        const tr = document.createElement('tr');
+                        colunas.forEach(col => {
+                            const td = document.createElement('td');
+                            td.textContent = row[col];
+                            tr.appendChild(td);
+                        });
+                        tbody.appendChild(tr);
+                    });
+                    table.appendChild(tbody);
+                    // DataTable
+                    if ($.fn.DataTable.isDataTable(table)) {
+                        $(table).DataTable().destroy();
+                    }
+                    $(table).DataTable({
+                        responsive: true,
+                        pageLength: 25,
+                        order: [[0, 'asc']],
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
+                        }
+                    });
+                }
+
+                // Carregar ao abrir as abas
+                document.getElementById('btnStage').addEventListener('click', function() {
+                    carregarStageOuEfeitos('stage');
+                });
+                document.getElementById('btnEffects').addEventListener('click', function() {
+                    carregarStageOuEfeitos('efeitos');
+                });
         // Script das abas, sem conflito com DataTables
         function setupStageTabs() {
             var btnStage = document.getElementById('btnStage');
             var btnEffects = document.getElementById('btnEffects');
+            var btnAtacks = document.getElementById('btnAtacks');
             var stagePage = document.getElementById('stagePage');
             var effectsPage = document.getElementById('effectsPage');
-            if (btnStage && btnEffects && stagePage && effectsPage) {
+            var atacksPage = document.getElementById('atacksPage');
+            if (btnStage && btnEffects && btnAtacks && stagePage && effectsPage && atacksPage) {
                 btnStage.onclick = function(e) {
                     e.preventDefault();
                     btnStage.classList.add('active');
                     btnEffects.classList.remove('active');
+                    btnAtacks.classList.remove('active');
                     stagePage.style.display = 'block';
                     effectsPage.style.display = 'none';
+                    atacksPage.style.display = 'none';
                 };
                 btnEffects.onclick = function(e) {
                     e.preventDefault();
                     btnEffects.classList.add('active');
                     btnStage.classList.remove('active');
+                    btnAtacks.classList.remove('active');
                     stagePage.style.display = 'none';
                     effectsPage.style.display = 'block';
+                    atacksPage.style.display = 'none';
+                };
+                btnAtacks.onclick = function(e) {
+                    e.preventDefault();
+                    btnAtacks.classList.add('active');
+                    btnStage.classList.remove('active');
+                    btnEffects.classList.remove('active');
+                    stagePage.style.display = 'none';
+                    effectsPage.style.display = 'none';
+                    atacksPage.style.display = 'block';
                 };
             }
         }
         document.addEventListener('DOMContentLoaded', setupStageTabs);
+        // --- ABA ATACKS ---
+        let atacksTableInstance = null;
+        let atacksData = [];
+
+        async function carregarAtacksParaTabela() {
+            try {
+                const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
+                const resultado = await resp.json();
+                if (resultado.success && resultado.data && resultado.data.length > 0) {
+                    atacksData = resultado.data;
+                    renderizarTabelaAtacks();
+                } else {
+                    alert('Erro ao carregar ataques!');
+                }
+            } catch (e) {
+                alert('Erro ao carregar ataques: ' + e.message);
+            }
+        }
+
+        function isAdmin() {
+            try {
+                const u = JSON.parse(localStorage.getItem('user') || '{}');
+                return !!u && u.role === 'admin';
+            } catch (e) { return false; }
+        }
+
+        function renderizarTabelaAtacks() {
+            const table = document.getElementById('atacksTable');
+            if (!table) return;
+            // Limpar cabeçalho e corpo
+            const head = document.getElementById('atacksTableHead');
+            const body = document.getElementById('atacksTableBody');
+            head.innerHTML = '';
+            body.innerHTML = '';
+            if (!atacksData.length) return;
+            // Cabeçalhos dinâmicos
+            const colunas = Object.keys(atacksData[0]);
+            colunas.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                head.appendChild(th);
+            });
+            if (isAdmin()) {
+                const th = document.createElement('th');
+                th.textContent = 'Ações';
+                head.appendChild(th);
+            }
+            // Linhas
+            atacksData.forEach((row, idx) => {
+                const tr = document.createElement('tr');
+                colunas.forEach(col => {
+                    const td = document.createElement('td');
+                    td.textContent = row[col];
+                    if (isAdmin() && col !== 'ATACK') {
+                        td.contentEditable = true;
+                        td.style.background = 'rgba(255,255,255,0.07)';
+                        td.addEventListener('blur', async function() {
+                            const novoValor = td.textContent.trim();
+                            if (novoValor !== row[col]) {
+                                await salvarEdicaoAtack(row['ATACK'], col, novoValor, td);
+                            }
+                        });
+                    }
+                    tr.appendChild(td);
+                });
+                if (isAdmin()) {
+                    const tdA = document.createElement('td');
+                    tdA.innerHTML = '<span style="color:#ffd700;font-size:1.2em;">✔️</span>';
+                    tr.appendChild(tdA);
+                }
+                body.appendChild(tr);
+            });
+            // DataTable
+            if (atacksTableInstance) {
+                $(table).DataTable().destroy();
+            }
+            atacksTableInstance = $(table).DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'asc']],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
+                }
+            });
+        }
+
+        async function salvarEdicaoAtack(nomeAtack, campo, valor, td) {
+            td.style.background = '#ffe066';
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({
+                        action: 'atualizarAtack',
+                        nomeAtack,
+                        campo,
+                        valor,
+                        email: user.email,
+                        authToken: user.authToken
+                    })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    td.style.background = '#b6fcb6';
+                    setTimeout(() => td.style.background = 'rgba(255,255,255,0.07)', 800);
+                } else {
+                    td.style.background = '#ffb3b3';
+                    alert('Erro ao salvar: ' + (result.message || 'Falha desconhecida'));
+                }
+            } catch (e) {
+                td.style.background = '#ffb3b3';
+                alert('Erro ao salvar: ' + e.message);
+            }
+        }
+
+        // Carregar ao abrir aba Atacks
+        document.getElementById('btnAtacks').addEventListener('click', function() {
+            if (!atacksData.length) carregarAtacksParaTabela();
+        });
     </script>
