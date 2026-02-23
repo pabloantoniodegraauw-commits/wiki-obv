@@ -32,6 +32,9 @@
         // Reaproveita atacksData se já carregado, senão busca
         let stageEffectsData = [];
         async function carregarStageOuEfeitos(tipo) {
+                        // ...existing code...
+                        }
+                        window.carregarStageOuEfeitos = carregarStageOuEfeitos;
                         console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
             if (!stageEffectsData.length) {
                 try {
