@@ -4,40 +4,14 @@
 <div class="stage-changes-container">
     <h2>Stage Changes</h2>
     <div style="display: flex; gap: 16px; justify-content: center; margin-bottom: 24px;">
-        <div class="besteirage">
-            <h2>Stage Changes</h2>
-            <p>Vamos recomeçar do zero. Só estrutura básica.</p>
-        </div>
+        <button id="btnStage" class="tab-btn active" style="min-width: 180px;">Stage Changes</button>
+        <button id="btnEffects" class="tab-btn" style="min-width: 180px;">Efeitos</button>
+        <button id="btnAtacks" class="tab-btn" style="min-width: 180px;">Atacks</button>
     </div>
-
-    <script>
-    function renderizarTabelaStageOuEfeitos(tipo, dados) {
-        let tableId = tipo === 'stage' ? 'stageTable' : 'efeitosTable';
-        let table = document.getElementById(tableId);
-        if (!table) {
-            // Criar tabela se não existir
-            const wrapper = document.getElementById(tipo === 'stage' ? 'stagePage' : 'effectsPage');
-            table = document.createElement('table');
-            table.id = tableId;
-            table.className = 'stage-changes-table';
-            wrapper.appendChild(table);
-        }
-        table.innerHTML = '';
-        if (!dados.length) {
-            table.innerHTML = '<tr><td>Nenhum ataque encontrado.</td></tr>';
-            return;
-        }
-        // Cabeçalhos fixos e ordenados
-        const colunas = ['ATACK','AÇÃO','EFEITO','TYPE','CATEGORIA','PP','POWER','ACCURACY','GEN'];
-        const thead = document.createElement('thead');
-        const trh = document.createElement('tr');
-        colunas.forEach(col => {
-            const th = document.createElement('th');
-            th.textContent = col;
-            trh.appendChild(th);
-        });
-        thead.appendChild(trh);
-        table.appendChild(thead);
+    <div id="stagePage" class="tab-content active"></div>
+    <div id="effectsPage" class="tab-content"></div>
+    <div id="atacksPage" class="tab-content"></div>
+</div>
         // Corpo
         const tbody = document.createElement('tbody');
         dados.forEach(row => {
