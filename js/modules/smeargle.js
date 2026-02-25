@@ -15,7 +15,10 @@ let smearglePokemonData = [];
 let smeargleMovesData = [];
 let smeargleAtacksData = [];
 // smeargleSelectedMoves agora é um array fixo de 9 slots (índices 0..8 -> M1..M9)
+// smeargleSelectedMoves agora é um array fixo de 9 slots (índices 0..8 -> M1..M9)
 let smeargleSelectedMoves = new Array(9).fill(null);
+// slot alvo quando usuário clica em "Adicionar" num slot vazio (null ou 0-based index)
+let smeargleTargetSlot = null;
 
 // Ícones por tipo
 const TIPO_ICONS = {
@@ -257,6 +260,35 @@ function renderizarGolpesSmeargle(golpes) {
 window.selecionarGolpe = function(element) {
     const golpe = JSON.parse(element.dataset.move);
 
+    // Se estamos em modo seleção de slot específico, tentar inserir no slot alvo
+    if (typeof smeargleTargetSlot === 'number' && smeargleTargetSlot !== null) {
+        const slotIdx = smeargleTargetSlot; // 0-based
+        // Validar que slot está dentro do conjunto permitido para o golpe
+        const poss = obterPosicoesDisponiveis(golpe).map(p => parseInt(p.replace(/^M/i, ''), 10));
+        if (!poss.includes(slotIdx + 1)) {
+            const msg = `⚠️ Este golpe não está disponível em M${slotIdx + 1}. Posições válidas: ${obterPosicoesDisponiveis(golpe).join(', ')}`;
+            if (window.showToast) window.showToast(msg, 'error'); else alert(msg);
+            smeargleTargetSlot = null;
+            atualizarCardSmeargle();
+            return;
+        }
+        if (smeargleSelectedMoves[slotIdx]) {
+            const msg = `⚠️ O slot M${slotIdx + 1} já está ocupado.`;
+            if (window.showToast) window.showToast(msg, 'error'); else alert(msg);
+            smeargleTargetSlot = null;
+            atualizarCardSmeargle();
+            return;
+        }
+        smeargleSelectedMoves[slotIdx] = golpe;
+        smeargleTargetSlot = null;
+        atualizarCardSmeargle();
+        buscarPokemonsCompativeis();
+        reordenarGridMovesOrdenado();
+        const okMsg = `✔️ Golpe adicionado em M${slotIdx + 1}`;
+        if (window.showToast) window.showToast(okMsg, 'success'); else alert(okMsg);
+        return;
+    }
+
     // Limite de 9 slots (M1..M9)
     const totalSelecionados = smeargleSelectedMoves.filter(Boolean).length;
     if (totalSelecionados >= 9) {
@@ -397,29 +429,33 @@ function atualizarCardSmeargle() {
         // Renderizar cada slot (M1..M9) mantendo posições vazias
         const items = [];
         for (let index = 0; index < smeargleSelectedMoves.length; index++) {
-            const golpe = smeargleSelectedMoves[index];
-            if (golpe) {
-                items.push(`
-                    <div class="selected-move-item">
-                        <span class="move-number">${index + 1}</span>
-                        <span class="move-info">
-                            <strong>${golpe.nome}</strong>
-                            <small>${golpe.tipo} • ${golpe.categoria}</small>
-                        </span>
-                        <button class="btn-remove-move" onclick="removerGolpe(${index})">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `);
-            } else {
-                items.push(`
-                    <div class="selected-move-item selected-move-empty">
-                        <span class="move-number">${index + 1}</span>
-                        <span class="move-info"><em>Slot livre</em></span>
-                    </div>
-                `);
+                const golpe = smeargleSelectedMoves[index];
+                if (golpe) {
+                    items.push(`
+                        <div class="selected-move-item">
+                            <span class="move-number">${index + 1}</span>
+                            <span class="move-info">
+                                <strong>${golpe.nome}</strong>
+                                <small>${golpe.tipo} • ${golpe.categoria}</small>
+                            </span>
+                            <button class="btn-remove-move" onclick="removerGolpe(${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `);
+                } else {
+                    const active = smeargleTargetSlot === index;
+                    items.push(`
+                        <div class="selected-move-item selected-move-empty">
+                            <span class="move-number">${index + 1}</span>
+                            <span class="move-info"><em>Slot livre</em></span>
+                            <button class="btn-add-slot" onclick="iniciarSelecaoSlot(${index})" style="margin-left:8px;">
+                                ${active ? 'Cancelar' : 'Adicionar'}
+                            </button>
+                        </div>
+                    `);
+                }
             }
-        }
         movesList.innerHTML = items.join('');
     }
 }
@@ -460,6 +496,22 @@ function limparGolpes() {
         </div>
     `;
 }
+
+// Iniciar seleção de slot vazio para inserir o próximo golpe clicado
+window.iniciarSelecaoSlot = function(index) {
+    if (typeof index !== 'number') return;
+    // Se já estava ativo esse slot, cancelar
+    if (smeargleTargetSlot === index) {
+        smeargleTargetSlot = null;
+        if (window.showToast) window.showToast('Seleção cancelada', 'error'); else alert('Seleção cancelada');
+        atualizarCardSmeargle();
+        return;
+    }
+    smeargleTargetSlot = index;
+    const msg = `Selecione um golpe no grid para inserir em M${index + 1} (clique em "Adicionar" novamente para cancelar).`;
+    if (window.showToast) window.showToast(msg, 'success'); else alert(msg);
+    atualizarCardSmeargle();
+};
 
 // Buscar Pokémons compatíveis (mostra o Pokémon de origem de cada golpe)
 function buscarPokemonsCompativeis() {
