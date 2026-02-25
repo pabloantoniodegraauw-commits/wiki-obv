@@ -56,6 +56,16 @@ const TIPO_ICONS = {
     'Fairy': 'fa-star'
 };
 
+// Helpers de normalização para comparar nomes sem acento/maiús/minús
+function normalizeName(str) {
+    if (!str) return '';
+    try {
+        return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    } catch (e) {
+        return str.toString().toLowerCase().trim();
+    }
+}
+
 function initSmeargle() {
     console.log('🎨 Inicializando Smeargle Builder...');
     ensureSmeargleStyles();
@@ -148,9 +158,17 @@ function extrairGolpesSmeargle(pokemons) {
                 if (index < 3 && i === 1) {
                     console.log(`M1 de ${pokemon['POKEMON']}:`, celula);
                 }
-                // Buscar detalhes do ataque na aba de ataques
+                // Buscar detalhes do ataque na aba de ataques (usar normalização)
                 const nomeAtaque = celula.split('/')[0].trim();
-                const atackDetalhes = smeargleAtacksData.find(a => (a['ATACK'] || '').toLowerCase() === nomeAtaque.toLowerCase());
+                const nomeNorm = normalizeName(nomeAtaque);
+                let atackDetalhes = smeargleAtacksData.find(a => normalizeName(a['ATACK']) === nomeNorm);
+                // fallback: busca por inclusão (ex: 'Knock Off' vs 'Knock-Off' ou variações)
+                if (!atackDetalhes) {
+                    atackDetalhes = smeargleAtacksData.find(a => {
+                        const an = normalizeName(a['ATACK']);
+                        return an.includes(nomeNorm) || nomeNorm.includes(an);
+                    });
+                }
                 if (atackDetalhes) {
                     const golpe = {
                         nome: atackDetalhes['ATACK'] || nomeAtaque,
@@ -167,6 +185,9 @@ function extrairGolpesSmeargle(pokemons) {
                     if (!golpesMap.has(key)) {
                         golpesMap.set(key, golpe);
                     }
+                }
+                else {
+                    console.warn(`[Smeargle] Ataque não encontrado em atacks: "${nomeAtaque}" (origem ${pokemon['POKEMON']} / EV=${pokemon['EV']})`);
                 }
             }
         }
