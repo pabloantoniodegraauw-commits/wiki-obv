@@ -20,6 +20,20 @@ let smeargleSelectedMoves = new Array(9).fill(null);
 // slot alvo quando usuário clica em "Adicionar" num slot vazio (null ou 0-based index)
 let smeargleTargetSlot = null;
 
+// Garantir estilos visuais para o slot alvo
+function ensureSmeargleStyles() {
+    if (document.getElementById('smeargle-slot-styles')) return;
+    const css = `
+        .selected-move-item.selected-move-empty { display:flex; align-items:center; gap:8px; padding:8px; border-radius:8px; transition: box-shadow 200ms ease, transform 120ms ease, outline-color 200ms ease; }
+        .selected-move-item.selected-move-empty .btn-add-slot { background:#ffd700;color:#23284a;border:none;padding:6px 8px;border-radius:6px;cursor:pointer }
+        .selected-move-item.selected-move-empty.slot-active { outline: 3px solid rgba(255,215,0,0.95); box-shadow: 0 10px 30px rgba(255,215,0,0.18); transform: translateY(-4px); }
+    `;
+    const s = document.createElement('style');
+    s.id = 'smeargle-slot-styles';
+    s.appendChild(document.createTextNode(css));
+    document.head.appendChild(s);
+}
+
 // Ícones por tipo
 const TIPO_ICONS = {
     'Normal': 'fa-circle',
@@ -44,6 +58,7 @@ const TIPO_ICONS = {
 
 function initSmeargle() {
     console.log('🎨 Inicializando Smeargle Builder...');
+    ensureSmeargleStyles();
     carregarDadosSmeargle();
 }
 
@@ -446,7 +461,7 @@ function atualizarCardSmeargle() {
                 } else {
                     const active = smeargleTargetSlot === index;
                     items.push(`
-                        <div class="selected-move-item selected-move-empty">
+                        <div class="selected-move-item selected-move-empty${active ? ' slot-active' : ''}">
                             <span class="move-number">${index + 1}</span>
                             <span class="move-info"><em>Slot livre</em></span>
                             <button class="btn-add-slot" onclick="iniciarSelecaoSlot(${index})" style="margin-left:8px;">
