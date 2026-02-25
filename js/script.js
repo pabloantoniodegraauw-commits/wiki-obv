@@ -2243,11 +2243,15 @@ window.addEventListener('DOMContentLoaded', function() {
             // Atualizar Pokémon existente (NUNCA adicionar novo)
             const temEV = todosPokemons[index].EV && todosPokemons[index].EV.trim() !== '';
             
-            // Construir objeto com M1-M10 atualizados
+            // Construir objeto com M1-M10 atualizados APENAS para os slots alterados
             const atackUpdates = {};
-            for (let i = 1; i <= 10; i++) {
-                const el = document.getElementById(`edit-m${i}`);
-                if (el) atackUpdates[`M${i}`] = el.value.trim();
+            if (Array.isArray(atacksMudados) && atacksMudados.length > 0) {
+                for (const a of atacksMudados) {
+                    try {
+                        const key = (a.slot || '').toString().toUpperCase(); // ex: M1
+                        if (key) atackUpdates[key] = (a.nome || '').toString().trim();
+                    } catch (e) { /* ignore malformed entry */ }
+                }
             }
 
             todosPokemons[index] = {

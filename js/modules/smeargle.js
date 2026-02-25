@@ -14,7 +14,8 @@ const SHEETS_BASE_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVv
 let smearglePokemonData = [];
 let smeargleMovesData = [];
 let smeargleAtacksData = [];
-let smeargleSelectedMoves = [];
+// smeargleSelectedMoves agora é um array fixo de 9 slots (índices 0..8 -> M1..M9)
+let smeargleSelectedMoves = new Array(9).fill(null);
 
 // Ícones por tipo
 const TIPO_ICONS = {
@@ -220,7 +221,7 @@ function renderizarGolpesSmeargle(golpes) {
         return;
     }
     
-    const nomesSelecionados = smeargleSelectedMoves.map(m => m.nome.toLowerCase());
+    const nomesSelecionados = smeargleSelectedMoves.filter(Boolean).map(m => m.nome.toLowerCase());
     
     grid.innerHTML = golpes.map(golpe => {
         const estaSelecionado = nomesSelecionados.includes(golpe.nome.toLowerCase());
@@ -254,48 +255,51 @@ function renderizarGolpesSmeargle(golpes) {
 
 // Selecionar golpe
 window.selecionarGolpe = function(element) {
-    if (smeargleSelectedMoves.length >= 9) {
+    const golpe = JSON.parse(element.dataset.move);
+
+    // Limite de 9 slots (M1..M9)
+    const totalSelecionados = smeargleSelectedMoves.filter(Boolean).length;
+    if (totalSelecionados >= 9) {
         alert('⚠️ Máximo de 9 golpes atingido!');
         return;
     }
-    
-    const golpe = JSON.parse(element.dataset.move);
-    
+
     // Evitar duplicatas
-    if (smeargleSelectedMoves.some(g => g.nome === golpe.nome)) {
+    if (smeargleSelectedMoves.some(g => g && g.nome === golpe.nome)) {
         alert('⚠️ Este golpe já foi selecionado!');
         return;
     }
-    
-    // VALIDAÇÃO: Verificar se o move pode ser adicionado na próxima posição
-    const proximaPosicao = smeargleSelectedMoves.length + 1;
-    if (!validarPosicaoMove(golpe, proximaPosicao)) {
-        alert(`⚠️ Este golpe só está disponível em: ${obterPosicoesDisponiveis(golpe).join(', ')}\nVocê está tentando adicionar na posição M${proximaPosicao}.`);
+
+    // Determinar posições possíveis para este golpe (ex: ['M1','M3']) e escolher a menor posição livre
+    const posicoesDisponiveis = obterPosicoesDisponiveis(golpe)
+        .map(p => parseInt(p.replace(/^M/i, ''), 10))
+        .filter(n => !isNaN(n) && n >= 1 && n <= 9)
+        .sort((a, b) => a - b);
+
+    // Filtrar apenas posições livres
+    const posicoesLivres = posicoesDisponiveis.filter(n => !smeargleSelectedMoves[n - 1]);
+
+    if (posicoesLivres.length === 0) {
+        alert(`⚠️ Este golpe só está disponível em: ${obterPosicoesDisponiveis(golpe).join(', ')}\nNenhuma das posições disponíveis está livre (M1..M9).`);
         return;
     }
-    
-    smeargleSelectedMoves.push(golpe);
+
+    const slotNum = posicoesLivres[0]; // escolher a menor posição livre
+    smeargleSelectedMoves[slotNum - 1] = golpe;
+
     atualizarCardSmeargle();
     buscarPokemonsCompativeis();
-    
-    // Reordenar grid para mostrar moves selecionados no topo
     reordenarGridMovesOrdenado();
-    
+
     // Feedback visual
     element.style.animation = 'none';
-    setTimeout(() => {
-        element.style.animation = 'pulseSelect 0.4s ease';
-    }, 10);
+    setTimeout(() => { element.style.animation = 'pulseSelect 0.4s ease'; }, 10);
 };
 
 // Validar se um move pode ser adicionado em uma posição específica
 function validarPosicaoMove(golpe, posicao) {
     const posicaoStr = `M${posicao}`;
-    
-    // Buscar todas as posições onde este golpe aparece
     const posicoesDisponiveis = obterPosicoesDisponiveis(golpe);
-    
-    // Verificar se a posição desejada está disponível
     return posicoesDisponiveis.includes(posicaoStr);
 }
 
@@ -338,25 +342,25 @@ function reordenarGridMovesOrdenado() {
                (!filtros.categoria || golpe.categoria === filtros.categoria) &&
                (!filtros.local || golpe.local === filtros.local);
     });
-    
-    // Separar moves selecionados e não selecionados
-    const movesSelecionados = [];
-    const movesNaoSelecionados = [];
-    
-    const nomesSelecionados = smeargleSelectedMoves.map(m => m.nome.toLowerCase());
-    
-    movesFiltrados.forEach(move => {
-        const index = nomesSelecionados.indexOf(move.nome.toLowerCase());
-        if (index !== -1) {
-            // Adicionar na ordem de seleção
-            movesSelecionados[index] = move;
-        } else {
-            movesNaoSelecionados.push(move);
-        }
-    });
-    
-    // Remover undefined do array (caso haja gaps)
-    const movesOrdenados = movesSelecionados.filter(m => m).concat(movesNaoSelecionados);
+        
+        // Separar moves selecionados (por slot) e não selecionados
+        const movesSelecionados = [];
+        const movesNaoSelecionados = [];
+        // Mapa nome -> slotIndex (0-based)
+        const selectedMap = {};
+        smeargleSelectedMoves.forEach((m, i) => { if (m) selectedMap[m.nome.toLowerCase()] = i; });
+
+        movesFiltrados.forEach(move => {
+            const key = move.nome.toLowerCase();
+            if (selectedMap.hasOwnProperty(key)) {
+                movesSelecionados[selectedMap[key]] = move; // posicione pelo slot
+            } else {
+                movesNaoSelecionados.push(move);
+            }
+        });
+
+        // Concatena mantendo ordem por slot (removendo gaps) e depois os não selecionados
+        const movesOrdenados = movesSelecionados.filter(Boolean).concat(movesNaoSelecionados);
     
     renderizarGolpesSmeargle(movesOrdenados);
 }
@@ -370,10 +374,12 @@ function atualizarCardSmeargle() {
     const movesCount = document.getElementById('movesCount');
     
     // Contar golpes
-    movesCount.textContent = smeargleSelectedMoves.length;
-    
-    // Calcular tipo dominante
-    const tipoDom = tipoDominante(smeargleSelectedMoves);
+    // Contagem de slots preenchidos
+    const countSelected = smeargleSelectedMoves.filter(Boolean).length;
+    movesCount.textContent = countSelected;
+
+    // Calcular tipo dominante a partir dos moves preenchidos
+    const tipoDom = tipoDominante(smeargleSelectedMoves.filter(Boolean));
     
     // Aplicar estilo dinâmico
     card.className = `smeargle-card type-${tipoDom.toLowerCase()}`;
@@ -385,21 +391,36 @@ function atualizarCardSmeargle() {
     typeBadge.innerHTML = `<span class="type-badge type-${tipoDom.toLowerCase()}">${tipoDom}</span>`;
     
     // Atualizar lista de golpes
-    if (smeargleSelectedMoves.length === 0) {
+    if (countSelected === 0) {
         movesList.innerHTML = '<div class="no-moves-yet">Nenhum golpe selecionado</div>';
     } else {
-        movesList.innerHTML = smeargleSelectedMoves.map((golpe, index) => `
-            <div class="selected-move-item">
-                <span class="move-number">${index + 1}</span>
-                <span class="move-info">
-                    <strong>${golpe.nome}</strong>
-                    <small>${golpe.tipo} • ${golpe.categoria}</small>
-                </span>
-                <button class="btn-remove-move" onclick="removerGolpe(${index})">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        `).join('');
+        // Renderizar cada slot (M1..M9) mantendo posições vazias
+        const items = [];
+        for (let index = 0; index < smeargleSelectedMoves.length; index++) {
+            const golpe = smeargleSelectedMoves[index];
+            if (golpe) {
+                items.push(`
+                    <div class="selected-move-item">
+                        <span class="move-number">${index + 1}</span>
+                        <span class="move-info">
+                            <strong>${golpe.nome}</strong>
+                            <small>${golpe.tipo} • ${golpe.categoria}</small>
+                        </span>
+                        <button class="btn-remove-move" onclick="removerGolpe(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `);
+            } else {
+                items.push(`
+                    <div class="selected-move-item selected-move-empty">
+                        <span class="move-number">${index + 1}</span>
+                        <span class="move-info"><em>Slot livre</em></span>
+                    </div>
+                `);
+            }
+        }
+        movesList.innerHTML = items.join('');
     }
 }
 
@@ -418,7 +439,10 @@ function tipoDominante(moves) {
 
 // Remover golpe
 window.removerGolpe = function(index) {
-    smeargleSelectedMoves.splice(index, 1);
+    // Não remover o índice (shift); apenas marcar o slot como vazio
+    if (index >= 0 && index < smeargleSelectedMoves.length) {
+        smeargleSelectedMoves[index] = null;
+    }
     atualizarCardSmeargle();
     buscarPokemonsCompativeis();
     reordenarGridMovesOrdenado();
@@ -426,7 +450,7 @@ window.removerGolpe = function(index) {
 
 // Limpar todos os golpes
 function limparGolpes() {
-    smeargleSelectedMoves = [];
+    smeargleSelectedMoves = new Array(9).fill(null);
     atualizarCardSmeargle();
     reordenarGridMovesOrdenado();
     document.getElementById('compatibleGrid').innerHTML = `
@@ -441,7 +465,8 @@ function limparGolpes() {
 function buscarPokemonsCompativeis() {
     const grid = document.getElementById('compatibleGrid');
     
-    if (smeargleSelectedMoves.length === 0) {
+    const countSelected = smeargleSelectedMoves.filter(Boolean).length;
+    if (countSelected === 0) {
         grid.innerHTML = `
             <div class="no-selection">
                 <i class="fas fa-hand-pointer"></i>
@@ -451,50 +476,42 @@ function buscarPokemonsCompativeis() {
         return;
     }
     
-    // Mostrar o Pokémon de origem de cada golpe selecionado na ordem
-    grid.innerHTML = smeargleSelectedMoves.map((golpe, index) => {
-        // Buscar o pokémon completo na base de dados
+    // Mostrar o Pokémon de origem de cada golpe selecionado por slot (M1..M9)
+    const cards = [];
+    for (let index = 0; index < smeargleSelectedMoves.length; index++) {
+        const golpe = smeargleSelectedMoves[index];
+        if (!golpe) continue;
         const pokemon = smearglePokemonData.find(p => 
             (p['POKEMON'] || '').toLowerCase() === golpe.origem.toLowerCase() ||
             (p['EV'] || '').toLowerCase() === golpe.origem.toLowerCase()
         );
-        
         if (!pokemon) {
-            return `
+            cards.push(`
                 <div class="compatible-card">
                     <div class="compatible-img">
-                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png" 
-                             alt="${golpe.origem}">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png" alt="${golpe.origem}">
                     </div>
                     <div class="compatible-name">${golpe.origem}</div>
-                    <div class="compatible-move">
-                        <i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}
-                    </div>
+                    <div class="compatible-move"><i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}</div>
                 </div>
-            `;
+            `);
+            continue;
         }
-        
-        return `
+        cards.push(`
             <div class="compatible-card">
                 <div class="compatible-img">
                     <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(
                         pokemon['EV'] ? pokemon['EV'].replace(/ /g, '-') : pokemon['POKEMON'],
                         pokemon['POKEMON']) : 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'}" 
-                        alt="${pokemon['POKEMON']}"
-                        onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
+                        alt="${pokemon['POKEMON']}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
                 </div>
                 <div class="compatible-name">${pokemon['EV'] || pokemon['POKEMON']}</div>
-                <div class="compatible-move">
-                    <i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}
-                </div>
-				<div class="compatible-location">
-					<i class="fas fa-map-marker-alt"></i>
-					${formatarLocalizacoesSmeargle(pokemon['LOCALIZAÇÃO'])}
-				</div>
-
+                <div class="compatible-move"><i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}</div>
+                <div class="compatible-location"><i class="fas fa-map-marker-alt"></i>${formatarLocalizacoesSmeargle(pokemon['LOCALIZAÇÃO'])}</div>
             </div>
-        `;
-    }).join('');
+        `);
+    }
+    grid.innerHTML = cards.join('');
 }
 
 // Configurar eventos
@@ -548,15 +565,19 @@ window.fecharModalBuilds = function() {
 function atualizarPreviewBuild() {
     const preview = document.getElementById('buildPreview');
     
-    if (smeargleSelectedMoves.length === 0) {
+    const countSelectedPreview = smeargleSelectedMoves.filter(Boolean).length;
+    if (countSelectedPreview === 0) {
         preview.innerHTML = '<em>Nenhum golpe selecionado. Selecione golpes antes de salvar.</em>';
         preview.style.display = 'block';
         return;
     }
     
-    const buildText = smeargleSelectedMoves.map((move, index) => 
-        `m${index + 1} - ${move.nome} - ${move.origem}`
-    ).join(' / ');
+    const parts = [];
+    for (let i = 0; i < smeargleSelectedMoves.length; i++) {
+        const move = smeargleSelectedMoves[i];
+        if (move) parts.push(`m${i + 1} - ${move.nome} - ${move.origem}`);
+    }
+    const buildText = parts.join(' / ');
     
     preview.innerHTML = `<strong>Preview:</strong> ${buildText}`;
     preview.style.display = 'block';
@@ -571,7 +592,8 @@ window.salvarBuildAtual = async function() {
         return;
     }
     
-    if (smeargleSelectedMoves.length === 0) {
+    const countToSave = smeargleSelectedMoves.filter(Boolean).length;
+    if (countToSave === 0) {
         alert('⚠️ Selecione pelo menos um golpe antes de salvar!');
         return;
     }
@@ -654,8 +676,8 @@ async function carregarBuilds() {
 // Aplicar uma build selecionada
 window.aplicarBuild = function(buildCompleta, nomeBuild) {
     try {
-        // Limpar seleção atual
-        smeargleSelectedMoves = [];
+        // Limpar seleção atual (usar array fixo de 9 slots)
+        smeargleSelectedMoves = new Array(9).fill(null);
         
         // Parsear a build: "m1 - Shadow Ball - Chandelure / m2 - ..."
         const moves = buildCompleta.split(' / ').map(moveStr => {
@@ -701,8 +723,30 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
             return;
         }
         
-        // Aplicar os moves
-        smeargleSelectedMoves = moves;
+        // Aplicar os moves em slots fixos (se a build indicar o slot, caso contrário preencher sequencialmente)
+        const arr = new Array(9).fill(null);
+        let nextIdx = 0;
+        moves.forEach((mv, i) => {
+            // A build original pode ter o slot no começo (ex: "m1 - Shadow Ball - Chandelure").
+            // Aqui tentamos detectar o slot a partir da string original (moves variable contains found move objects),
+            // mas se não houver informação de slot, preenchemos sequencialmente no próximo slot livre.
+            // Como fallback usamos a ordem encontrada.
+            if (mv && mv.local) {
+                // tentar usar o campo local se existir (ex: 'M1')
+                const num = parseInt((mv.local || '').replace(/^M/i, ''), 10);
+                if (!isNaN(num) && num >= 1 && num <= 9) {
+                    arr[num - 1] = mv;
+                    return;
+                }
+            }
+            // fallback: preencher próximo slot livre
+            while (nextIdx < arr.length && arr[nextIdx]) nextIdx++;
+            if (nextIdx < arr.length) {
+                arr[nextIdx] = mv;
+                nextIdx++;
+            }
+        });
+        smeargleSelectedMoves = arr;
         
         // Atualizar interface
         atualizarCardSmeargle();
