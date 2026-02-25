@@ -158,7 +158,8 @@ function extrairGolpesSmeargle(pokemons) {
                         efeito: atackDetalhes['EFEITO'] || '',
                         tipo: atackDetalhes['TYPE'] || '',
                         categoria: atackDetalhes['CATEGORIA'] || '',
-                        origem: pokemon['POKEMON'],
+                        origem: (pokemon['EV'] && pokemon['EV'].toString().trim()) ? pokemon['EV'].toString().trim() : (pokemon['POKEMON'] || '').toString().trim(),
+                        origem_pokemon: (pokemon['POKEMON'] || '').toString().trim(),
                         local: coluna
                     };
                     golpesValidos++;
@@ -553,6 +554,15 @@ function buscarPokemonsCompativeis() {
             (p['EV'] || '').toLowerCase() === golpe.origem.toLowerCase()
         );
         if (!pokemon) {
+            console.warn(`[Smeargle] Não encontrou Pokémon para origem="${golpe.origem}" (procurando por M${index + 1}: ${golpe.nome}). Tentando sugerir candidatos...`);
+            // tentar sugerir candidatos aproximados (busca por substring no POKEMON/EV)
+            const termo = (golpe.origem || '').toLowerCase().split(/\s|\(|\-|_/)[0];
+            const candidatos = smearglePokemonData.filter(p => {
+                const pok = (p['POKEMON'] || '').toLowerCase();
+                const ev = (p['EV'] || '').toLowerCase();
+                return pok.includes(termo) || ev.includes(termo);
+            }).slice(0, 12).map(p => ({POKEMON: p['POKEMON'], EV: p['EV']}));
+            console.warn('[Smeargle] Candidatos encontrados:', candidatos);
             cards.push(`
                 <div class="compatible-card">
                     <div class="compatible-img">
