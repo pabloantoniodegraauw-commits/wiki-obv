@@ -1613,11 +1613,20 @@ window.addEventListener('DOMContentLoaded', function() {
             const overlay = document.createElement('div');
             overlay.id = 'modalEdicaoOverlay';
             overlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
-            
+
+            // Garantir carregamento dos ataques antes de abrir o modal
+            if (!window.todosAtacks || window.todosAtacks.length === 0) {
+                // Carregar e aguardar
+                carregarDadosAtacks().then(() => {
+                    criarModalEdicao(nomeReal, nomeDisplay, numero, stats, localizacao, tms, pokemonData);
+                });
+                return;
+            }
+
             // Obter moves atuais do pokémon (M1-M10 da planilha)
             let movesHTML = '';
-            const atackDatalistOptions = todosAtacks.map(a => `<option value="${(a['ATACK'] || a.ATACK || '')}">`).join('');
-            
+            const atackDatalistOptions = window.todosAtacks.map(a => `<option value="${(a['ATACK'] || a.ATACK || '')}">`).join('');
+
             for (let i = 1; i <= 10; i++) {
                 const slotKey = `M${i}`;
                 // Tentar encontrar o valor do slot nos dados do pokémon (vários formatos possíveis)
@@ -1639,6 +1648,7 @@ window.addEventListener('DOMContentLoaded', function() {
                         <input type="text" 
                             id="edit-m${i}" 
                             value="${currentMove}" 
+                            data-original-value="${currentMove}"
                             list="datalistAtacks"
                             placeholder="Selecione o atack..." 
                             class="modal-atack-input"
@@ -1673,6 +1683,7 @@ window.addEventListener('DOMContentLoaded', function() {
                                 value="${numF} - ${tm.nome}" 
                                 list="datalistTMs"
                                 data-tm-numero-original="${tm.numero}"
+                                data-original-value="${numF} - ${tm.nome}"
                                 placeholder="Selecione o TM..." 
                                 autocomplete="off">
                             <button class="modal-clear-btn" onclick="this.parentElement.querySelector('input').value='';" title="Limpar TM">
@@ -2151,7 +2162,10 @@ window.addEventListener('DOMContentLoaded', function() {
                 const el = document.getElementById(`edit-m${i}`);
                 if (el) {
                     const nomeAtack = el.value.trim();
-                    // Sempre salva apenas o nome do ataque, sem detalhes
+                    const orig = (el.getAttribute('data-original-value') || '').toString().trim();
+                    // Se não houve alteração, pular (evita sobrescrever/limpar sem querer)
+                    if (orig === nomeAtack) continue;
+                    // Salvar alteração (pode ser string vazia para remoção)
                     atacksMudados.push({ slot: `m${i}`, nome: nomeAtack });
                 }
             }
@@ -2161,8 +2175,12 @@ window.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('#modalEdicaoOverlay .modal-tm-input').forEach(input => {
                 const valor = input.value.trim();
                 const numOriginal = input.getAttribute('data-tm-numero-original') || '';
+                const origText = (input.getAttribute('data-original-value') || '').toString().trim();
                 const isNew = input.classList.contains('modal-tm-new');
-                
+
+                // Se não houve alteração no campo (valor igual ao original), ignorar
+                if (!isNew && origText && origText === valor) return;
+
                 if (valor) {
                     // Extrair número do TM do valor (formato: "TM01 - Nome" ou "HM01 - Nome")
                     const match = valor.match(/^(TM|HM)(\d+)\s*-\s*(.+)$/i);
@@ -2305,22 +2323,21 @@ window.addEventListener('DOMContentLoaded', function() {
                         for (const atack of atacksMudados) {
                             if (atack.nome !== undefined) {
                                 promessas.push(
-                                    fetch(APPS_SCRIPT_URL, {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'text/plain' },
-                                        body: JSON.stringify({
-                                            action: 'atualizarAtack',
-                                            nomePokemon: nomeOriginal,
-                                            slot: atack.slot,
-                                            nomeAtack: atack.nome,
-                                            email: adminUser.email,
-                                            authToken: adminUser.authToken
-                                        })
-                                    }).then(() => {
-                                        console.log(`✅ ${atack.slot} salvo: ${atack.nome}`);
-                                    }).catch(e => {
-                                        console.warn(`⚠️ Erro ao salvar ${atack.slot}:`, e);
-                                    })
+                                    (async () => {
+                                        try {
+                                            const form = new URLSearchParams();
+                                            form.append('action', 'atualizarAtack');
+                                            form.append('nomePokemon', nomeOriginal);
+                                            form.append('slot', atack.slot);
+                                            form.append('nomeAtack', atack.nome);
+                                            form.append('email', adminUser.email || '');
+                                            form.append('authToken', adminUser.authToken || '');
+                                            await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                                            console.log(`✅ ${atack.slot} salvo: ${atack.nome}`);
+                                        } catch (e) {
+                                            console.warn(`⚠️ Erro ao salvar ${atack.slot}:`, e);
+                                        }
+                                    })()
                                 );
                             }
                         }
@@ -2330,24 +2347,21 @@ window.addEventListener('DOMContentLoaded', function() {
                     if (tmsMudados && tmsMudados.length > 0) {
                         console.log('💾 Salvando TMs em paralelo...');
                         for (const tm of tmsMudados) {
-                            promessas.push(
-                                fetch(APPS_SCRIPT_URL, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'text/plain' },
-                                    body: JSON.stringify({
-                                        action: 'atualizarOrigemTM',
-                                        tmNumero: tm.numero,
-                                        nomePokemon: tm.tipo === 'remover' ? '' : nomeOriginal,
-                                        nomePokemonRemover: tm.pokemonRemover || nomeOriginal,
-                                        email: adminUser.email,
-                                        authToken: adminUser.authToken
-                                    })
-                                }).then(() => {
-                                    console.log(`✅ TM${tm.numero} ${tm.tipo === 'remover' ? 'removido' : 'salvo'}`);
-                                }).catch(e => {
-                                    console.warn(`⚠️ Erro ao salvar TM${tm.numero}:`, e);
-                                })
-                            );
+                                promessas.push((async () => {
+                                    try {
+                                        const form = new URLSearchParams();
+                                        form.append('action', 'atualizarOrigemTM');
+                                        form.append('tmNumero', tm.numero);
+                                        form.append('nomePokemon', tm.tipo === 'remover' ? '' : nomeOriginal);
+                                        form.append('nomePokemonRemover', tm.pokemonRemover || nomeOriginal);
+                                        form.append('email', adminUser.email || '');
+                                        form.append('authToken', adminUser.authToken || '');
+                                        await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                                        console.log(`✅ TM${tm.numero} ${tm.tipo === 'remover' ? 'removido' : 'salvo'}`);
+                                    } catch (e) {
+                                        console.warn(`⚠️ Erro ao salvar TM${tm.numero}:`, e);
+                                    }
+                                })());
                         }
                     }
 
@@ -2364,17 +2378,21 @@ window.addEventListener('DOMContentLoaded', function() {
                             if (del.tmNumero !== undefined) payload.tmNumero = del.tmNumero;
                             if (del.slot !== undefined) payload.slot = del.slot;
                             
-                            promessas.push(
-                                fetch(APPS_SCRIPT_URL, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'text/plain' },
-                                    body: JSON.stringify(payload)
-                                }).then(() => {
+                            promessas.push((async () => {
+                                try {
+                                    const form = new URLSearchParams();
+                                    form.append('action', payload.action);
+                                    form.append('email', payload.email || '');
+                                    form.append('authToken', payload.authToken || '');
+                                    if (payload.nomePokemon) form.append('nomePokemon', payload.nomePokemon);
+                                    if (payload.tmNumero !== undefined) form.append('tmNumero', payload.tmNumero);
+                                    if (payload.slot !== undefined) form.append('slot', payload.slot);
+                                    await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
                                     console.log(`✅ Sugestão excluída: ${del.action}`);
-                                }).catch(e => {
+                                } catch (e) {
                                     console.warn(`⚠️ Erro ao excluir sugestão:`, e);
-                                })
-                            );
+                                }
+                            })());
                         }
                     }
 
@@ -2484,15 +2502,24 @@ window.addEventListener('DOMContentLoaded', function() {
 
         // Carregar base de atacks
         async function carregarDadosAtacks() {
-            if (todosAtacks.length > 0) return;
+            if (window.todosAtacks && window.todosAtacks.length > 0) return;
             try {
                 const response = await fetch(APPS_SCRIPT_URL + '?acao=obter_atacks');
                 const resultado = await response.json();
                 if (resultado.success && resultado.data && resultado.data.length > 0) {
-                    todosAtacks = resultado.data;
-                    console.log('✅ Atacks carregados:', todosAtacks.length);
+                    window.todosAtacks = resultado.data;
+                    console.log('✅ Atacks carregados:', window.todosAtacks.length);
+                } else {
+                    window.todosAtacks = [];
+                }
+                // Log para debug
+                if (window.todosAtacks && window.todosAtacks.length > 0) {
+                    console.log('[DEBUG todosAtacks] Primeiro ataque:', window.todosAtacks[0]);
+                } else {
+                    console.log('[DEBUG todosAtacks] Nenhum ataque carregado.');
                 }
             } catch (e) {
+                window.todosAtacks = [];
                 console.warn('⚠️ Erro ao carregar Atacks:', e);
             }
         }
@@ -2738,14 +2765,15 @@ window.addEventListener('DOMContentLoaded', function() {
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             try {
-                const resp = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ action: 'atualizarSugestao', nomePokemon, sugestao, email: user.email, authToken: user.authToken })
-                });
-                const texto = await resp.text();
-                console.log('📥 Resposta salvarSugestaoLoc:', texto);
-                let resultado;
-                try { resultado = JSON.parse(texto); } catch(_e) { resultado = { sucesso: false, mensagem: 'Resposta inválida do servidor' }; }
+                const form = new URLSearchParams();
+                form.append('action', 'atualizarSugestao');
+                form.append('nomePokemon', nomePokemon);
+                form.append('sugestao', sugestao);
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                let resultado = {};
+                try { resultado = await resp.json(); } catch (_e) { try { const txt = await resp.text(); resultado = JSON.parse(txt || '{}'); } catch (__) { resultado = { sucesso: false, mensagem: 'Resposta inválida do servidor' }; } }
                 if (resultado.sucesso || resultado.success) {
                     // ⚡ Push imediato: atualizar dados locais e card no DOM
                     const nomeNorm = normalizarNome(nomePokemon);
@@ -2867,11 +2895,15 @@ window.addEventListener('DOMContentLoaded', function() {
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             try {
-                const resp = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ action: 'salvarSugestaoAtack', nomePokemon, sugestao: sugestaoFormatada, email: user.email, authToken: user.authToken })
-                });
-                const resultado = JSON.parse(await resp.text());
+                const form = new URLSearchParams();
+                form.append('action', 'salvarSugestaoAtack');
+                form.append('nomePokemon', nomePokemon);
+                form.append('sugestao', sugestaoFormatada);
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                let resultado = {};
+                try { resultado = await resp.json(); } catch (e) { try { const txt = await resp.text(); resultado = JSON.parse(txt || '{}'); } catch (_) { resultado = {}; } }
                 if (resultado.sucesso || resultado.success) {
                     // ⚡ Push imediato: atualizar SUGESTAO_ATACKS no array local
                     const nomeNorm = normalizarNome(nomePokemon);
@@ -2961,22 +2993,20 @@ window.addEventListener('DOMContentLoaded', function() {
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             try {
-                const resp = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({
-                        action: 'adicionarAtack',
-                        atack: nome,
-                        type: document.getElementById('novoAtackType').value,
-                        categoria: document.getElementById('novoAtackCategoria').value,
-                        pp: document.getElementById('novoAtackPP').value || '',
-                        power: document.getElementById('novoAtackPower').value || '',
-                        accuracy: document.getElementById('novoAtackAccuracy').value || '',
-                        gen: document.getElementById('novoAtackGen').value || '',
-                        email: user.email,
-                        authToken: user.authToken
-                    })
-                });
-                const resultado = JSON.parse(await resp.text());
+                const form = new URLSearchParams();
+                form.append('action', 'adicionarAtack');
+                form.append('atack', nome);
+                form.append('type', document.getElementById('novoAtackType').value);
+                form.append('categoria', document.getElementById('novoAtackCategoria').value);
+                form.append('pp', document.getElementById('novoAtackPP').value || '');
+                form.append('power', document.getElementById('novoAtackPower').value || '');
+                form.append('accuracy', document.getElementById('novoAtackAccuracy').value || '');
+                form.append('gen', document.getElementById('novoAtackGen').value || '');
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                let resultado = {};
+                try { resultado = await resp.json(); } catch (e) { try { const txt = await resp.text(); resultado = JSON.parse(txt || '{}'); } catch (_) { resultado = {}; } }
                 if (resultado.sucesso || resultado.success) {
                     alert('Atack adicionado com sucesso!');
                     todosAtacks.push({ ATACK: nome }); // Atualizar cache local
@@ -3084,11 +3114,16 @@ window.addEventListener('DOMContentLoaded', function() {
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             try {
-                const resp = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({ action: 'atualizarSugestaoTM', tmNumero, sugestao, nomePokemon, email: user.email, authToken: user.authToken })
-                });
-                const resultado = JSON.parse(await resp.text());
+                const form = new URLSearchParams();
+                form.append('action', 'atualizarSugestaoTM');
+                form.append('tmNumero', tmNumero);
+                form.append('sugestao', sugestao);
+                form.append('nomePokemon', nomePokemon);
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                let resultado = {};
+                try { resultado = await resp.json(); } catch (e) { try { const txt = await resp.text(); resultado = JSON.parse(txt || '{}'); } catch (_) { resultado = {}; } }
                 if (resultado.sucesso || resultado.success) {
                     // ⚡ Push imediato: atualizar card no DOM
                     const nomeNorm = normalizarNome(nomePokemon);
@@ -3173,22 +3208,20 @@ window.addEventListener('DOMContentLoaded', function() {
             botao.disabled = true;
             botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
             try {
-                const resp = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST', headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({
-                        action: 'adicionarTM',
-                        tipoItem: 'TM',
-                        numero: numero,
-                        nome: nome,
-                        tipagem: document.getElementById('novoTMTipagem').value,
-                        origem: '',
-                        tipoDrop: document.getElementById('novoTMTipoDrop').value,
-                        sugestao: document.getElementById('novoTMSugestao').value.trim(),
-                        email: user.email,
-                        authToken: user.authToken
-                    })
-                });
-                const resultado = JSON.parse(await resp.text());
+                const form = new URLSearchParams();
+                form.append('action', 'adicionarTM');
+                form.append('tipoItem', 'TM');
+                form.append('numero', numero);
+                form.append('nome', nome);
+                form.append('tipagem', document.getElementById('novoTMTipagem').value);
+                form.append('origem', '');
+                form.append('tipoDrop', document.getElementById('novoTMTipoDrop').value);
+                form.append('sugestao', document.getElementById('novoTMSugestao').value.trim());
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                let resultado = {};
+                try { resultado = await resp.json(); } catch (e) { try { const txt = await resp.text(); resultado = JSON.parse(txt || '{}'); } catch (_) { resultado = {}; } }
                 if (resultado.sucesso || resultado.success) {
                     document.getElementById('modalSugestao').remove();
                     mostrarToastSucesso('Novo TM adicionado com sucesso!');

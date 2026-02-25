@@ -97,16 +97,16 @@
     // Registrar logout nos logs
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
     
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({
-        action: 'log',
-        email: user.email,
-        nickname: user.nickname,
-        evento: 'logout'
-      })
-    }).catch(err => console.error('Erro ao registrar logout:', err));
+    try {
+      const form = new URLSearchParams();
+      form.append('action', 'log');
+      form.append('email', user.email || '');
+      form.append('nickname', user.nickname || '');
+      form.append('evento', 'logout');
+      fetch(APPS_SCRIPT_URL, { method: 'POST', body: form }).catch(err => console.error('Erro ao registrar logout:', err));
+    } catch (err) {
+      console.error('Erro ao construir payload de logout:', err);
+    }
 
     // Limpar localStorage e redirecionar
     localStorage.clear();
@@ -146,16 +146,16 @@ function startActivityPing(user) {
   const PING_INTERVAL = 5 * 60 * 1000; // 5 minutos
 
   function sendPing() {
-    fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({
-        action: 'log',
-        email: user.email,
-        nickname: user.nickname,
-        evento: 'ping'
-      })
-    }).catch(err => console.error('Erro no ping:', err));
+    try {
+      const form = new URLSearchParams();
+      form.append('action', 'log');
+      form.append('email', user.email || '');
+      form.append('nickname', user.nickname || '');
+      form.append('evento', 'ping');
+      fetch(APPS_SCRIPT_URL, { method: 'POST', body: form }).catch(err => console.error('Erro no ping:', err));
+    } catch (err) {
+      console.error('Erro ao construir payload de ping:', err);
+    }
   }
 
   // Enviar primeiro ping
@@ -166,11 +166,16 @@ function startActivityPing(user) {
 
   // Tentar registrar logout ao fechar página
   window.addEventListener('beforeunload', () => {
-    navigator.sendBeacon(APPS_SCRIPT_URL, JSON.stringify({
-      action: 'log',
-      email: user.email,
-      nickname: user.nickname,
-      evento: 'logout'
-    }));
+    try {
+      const params = new URLSearchParams();
+      params.append('action', 'log');
+      params.append('email', user.email || '');
+      params.append('nickname', user.nickname || '');
+      params.append('evento', 'logout');
+      // sendBeacon may not set form content-type; keep best-effort
+      navigator.sendBeacon(APPS_SCRIPT_URL, params.toString());
+    } catch (err) {
+      // fallback silent
+    }
   });
 }

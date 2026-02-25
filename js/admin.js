@@ -292,16 +292,17 @@ async function approveMember(email) {
   if (!confirm('Deseja aprovar este membro?')) return;
 
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'approveUser',
-        email: email,
-        authToken: adminUser.authToken, // Token validado no backend
-        adminEmail: adminUser.email // Fallback (backend prefere o token)
-      })
-    });
-
+    const form = new URLSearchParams();
+    form.append('action', 'approveUser');
+    form.append('email', email);
+    form.append('authToken', adminUser.authToken || '');
+    form.append('adminEmail', adminUser.email || '');
+    const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+    const data = await resp.json().catch(() => ({}));
+    if (!data.success) {
+      alert(data.message || 'Erro ao aprovar membro.');
+      return;
+    }
     alert('Membro aprovado com sucesso!');
     loadMembers();
   } catch (error) {
@@ -317,16 +318,17 @@ async function rejectMember(email) {
   if (!confirm('Deseja rejeitar este cadastro?')) return;
 
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'rejectUser',
-        email: email,
-        authToken: adminUser.authToken, // Token validado no backend
-        adminEmail: adminUser.email // Fallback
-      })
-    });
-
+    const form = new URLSearchParams();
+    form.append('action', 'rejectUser');
+    form.append('email', email);
+    form.append('authToken', adminUser.authToken || '');
+    form.append('adminEmail', adminUser.email || '');
+    const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+    const data = await resp.json().catch(() => ({}));
+    if (!data.success) {
+      alert(data.message || 'Erro ao rejeitar membro.');
+      return;
+    }
     alert('Cadastro rejeitado.');
     loadMembers();
   } catch (error) {
@@ -342,17 +344,18 @@ async function makeAdmin(email) {
   if (!confirm('Deseja tornar este membro um administrador?')) return;
 
   try {
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'setRole',
-        email: email,
-        role: 'admin',
-        authToken: adminUser.authToken, // Token validado no backend
-        adminEmail: adminUser.email // Fallback
-      })
-    });
-
+    const form = new URLSearchParams();
+    form.append('action', 'setRole');
+    form.append('email', email);
+    form.append('role', 'admin');
+    form.append('authToken', adminUser.authToken || '');
+    form.append('adminEmail', adminUser.email || '');
+    const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+    const data = await resp.json().catch(() => ({}));
+    if (!data.success) {
+      alert(data.message || 'Erro ao promover membro.');
+      return;
+    }
     alert('Membro promovido a administrador!');
     loadMembers();
   } catch (error) {
@@ -369,24 +372,18 @@ async function removeAdmin(email) {
 
   try {
     // Não precisa verificar no front, o backend já valida
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'setRole',
-        email: email,
-        role: 'membro',
-        authToken: adminUser.authToken, // Token validado no backend
-        adminEmail: adminUser.email // Fallback
-      })
-    });
-
-    const data = await response.json();
-    
+    const form = new URLSearchParams();
+    form.append('action', 'setRole');
+    form.append('email', email);
+    form.append('role', 'membro');
+    form.append('authToken', adminUser.authToken || '');
+    form.append('adminEmail', adminUser.email || '');
+    const response = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+    const data = await response.json().catch(() => ({}));
     if (!data.success) {
       alert(data.message || 'Erro ao remover privilégios.');
       return;
     }
-
     alert('Privilégios removidos.');
     loadMembers();
   } catch (error) {
@@ -408,31 +405,20 @@ async function deleteMember(email) {
   }
 
   try {
-    const payload = {
-      action: 'deleteUser',
-      email: email,
-      authToken: adminUser.authToken,
-      adminEmail: adminUser.email
-    };
-    
-    console.log('📤 Enviando payload:', payload);
-    console.log('📍 URL:', APPS_SCRIPT_URL);
-    
-    // Enviar requisição (modo no-cors porque Apps Script tem CORS limitado)
-    await fetch(APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify(payload)
-    }).catch(err => console.log('Fetch error (expected with no-cors):', err));
-
-    console.log('✅ Requisição enviada');
-    
-    // Aguardar 2 segundos e recarregar
-    alert('Membro removido com sucesso!\n\nAguarde enquanto a tabela é atualizada...');
-    setTimeout(() => {
-      console.log('🔄 Recarregando membros...');
-      loadMembers();
-    }, 2000);
+    const form = new URLSearchParams();
+    form.append('action', 'deleteUser');
+    form.append('email', email);
+    form.append('authToken', adminUser.authToken || '');
+    form.append('adminEmail', adminUser.email || '');
+    console.log('📤 Enviando deleteUser');
+    const response = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+    const data = await response.json().catch(() => ({}));
+    if (data.success) {
+      alert('Membro removido com sucesso!\n\nAguarde enquanto a tabela é atualizada...');
+      setTimeout(() => { loadMembers(); }, 1000);
+    } else {
+      alert(data.message || 'Erro ao remover membro.');
+    }
     
   } catch (error) {
     console.error('❌ Erro ao deletar membro:', error);

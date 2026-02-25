@@ -518,6 +518,46 @@ h1 {
     font-weight: bold;
 }
 
+/* Estilo da tabela de ataques inspirado nos Pokemon cards */
+.atk-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: linear-gradient(145deg, rgba(30,60,114,0.6), rgba(15,30,60,0.85));
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+    font-size: 14px;
+}
+.atk-table th {
+    background: linear-gradient(90deg, rgba(255,215,0,0.95), rgba(136,211,255,0.85));
+    color: #1e2746;
+    padding: 10px 12px;
+    font-weight: 700;
+    border-bottom: 2px solid rgba(255,215,0,0.25);
+}
+.atk-table td {
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.02);
+    color: #fff;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+}
+.atk-table tbody tr:hover td {
+    background: rgba(255,255,255,0.02);
+    transform: translateY(-2px);
+}
+.atk-table .type-badge {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.85em;
+}
+
+/* Ajuste responsivo */
+@media (max-width: 820px) {
+    .atk-table th, .atk-table td { padding: 8px 6px; font-size: 13px; }
+}
+
 .pokemon-number {
     color: #88d3ff;
     font-size: 0.9em;

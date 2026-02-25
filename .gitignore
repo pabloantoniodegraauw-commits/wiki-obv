@@ -1,0 +1,26 @@
+# Sistema
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node
+node_modules/
+
+# Environment
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OneDrive / Office temp
+~$*
+
+# Others
+*.bak
+*.tmp

@@ -1,196 +1,55 @@
-<!-- Stage Changes - Nova aba do site -->
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<div class="stage-changes-container">
-    <h2>Stage Changes</h2>
-    <div style="display: flex; gap: 16px; justify-content: center; margin-bottom: 24px;">
-        <button id="btnStage" class="tab-btn active" style="min-width: 180px;">Stage Changes</button>
-        <button id="btnEffects" class="tab-btn" style="min-width: 180px;">Efeitos</button>
-        <button id="btnAtacks" class="tab-btn" style="min-width: 180px;">Atacks</button>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Stage Changes</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="tabs-nav">
+            <button id="btnStage" class="tab-btn active">Stage Changes</button>
+            <button id="btnEffects" class="tab-btn">Efeitos</button>
+            <button id="btnAtacks" class="tab-btn">Atacks</button>
+        </div>
+        <div id="stagePage" style="display:block;">
+            <h2>O sistema de Stage Changes</h2>
+            <p>O sistema de Stage Changes para o otPokémon permite que os jogadores alterem temporariamente os atributos de seus Pokémon através de movimentos especiais. Alguns desses movimentos podem aumentar ou diminuir os atributos de Attack, Sp Attack, Defense, Sp Def e Speed em um ou mais estágios.</p>
+            <p>Essas alterações são persistentes e não são canceladas quando o Pokémon é recolhido em sua Poké Ball, permitindo que o Pokémon mantenha o bônus ou penalidade durante a batalha. Cada estágio de alteração de atributo tem uma duração de 15 segundos.</p>
+            <p>Os jogadores devem usar esses movimentos estrategicamente, pois eles podem ser uma vantagem significativa em batalha. No entanto, o efeito da mudança de estágio pode ser revertido pelos movimentos que alteram os estágios opostos, portanto, os jogadores devem estar cientes das fraquezas de seus próprios Pokémon e dos adversários para obter o máximo benefício dos movimentos Stage Changes.</p>
+        </div>
+        <div id="effectsPage" style="display:none;">
+            <h2>Efeitos Negativos</h2>
+
+            <p>Ao longo de suas jornadas como treinador Pokémon, é crucial compreender os diversos efeitos negativos que seus Pokémon podem enfrentar durante as batalhas. Estes estados prejudiciais podem afetar o desempenho do seu Pokémon, exigindo ações rápidas para restaurar sua condição ideal. Abaixo estão os principais efeitos negativos e seus impactos:</p>
+
+
+            <p>🧪 POISON: Causa dano periódico ao Pokémon afetado, causando a perda de 40% da vida do Pokémon ao longo de seu efeito fora da Pokébola, dura 10 segundos. Se retornar para a Pokébola, o contador reinicia.</p>
+
+            <p>💤 SLEEP: O Pokémon entra em um sono profundo, sendo impedido de se mover e atacar, dura 5 segundos. Se retornar para a Pokébola, o contador reinicia.</p>
+
+            <p>🔥 BURN: Causa dano periódico ao Pokémon afetado, causando a perda de 20% da vida do Pokémon ao longo de seu efeito fora da Pokébola e fazendo o Pokémon perder 50% da sua força, dura 10 segundos. Se retornar para a Pokébola, o contador reinicia.</p>
+
+            <p>❄️ FREEZE: O Pokémon é congelado, ele fica completamente imóvel e não pode realizar nenhuma ação, dura 5 segundos. Se retornar para a Pokébola, o contador reinicia.</p>
+
+            <p>⚡ PARALYZE: Quando um Pokémon está paralisado, sua velocidade de movimento é reduzida e há uma chance de que ele não consiga realizar uma ação, dobra o tempo de recarga dos ataques de um Pokémon afetado, dura 10 segundos. Se retornar para a Pokébola, o contador reinicia.</p>
+
+            <p>🌀 CONFUSION: Ainda não esta no game  ( O Pokémon do oponente tem 50% de chance de não atacar. Nesse caso eles causam um dano baixo em si mesmos, proporcional ao seu stat ofensivo ).</p>
+
+            <p>❌ Importante: Esses efeitos não funcionam em Pokémon lendários, míticos ou bosses.</p>
+            <p>🛡️ A habilidade Safeguard também impede todos os efeitos negativos.</p>
+
+            <h3>❤️ Recuperação</h3>
+            <p>Para lidar com esses efeitos negativos, você pode utilizar estratégias como:</p>
+
+            <p>Nurse Joy NPC Nurse Joy: Visite um Centro Pokémon e fale com a Enfermeira Joy para curar completamente seus Pokémon.</p>
+            <p>Full Heal Potions: Use potions específicas para o efeito ou utilize uma Full Heal para curar qualquer condição.</p>
+
+        </div>
+        <div id="atacksPage" style="display:none;">
+            <p>Conteúdo de Atacks.</p>
+        </div>
     </div>
-    <div id="stagePage" class="tab-content active"></div>
-    <div id="effectsPage" class="tab-content"></div>
-    <div id="atacksPage" class="tab-content"></div>
-</div>
-        // Corpo
-        const tbody = document.createElement('tbody');
-        dados.forEach(row => {
-            const tr = document.createElement('tr');
-            colunas.forEach(col => {
-                const td = document.createElement('td');
-                td.textContent = row[col] || '';
-                tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-        });
-        table.appendChild(tbody);
-        // DataTable
-        if ($.fn.DataTable.isDataTable(table)) {
-            $(table).DataTable().destroy();
-        }
-        $(table).DataTable({
-            responsive: true,
-            pageLength: 25,
-            order: [[0, 'asc']],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
-            }
-        });
-    }
-    </script>
-            }
-            $(table).DataTable({
-                responsive: true,
-                pageLength: 25,
-                order: [[0, 'asc']],
-                language: {
-        // Function implementation removed
-        // Function implementation removed
-                    } else if (tipo === 'efeitos') {
-                        const efeitos = ['POISON','BURN','FREEZE','PARALYZE','SLEEP'];
-                        filtrados = window.stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
-                        console.log('[StageChanges] Filtrados Efeitos:', filtrados.length);
-                    }
-                    renderizarTabelaStageOuEfeitos(tipo, filtrados);
-                }
-                </script>
-                return !!u && u.role === 'admin';
-            } catch (e) { return false; }
-        }
-
-        function renderizarTabelaAtacks() {
-            const table = document.getElementById('atacksTable');
-            if (!table) return;
-            // Limpar cabeçalho e corpo
-            const head = document.getElementById('atacksTableHead');
-            const body = document.getElementById('atacksTableBody');
-            head.innerHTML = '';
-            body.innerHTML = '';
-            if (!atacksData.length) return;
-            // Cabeçalhos dinâmicos
-            const colunas = Object.keys(atacksData[0]);
-            colunas.forEach(col => {
-                const th = document.createElement('th');
-                th.textContent = col;
-                head.appendChild(th);
-            });
-            if (isAdmin()) {
-                const th = document.createElement('th');
-                th.textContent = 'Ações';
-                head.appendChild(th);
-            }
-            // Linhas
-            atacksData.forEach((row, idx) => {
-                const tr = document.createElement('tr');
-                colunas.forEach(col => {
-                    const td = document.createElement('td');
-                    td.textContent = row[col];
-                    if (isAdmin() && col !== 'ATACK') {
-                        td.contentEditable = true;
-                        td.style.background = 'rgba(255,255,255,0.07)';
-                        td.addEventListener('blur', async function() {
-                            const novoValor = td.textContent.trim();
-                            if (novoValor !== row[col]) {
-                                await salvarEdicaoAtack(row['ATACK'], col, novoValor, td);
-                            }
-                        });
-                    }
-                    tr.appendChild(td);
-                });
-                if (isAdmin()) {
-                    const tdA = document.createElement('td');
-                    tdA.innerHTML = '<span style="color:#ffd700;font-size:1.2em;">✔️</span>';
-                    tr.appendChild(tdA);
-                }
-                body.appendChild(tr);
-            });
-            // DataTable
-            if (atacksTableInstance) {
-                $(table).DataTable().destroy();
-            }
-            atacksTableInstance = $(table).DataTable({
-                responsive: true,
-                pageLength: 25,
-                order: [[0, 'asc']],
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
-                }
-            });
-        }
-
-        async function salvarEdicaoAtack(nomeAtack, campo, valor, td) {
-            td.style.background = '#ffe066';
-            try {
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
-                const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: JSON.stringify({
-                        action: 'atualizarAtack',
-                        nomeAtack,
-                        campo,
-                        valor,
-                        email: user.email,
-                        authToken: user.authToken
-                    })
-                });
-                const result = await resp.json();
-                if (result.success) {
-                    td.style.background = '#b6fcb6';
-                    setTimeout(() => td.style.background = 'rgba(255,255,255,0.07)', 800);
-                } else {
-                    td.style.background = '#ffb3b3';
-                    alert('Erro ao salvar: ' + (result.message || 'Falha desconhecida'));
-                }
-            } catch (e) {
-                td.style.background = '#ffb3b3';
-                alert('Erro ao salvar: ' + e.message);
-            }
-        }
-
-        // Carregar ao abrir aba Atacks
-        document.getElementById('btnAtacks').addEventListener('click', function() {
-            if (!atacksData.length) carregarAtacksParaTabela();
-        });
-        // Removido: todo JS fora de <script>
-        function renderizarTabelaAtacks() {
-            // Function implementation removed
-        }
-        async function salvarEdicaoAtack(nomeAtack, campo, valor, td) {
-            // Function implementation removed
-        }
-        </script>
-        <script>
-        window.stageEffectsData = [];
-        window.carregarStageOuEfeitos = async function(tipo) {
-            console.log('[StageChanges] carregarStageOuEfeitos chamada para tipo:', tipo);
-            if (!window.stageEffectsData.length) {
-                try {
-                    const resp = await fetch('https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_atacks');
-                    const resultado = await resp.json();
-                    console.log('[StageChanges] Resultado do fetch:', resultado);
-                    if (resultado.success && resultado.data && resultado.data.length > 0) {
-                        window.stageEffectsData = resultado.data;
-                        console.log('[StageChanges] Dados carregados:', window.stageEffectsData.length);
-                    } else {
-                        alert('Erro ao carregar ataques!');
-                        return;
-                    }
-                } catch (e) {
-                    alert('Erro ao carregar ataques: ' + e.message);
-                    return;
-                }
-            }
-            let filtrados = [];
-            if (tipo === 'stage') {
-                filtrados = window.stageEffectsData.filter(a => (a['AÇÃO']||'').toUpperCase() === 'STAGE');
-                console.log('[StageChanges] Filtrados STAGE:', filtrados.length);
-            } else if (tipo === 'efeitos') {
-                const efeitos = ['POISON','BURN','FREEZE','PARALYZE','SLEEP'];
-                filtrados = window.stageEffectsData.filter(a => efeitos.includes((a['AÇÃO']||'').toUpperCase()));
-                console.log('[StageChanges] Filtrados Efeitos:', filtrados.length);
-            }
-            renderizarTabelaStageOuEfeitos(tipo, filtrados);
-        }
-        </script>
-        <script src="js/modules/stagechanges-tabs.js"></script>
+    <script src="../js/modules/stagechanges-tabs.js"></script>
+</body>
+</html>

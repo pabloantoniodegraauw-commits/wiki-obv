@@ -1,4 +1,64 @@
 /**
+ * Atualizar ataque de um Pokémon na aba STAGE
+ * Similar à handleAtualizarAtack, mas atua na aba STAGE
+ */
+function handleAtualizarAtackStage(planilha, dados) {
+  try {
+    let abaStage = planilha.getSheetByName('STAGE');
+    if (!abaStage) {
+      return { success: false, message: 'Aba STAGE não encontrada.' };
+    }
+    // Log raw payload for debugging (enabled only when DEBUG=true)
+    if (typeof DEBUG !== 'undefined' && DEBUG) { try { Logger.log('handleAtualizarAtackStage chamado. dados raw: ' + JSON.stringify(dados)); } catch(e) {} }
+    // Aceitar vários nomes de campo enviados pelo frontend (form ou JSON)
+    const getField = (keys) => {
+      for (const k of keys) {
+        if (dados[k] !== undefined && dados[k] !== null) return dados[k];
+      }
+      return '';
+    };
+
+    // Normalizar parâmetros possíveis
+    const nomeOriginalRaw = getField(['nomeAtack','nomeAtack','nomeAtaque','nomeAtaque','atack','atackName','atackNome','atackname','nome','pokemon']);
+    const slotRaw = getField(['slot','coluna','field','acao','action']);
+    const valor = getField(['valor','value','novoValor','newValue','nomeAtack','nomeAtaque']);
+
+    const nomeOriginal = (nomeOriginalRaw || '').toString().trim().toLowerCase();
+    const slot = (slotRaw || '').toString().trim().toLowerCase();
+    if (typeof DEBUG !== 'undefined' && DEBUG) { try { Logger.log('handleAtualizarAtackStage campos normalizados: nomeOriginal="' + nomeOriginal + '", slot="' + slot + '", valor="' + valor + '"'); } catch(e) {} }
+    const todosOsDados = abaStage.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+    // Encontrar índice da coluna do slot (se slot fornecido)
+    let colIndex = -1;
+    if (slot) {
+      colIndex = cabecalho.findIndex(function(col) {
+        return (col || '').toString().toLowerCase().trim() === slot;
+      });
+    }
+    if (colIndex === -1) {
+      return { success: false, message: 'Coluna ' + slot + ' não encontrada na aba STAGE. Colunas disponíveis: ' + cabecalho.join(', ') };
+    }
+    // Buscar ataque pelo nome normalizado na primeira coluna
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const nomeLinha = (todosOsDados[i][0] || '').toString().trim().toLowerCase();
+      if (nomeOriginal && nomeLinha === nomeOriginal) {
+        // Se coluna (slot) foi encontrada, atualizar coluna específica
+        if (colIndex !== -1) {
+          abaStage.getRange(i + 1, colIndex + 1).setValue(valor);
+          return { success: true, message: 'Ataque "' + nomeOriginal + '" atualizado no slot "' + slot + '" com valor: ' + valor };
+        } else {
+          // Se não foi informado slot, atualizar segunda coluna (ex.: valor geral)
+          abaStage.getRange(i + 1, 2).setValue(valor);
+          return { success: true, message: 'Ataque "' + nomeOriginal + '" atualizado na coluna 2 com valor: ' + valor };
+        }
+      }
+    }
+    return { success: false, message: 'Ataque não encontrado na aba STAGE: ' + nomeOriginal };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+/**
  * 📋 GOOGLE APPS SCRIPT - WIKI OBV
  * Sistema de Autenticação e Gerenciamento de Membros
  * 
@@ -24,6 +84,8 @@ const SPREADSHEET_ID = '1UZzLa4x2sdDXpE6J2CKh1LLsPUbUfDSVBuHayHydoVQ';
 
 // Tempo de expiração da sessão (8 horas em milissegundos)
 const SESSION_EXPIRATION = 8 * 60 * 60 * 1000;
+// Debug flag para controlar logs no Apps Script
+const DEBUG = false;
 
 /**
  * Responder requisições OPTIONS (preflight CORS)
@@ -58,7 +120,7 @@ function validateTokenAndGetEmail(dados) {
       // Retornar email do token (fonte confiável)
       return payload.email || null;
     } catch (e) {
-      Logger.log('Erro ao validar token: ' + e.toString());
+      if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro ao validar token: ' + e.toString());
       return null;
     }
   }
@@ -87,17 +149,17 @@ function doPost(e) {
           try {
             dados.moves = JSON.parse(dados.moves);
           } catch (e) {
-            Logger.log('Erro ao parsear moves: ' + e.toString());
+            if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro ao parsear moves: ' + e.toString());
           }
         }
       }
     }
     
-    const action = dados.action;
-    
-    Logger.log('=== doPost CHAMADO ===');
-    Logger.log('Action recebida: "' + action + '"');
-    Logger.log('Dados completos: ' + JSON.stringify(dados));
+    const action = (dados.action || dados.acao || '').toString();
+
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('=== doPost CHAMADO ===');
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Action recebida: "' + action + '"  (dados.acao fallback usado se presente)');
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Dados completos: ' + JSON.stringify(dados));
 
     // ROUTER - Redirecionar para função apropriada
     let result;
@@ -149,6 +211,24 @@ function doPost(e) {
         break;
       case 'atualizarAtack':
         result = handleAtualizarAtack(planilha, dados);
+        break;
+      case 'atualizar':
+        // Compatibilidade: 'acao=atualizar' usado por frontend antigo. Decidir handler pelo payload
+        if (typeof DEBUG !== 'undefined' && DEBUG) { try { Logger.log('Rota genérica atualizar chamada. Inspecting payload...'); } catch(e) {} }
+        // Priorizar edição de definição de ataque (ATACKS) quando campos de definição estão presentes
+        if (dados && (dados.efeito || dados.tipo || dados.categoria || dados.pp || dados.power || dados.accuracy || dados.gen || dados.acaoAtack)) {
+          result = handleAtualizarAtackDef(planilha, dados);
+        } else if (dados && (dados.nomeAtack || dados.atack || dados.atackName) && !dados.acaoAtack) {
+          // Caso seja atualização específica de STAGE (nome do ataque + slot)
+          result = handleAtualizarAtackStage(planilha, dados);
+        } else if (dados && dados.nomePokemon && dados.slot) {
+          result = handleAtualizarAtack(planilha, dados);
+        } else {
+          result = handlePokemonUpdate(planilha, dados);
+        }
+        break;
+      case 'atualizarAtackStage':
+        result = handleAtualizarAtackStage(planilha, dados);
         break;
       case 'adicionarAtack':
         result = handleAdicionarAtack(planilha, dados);
@@ -213,6 +293,8 @@ function doGet(e) {
         return createCorsResponse(countAdmins(planilha));
       case 'carregarBuilds':
         return createCorsResponse(handleCarregarBuilds(planilha));
+      case 'carregarStage':
+        return createCorsResponse(handleCarregarStage(planilha));
     }
     
     // Sistema de Pokémon (código existente)
@@ -253,6 +335,26 @@ function doGet(e) {
         hasMore: hasMore
       }))
       .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Handler para carregar dados da aba STAGE via GET?action=carregarStage
+    function handleCarregarStage(planilha) {
+      try {
+        const aba = planilha.getSheetByName('STAGE');
+        if (!aba) return { success: false, message: 'Aba STAGE não encontrada' };
+        const dados = aba.getDataRange().getValues();
+        if (!dados || dados.length <= 1) return { data: [] };
+        const cabecalho = dados[0];
+        const linhas = dados.slice(1);
+        const rows = linhas.map(linha => {
+          const obj = {};
+          cabecalho.forEach((col, i) => { obj[col] = linha[i]; });
+          return obj;
+        });
+        return { data: rows };
+      } catch (e) {
+        return { success: false, message: e.toString() };
+      }
     }
     
     // Obter TMs da aba "TMs"
@@ -942,18 +1044,18 @@ function createCorsResponse(content) {
  */
 function handleAtualizarSugestao(planilha, dados) {
   try {
-    Logger.log('=== INICIANDO handleAtualizarSugestao ===');
-    Logger.log('Dados recebidos: ' + JSON.stringify(dados));
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('=== INICIANDO handleAtualizarSugestao ===');
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Dados recebidos: ' + JSON.stringify(dados));
     
     const aba = planilha.getSheets()[0];
     const nomeOriginal = dados.nomePokemon.toLowerCase().trim();
     const novaSugestao = dados.sugestao || '';
     
-    Logger.log('Nome procurado: ' + nomeOriginal);
-    Logger.log('Nova sugestão: ' + novaSugestao);
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Nome procurado: ' + nomeOriginal);
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Nova sugestão: ' + novaSugestao);
     
     const todosOsDados = aba.getDataRange().getValues();
-    Logger.log('Total de linhas na planilha: ' + todosOsDados.length);
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Total de linhas na planilha: ' + todosOsDados.length);
     
     // Buscar Pokémon
     for (let i = 1; i < todosOsDados.length; i++) {
@@ -962,8 +1064,8 @@ function handleAtualizarSugestao(planilha, dados) {
       const nomeParaComparar = nomeEV || nomePokemon;
       
       if (nomeParaComparar === nomeOriginal) {
-        Logger.log('POKEMON ENCONTRADO na linha ' + (i + 1));
-        Logger.log('Coluna F (índice 5): ' + todosOsDados[i][5]);
+        if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('POKEMON ENCONTRADO na linha ' + (i + 1));
+        if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Coluna F (índice 5): ' + todosOsDados[i][5]);
         
         // COLUNA F = índice 5 (contando de 0: A=0, B=1, C=2, D=3, E=4, F=5)
         // APPEND: se já existir sugestão, concatenar com " / "
@@ -971,7 +1073,7 @@ function handleAtualizarSugestao(planilha, dados) {
         var novoValor = valorAtual ? valorAtual + ' / ' + novaSugestao : novaSugestao;
         aba.getRange(i + 1, 6).setValue(novoValor);
         
-        Logger.log('Sugestão salva com sucesso! Valor final: ' + novoValor);
+        if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Sugestão salva com sucesso! Valor final: ' + novoValor);
         
         return {
           sucesso: true,
@@ -980,7 +1082,7 @@ function handleAtualizarSugestao(planilha, dados) {
       }
     }
     
-    Logger.log('ERRO: Pokemon não encontrado: ' + nomeOriginal);
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('ERRO: Pokemon não encontrado: ' + nomeOriginal);
     
     return {
       sucesso: false,
@@ -1348,6 +1450,79 @@ function handleAtualizarAtack(planilha, dados) {
     }
     
     return { success: false, message: 'Pokémon não encontrado: ' + dados.nomePokemon };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Atualizar definição de um ataque na aba ATACKS
+ */
+function handleAtualizarAtackDef(planilha, dados) {
+  try {
+    if (typeof DEBUG !== 'undefined' && DEBUG) { try { Logger.log('handleAtualizarAtackDef chamado. dados: ' + JSON.stringify(dados)); } catch(e) {} }
+    let abaAtacks = planilha.getSheetByName('ATACKS');
+    if (!abaAtacks) {
+      return { success: false, message: 'Aba ATACKS não encontrada.' };
+    }
+
+    const todosOsDados = abaAtacks.getDataRange().getValues();
+    if (!todosOsDados || todosOsDados.length === 0) {
+      return { success: false, message: 'Aba ATACKS vazia.' };
+    }
+    const cabecalho = todosOsDados[0];
+
+    const nomeAtack = (dados.atack || dados.atackName || dados.atackNome || dados.nomeAtack || '').toString().trim();
+    if (!nomeAtack) {
+      return { success: false, message: 'Nome do ataque não informado.' };
+    }
+
+    // Encontrar linha do ataque
+    let linhaIndex = -1;
+    const colAtack = cabecalho.findIndex(h => (h || '').toString().toLowerCase().trim() === 'atack' || (h || '').toString().toLowerCase().trim() === 'attack');
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const val = (todosOsDados[i][colAtack] || '').toString().trim();
+      if (val === nomeAtack) { linhaIndex = i; break; }
+    }
+    if (linhaIndex === -1) {
+      if (typeof DEBUG !== 'undefined' && DEBUG) { try { Logger.log('Atack não encontrado: ' + nomeAtack); } catch(e) {} }
+      return { success: false, message: 'Atack não encontrado: ' + nomeAtack };
+    }
+
+    // Mapeamento de campos -> cabeçalho esperado
+    const camposMap = {
+      'acaoAtack': ['ação','ação','acao','ação'],
+      'efeito': ['efeito'],
+      'tipo': ['type','type'],
+      'categoria': ['categoria'],
+      'pp': ['pp'],
+      'power': ['power'],
+      'accuracy': ['accuracy'],
+      'gen': ['gen']
+    };
+
+    const setIfExists = (fieldNames, value) => {
+      for (const nomeCol of fieldNames) {
+        const idx = cabecalho.findIndex(h => (h || '').toString().toLowerCase().trim() === nomeCol.toString().toLowerCase().trim());
+        if (idx !== -1) {
+          abaAtacks.getRange(linhaIndex + 1, idx + 1).setValue(value);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // Atualizar campos disponíveis no payload
+    for (const key in camposMap) {
+      const payloadKey = key;
+      const value = dados[payloadKey] !== undefined ? dados[payloadKey] : (dados[key] !== undefined ? dados[key] : undefined);
+      if (value !== undefined) {
+        setIfExists(camposMap[key], value);
+      }
+    }
+
+    if (typeof DEBUG !== 'undefined' && DEBUG) { try { Logger.log('Atack atualizado: ' + nomeAtack + ' na linha ' + (linhaIndex+1)); } catch(e) {} }
+    return { success: true, message: 'Definição do ataque atualizada com sucesso: ' + nomeAtack };
   } catch (erro) {
     return { success: false, message: 'Erro: ' + erro.toString() };
   }
@@ -1818,5 +1993,4 @@ function handleExcluirVenda(planilha, dados) {
       message: 'Erro ao excluir venda: ' + error.toString()
     };
   }
-}
-
+  }
