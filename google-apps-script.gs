@@ -257,6 +257,12 @@ function doPost(e) {
       case 'aprovarSugestaoAbility':
         result = handleAprovarSugestaoAbility(planilha, dados);
         break;
+      case 'editarTMDef':
+        result = handleEditarTMDef(planilha, dados);
+        break;
+      case 'sugerirEdicaoTM':
+        result = handleSugerirEdicaoTM(planilha, dados);
+        break;
       default:
         // Manter código existente de Pokémon
         result = handlePokemonUpdate(planilha, dados);
@@ -1276,6 +1282,121 @@ function handleLimparSugestaoAtack(planilha, dados) {
     return { sucesso: false, mensagem: 'Pokémon não encontrado' };
   } catch (erro) {
     return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Editar definição de um TM na aba TMs (ADM)
+ * Campos: TIPO DE ITEM, NUMERO DO TM, NOME DO TM, TIPAGEM DO TM, ORIGEM DO TM, TIPO DE DROP
+ */
+function handleEditarTMDef(planilha, dados) {
+  try {
+    const adminEmail = validateTokenAndGetEmail(dados);
+    if (!adminEmail) return { success: false, message: 'Token inválido.' };
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') isAdmin = true;
+        break;
+      }
+    }
+    if (!isAdmin) return { success: false, message: 'Sem permissão: apenas ADM pode editar TMs.' };
+
+    const abaTMs = planilha.getSheetByName('TMs');
+    if (!abaTMs) return { success: false, message: 'Aba TMs não encontrada.' };
+
+    const todosOsDados = abaTMs.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+    const colNumero = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === 'NUMERO DO TM');
+    if (colNumero === -1) return { success: false, message: 'Coluna NUMERO DO TM não encontrada.' };
+
+    const tmNumeroOriginal = String(dados.tmNumeroOriginal || dados.tmNumero || '').trim();
+    if (!tmNumeroOriginal) return { success: false, message: 'Número do TM não informado.' };
+
+    let linhaIndex = -1;
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if (String(todosOsDados[i][colNumero]).trim() === tmNumeroOriginal) {
+        linhaIndex = i;
+        break;
+      }
+    }
+    if (linhaIndex === -1) return { success: false, message: 'TM não encontrado: ' + tmNumeroOriginal };
+
+    const camposMap = {
+      'tipoItem': ['TIPO DE ITEM'],
+      'numero': ['NUMERO DO TM'],
+      'nome': ['NOME DO TM'],
+      'tipagem': ['TIPAGEM DO TM'],
+      'origem': ['ORIGEM DO TM'],
+      'tipoDrop': ['TIPO DE DROP']
+    };
+
+    const setIfExists = (fieldNames, value) => {
+      for (const nomeCol of fieldNames) {
+        const idx = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === nomeCol.toUpperCase().trim());
+        if (idx !== -1) {
+          abaTMs.getRange(linhaIndex + 1, idx + 1).setValue(value);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    for (const key in camposMap) {
+      if (dados[key] !== undefined && dados[key] !== null) {
+        setIfExists(camposMap[key], dados[key]);
+      }
+    }
+
+    return { success: true, message: 'TM atualizado com sucesso!' };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Sugerir edição de TM (usuário comum)
+ * Salva texto livre na coluna SUGESTÃO DE POKEMON
+ */
+function handleSugerirEdicaoTM(planilha, dados) {
+  try {
+    const abaTMs = planilha.getSheetByName('TMs');
+    if (!abaTMs) return { success: false, message: 'Aba TMs não encontrada.' };
+
+    const todosOsDados = abaTMs.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+    const colNumero = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === 'NUMERO DO TM');
+    let colSugestao = cabecalho.findIndex(h => {
+      const upper = (h || '').toString().toUpperCase().trim();
+      return upper === 'SUGESTÃO DE POKEMON' || upper === 'SUGESTÃO DE TM/POKEMON';
+    });
+    if (colSugestao === -1) {
+      colSugestao = cabecalho.length;
+      abaTMs.getRange(1, colSugestao + 1).setValue('SUGESTÃO DE POKEMON');
+    }
+    if (colNumero === -1) return { success: false, message: 'Coluna NUMERO DO TM não encontrada.' };
+
+    const tmNumero = String(dados.tmNumero || '').trim();
+    const sugestao = (dados.sugestao || '').trim();
+    const email = (dados.email || '').trim();
+    if (!tmNumero) return { success: false, message: 'Número do TM não informado.' };
+    if (!sugestao) return { success: false, message: 'Sugestão vazia.' };
+
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if (String(todosOsDados[i][colNumero]).trim() === tmNumero) {
+        const valorAtual = (todosOsDados[i][colSugestao] || '').toString().trim();
+        const textoSugestao = email ? (email + ': ' + sugestao) : sugestao;
+        const novoValor = valorAtual ? valorAtual + ' | ' + textoSugestao : textoSugestao;
+        abaTMs.getRange(i + 1, colSugestao + 1).setValue(novoValor);
+        return { success: true, message: 'Sugestão salva com sucesso!' };
+      }
+    }
+
+    return { success: false, message: 'TM não encontrado: ' + tmNumero };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
   }
 }
 

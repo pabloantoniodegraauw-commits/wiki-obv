@@ -1102,6 +1102,12 @@ window.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            const isADM = isAdmin();
+
+            // Mostrar botão Adicionar TM para ADM
+            const btnAdd = document.getElementById('btnAdicionarTM');
+            if (btnAdd) btnAdd.style.display = isADM ? '' : 'none';
+
             dados.forEach((tm) => {
                 const card = document.createElement('div');
                 card.className = 'tm-card';
@@ -1139,12 +1145,21 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
                 const fallbackImg = `this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'`;
 
+                const numEsc = String(tm.numero).replace(/'/g, "\\'");
+                let actionBtn = '';
+                if (isADM) {
+                    actionBtn = `<button class="tm-edit-btn" onclick="event.stopPropagation();abrirModalEdicaoTM('${numEsc}')" style="margin-top:8px;padding:3px 12px;border-radius:6px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:12px;border:none;">Editar</button>`;
+                } else {
+                    actionBtn = `<button class="tm-edit-btn" onclick="event.stopPropagation();abrirModalSugestaoTMEdit('${numEsc}')" style="margin-top:8px;padding:3px 12px;border-radius:6px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:12px;border:none;">Sugerir</button>`;
+                }
+
                 card.innerHTML = `
                     <img src="${discoSrc}" alt="${numFormatado}" class="tm-disk-image" onerror="this.src='IMAGENS/imagens-itens/tipagens de tm/Normal_type_tm_disk.png'">
                     <div class="tm-number-text">${numFormatado}</div>
                     <div class="tm-name">${tm.nome}</div>
                     <img src="${stickerSrc}" alt="${stickerAlt}" class="tm-pokemon-image" onerror="${fallbackImg}">
                     <div class="tm-pokemon-name">${tm.pokemon}</div>
+                    ${actionBtn}
                 `;
                 container.appendChild(card);
             });
@@ -1366,6 +1381,292 @@ window.addEventListener('DOMContentLoaded', function() {
             }
             
             input.addEventListener('input', aplicarFiltros);
+        }
+
+        // =============================================
+        // MODAIS DE EDIÇÃO / SUGESTÃO / ADIÇÃO DE TMs
+        // =============================================
+
+        function _tmModalStyle() {
+            return 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+        }
+        function _tmBoxStyle() {
+            return 'background:#23284a;padding:30px;border-radius:20px;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:2px solid #ffd700;position:relative;max-height:90vh;overflow-y:auto;';
+        }
+        function _tmCloseBtn(modalId) {
+            return `<button onclick="document.getElementById('${modalId}').remove()" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ffd700;font-size:24px;cursor:pointer;padding:5px 10px;line-height:1;z-index:10;" title="Fechar"><i class="fas fa-times"></i></button>`;
+        }
+        function _tmLabelStyle() { return 'color:#ffd700;font-size:14px;display:block;margin-bottom:2px;'; }
+        function _tmInputStyle() { return 'width:100%;padding:8px;border-radius:8px;border:1px solid #ffd700;background:#181c2a;color:#fff;font-size:15px;margin-bottom:10px;'; }
+
+        // Gerar datalist options a partir de valores únicos dos TMs
+        function _tmGetUnique(key) {
+            var s = {};
+            (todosTMs || []).forEach(function(tm) { var v = (tm[key] || '').toString().trim(); if (v) s[v] = true; });
+            return Object.keys(s).sort();
+        }
+
+        // Gerar lista de todos os Pokémon da Pokédex (EV ou POKEMON)
+        function _tmGetAllPokemonNames() {
+            var s = {};
+            (window.todosPokemons || todosPokemons || []).forEach(function(p) {
+                var nome = (p['EV'] || p['POKEMON'] || '').toString().trim();
+                if (nome && nome !== 'Desconhecido') s[nome] = true;
+            });
+            return Object.keys(s).sort();
+        }
+
+        // --- Modal de edição TM (ADM) ---
+        window.abrirModalEdicaoTM = function(tmNumero) {
+            var tm = (todosTMs || []).find(function(t) { return String(t.numero).trim() === String(tmNumero).trim(); });
+            if (!tm) { mostrarToastSucesso('TM não encontrado!'); return; }
+
+            var tipos = _tmGetUnique('tipo');
+            var tipagens = _tmGetUnique('tipagem');
+            var categorias = _tmGetUnique('categoria');
+            var origens = _tmGetAllPokemonNames();
+
+            var modal = document.createElement('div');
+            modal.id = 'modalEdicaoTM';
+            modal.style.cssText = _tmModalStyle();
+            modal.innerHTML = `
+                <div style="${_tmBoxStyle()}">
+                    ${_tmCloseBtn('modalEdicaoTM')}
+                    <h2 style="color:#ffd700;margin-bottom:18px;font-size:20px;">Editar TM: <span style="color:#fff">TM${String(tm.numero).padStart(2,'0')} — ${tm.nome}</span></h2>
+                    <label style="${_tmLabelStyle()}">Tipo de Item:</label>
+                    <input id="editTMTipoItem" type="text" value="${tm.tipo || ''}" list="dlTMTipoItem" style="${_tmInputStyle()}">
+                    <datalist id="dlTMTipoItem">${tipos.map(v=>`<option value="${v}">`).join('')}</datalist>
+                    <label style="${_tmLabelStyle()}">Número do TM:</label>
+                    <input id="editTMNumero" type="text" value="${tm.numero || ''}" style="${_tmInputStyle()}">
+                    <label style="${_tmLabelStyle()}">Nome do TM:</label>
+                    <input id="editTMNome" type="text" value="${(tm.nome || '').replace(/"/g,'&quot;')}" style="${_tmInputStyle()}">
+                    <label style="${_tmLabelStyle()}">Tipagem do TM:</label>
+                    <input id="editTMTipagem" type="text" value="${tm.tipagem || ''}" list="dlTMTipagem" style="${_tmInputStyle()}">
+                    <datalist id="dlTMTipagem">${tipagens.map(v=>`<option value="${v}">`).join('')}</datalist>
+                    <label style="${_tmLabelStyle()}">Origem do TM (Pokémon):</label>
+                    <input id="editTMOrigem" type="text" value="${(tm.pokemon || '').replace(/"/g,'&quot;')}" list="dlTMOrigem" style="${_tmInputStyle()}">
+                    <datalist id="dlTMOrigem">${origens.map(v=>`<option value="${v}">`).join('')}</datalist>
+                    <label style="${_tmLabelStyle()}">Tipo de Drop:</label>
+                    <input id="editTMTipoDrop" type="text" value="${(tm.categoria || '').replace(/"/g,'&quot;')}" list="dlTMTipoDrop" style="${_tmInputStyle()}">
+                    <datalist id="dlTMTipoDrop">${categorias.map(v=>`<option value="${v}">`).join('')}</datalist>
+                    <button id="btnSalvarEdicaoTM" style="width:100%;padding:12px;background:#ffd700;color:#23284a;font-weight:bold;border:none;border-radius:10px;font-size:16px;cursor:pointer;margin-top:8px;">Salvar Alterações</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('btnSalvarEdicaoTM').onclick = function() { salvarEdicaoTM(tmNumero); };
+        };
+
+        // --- Salvar edição TM (ADM) ---
+        async function salvarEdicaoTM(tmNumeroOriginal) {
+            var user = {};
+            try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch(e){}
+            if (!user.email) { mostrarToastSucesso('ADM não autenticado!'); return; }
+
+            var tipoItem = (document.getElementById('editTMTipoItem') || {}).value || '';
+            var numero = (document.getElementById('editTMNumero') || {}).value || '';
+            var nome = (document.getElementById('editTMNome') || {}).value || '';
+            var tipagem = (document.getElementById('editTMTipagem') || {}).value || '';
+            var origem = (document.getElementById('editTMOrigem') || {}).value || '';
+            var tipoDrop = (document.getElementById('editTMTipoDrop') || {}).value || '';
+
+            var btn = document.getElementById('btnSalvarEdicaoTM');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...'; }
+
+            try {
+                var form = new URLSearchParams();
+                form.append('action', 'editarTMDef');
+                form.append('tmNumeroOriginal', tmNumeroOriginal);
+                form.append('tipoItem', tipoItem.trim());
+                form.append('numero', numero.trim());
+                form.append('nome', nome.trim());
+                form.append('tipagem', tipagem.trim());
+                form.append('origem', origem.trim());
+                form.append('tipoDrop', tipoDrop.trim());
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                var resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                var json = {};
+                try { json = await resp.json(); } catch(e) { try { json = JSON.parse(await resp.text()); } catch(_){} }
+                if (json.success) {
+                    var el = document.getElementById('modalEdicaoTM');
+                    if (el) el.remove();
+                    mostrarToastSucesso('TM atualizado com sucesso!');
+                    // Atualizar cache local
+                    var tm = (todosTMs || []).find(function(t) { return String(t.numero).trim() === String(tmNumeroOriginal).trim(); });
+                    if (tm) {
+                        tm.tipo = tipoItem.trim() || tm.tipo;
+                        tm.numero = numero.trim() || tm.numero;
+                        tm.nome = nome.trim() || tm.nome;
+                        tm.tipagem = tipagem.trim() || tm.tipagem;
+                        tm.pokemon = origem.trim() || tm.pokemon;
+                        tm.categoria = tipoDrop.trim() || tm.categoria;
+                    }
+                    renderizarTMs(todosTMs);
+                    configurarBuscaTMs();
+                } else {
+                    mostrarToastSucesso('Erro: ' + (json.message || 'desconhecido'));
+                    if (btn) { btn.disabled = false; btn.innerHTML = 'Salvar Alterações'; }
+                }
+            } catch(e) {
+                mostrarToastSucesso('Erro ao salvar. Tente novamente.');
+                if (btn) { btn.disabled = false; btn.innerHTML = 'Salvar Alterações'; }
+            }
+        }
+
+        // --- Modal de sugestão TM (usuário comum) ---
+        window.abrirModalSugestaoTMEdit = function(tmNumero) {
+            var user = {};
+            try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch(e){}
+            if (!user.email) { mostrarToastSucesso('Você precisa estar logado para sugerir!'); return; }
+
+            var tm = (todosTMs || []).find(function(t) { return String(t.numero).trim() === String(tmNumero).trim(); });
+            var tmLabel = tm ? `TM${String(tm.numero).padStart(2,'0')} — ${tm.nome}` : `TM${tmNumero}`;
+
+            var modal = document.createElement('div');
+            modal.id = 'modalSugestaoTMEdit';
+            modal.style.cssText = _tmModalStyle();
+            modal.innerHTML = `
+                <div style="${_tmBoxStyle()}">
+                    ${_tmCloseBtn('modalSugestaoTMEdit')}
+                    <h2 style="color:#ffd700;margin-bottom:18px;font-size:20px;">Sugerir alteração para: <br><span style="color:#fff">${tmLabel}</span></h2>
+                    <input id="inputSugestaoTMEdit" type="text" placeholder="Descreva sua sugestão..." style="${_tmInputStyle()}">
+                    <button id="btnEnviarSugestaoTMEdit" style="width:100%;padding:12px;background:#ffd700;color:#23284a;font-weight:bold;border:none;border-radius:10px;font-size:16px;cursor:pointer;">Enviar Sugestão</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('btnEnviarSugestaoTMEdit').onclick = function() { enviarSugestaoTMEdit(tmNumero); };
+        };
+
+        // --- Enviar sugestão TM ---
+        async function enviarSugestaoTMEdit(tmNumero) {
+            var input = document.getElementById('inputSugestaoTMEdit');
+            if (!input) return;
+            var sugestao = input.value.trim();
+            if (!sugestao) { mostrarToastSucesso('Digite uma sugestão antes de enviar.'); return; }
+            var user = {};
+            try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch(e){}
+
+            var btn = document.getElementById('btnEnviarSugestaoTMEdit');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; }
+
+            try {
+                var form = new URLSearchParams();
+                form.append('action', 'sugerirEdicaoTM');
+                form.append('tmNumero', tmNumero);
+                form.append('sugestao', sugestao);
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                var resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                var json = {};
+                try { json = await resp.json(); } catch(e) { try { json = JSON.parse(await resp.text()); } catch(_){} }
+                if (json.success) {
+                    var el = document.getElementById('modalSugestaoTMEdit');
+                    if (el) el.remove();
+                    mostrarToastSucesso('Sugestão enviada com sucesso!');
+                } else {
+                    mostrarToastSucesso('Erro: ' + (json.message || 'desconhecido'));
+                    if (btn) { btn.disabled = false; btn.innerHTML = 'Enviar Sugestão'; }
+                }
+            } catch(e) {
+                mostrarToastSucesso('Erro ao enviar. Tente novamente.');
+                if (btn) { btn.disabled = false; btn.innerHTML = 'Enviar Sugestão'; }
+            }
+        }
+
+        // --- Modal de adicionar TM (ADM) ---
+        window.abrirModalAdicionarTM = function() {
+            var tipagens = _tmGetUnique('tipagem');
+            var categorias = _tmGetUnique('categoria');
+
+            var modal = document.createElement('div');
+            modal.id = 'modalAdicionarTM';
+            modal.style.cssText = _tmModalStyle();
+            modal.innerHTML = `
+                <div style="${_tmBoxStyle()}">
+                    ${_tmCloseBtn('modalAdicionarTM')}
+                    <h2 style="color:#ffd700;margin-bottom:18px;font-size:20px;"><i class="fas fa-plus"></i> Adicionar novo TM</h2>
+                    <label style="${_tmLabelStyle()}">Tipo de Item:</label>
+                    <input id="addTMTipoItem" type="text" value="TM" list="dlAddTMTipo" style="${_tmInputStyle()}">
+                    <datalist id="dlAddTMTipo"><option value="TM"><option value="HM"></datalist>
+                    <label style="${_tmLabelStyle()}">Número do TM:</label>
+                    <input id="addTMNumero" type="text" placeholder="Ex: 120" style="${_tmInputStyle()}">
+                    <label style="${_tmLabelStyle()}">Nome do TM:</label>
+                    <input id="addTMNome" type="text" placeholder="Ex: Focus Punch" style="${_tmInputStyle()}">
+                    <label style="${_tmLabelStyle()}">Tipagem do TM:</label>
+                    <input id="addTMTipagem" type="text" placeholder="Ex: Fighting" list="dlAddTMTipagem" style="${_tmInputStyle()}">
+                    <datalist id="dlAddTMTipagem">${tipagens.map(v=>`<option value="${v}">`).join('')}</datalist>
+                    <label style="${_tmLabelStyle()}">Origem do TM (Pokémon):</label>
+                    <input id="addTMOrigem" type="text" placeholder="Ex: Machamp" list="dlAddTMOrigem" style="${_tmInputStyle()}">
+                    <datalist id="dlAddTMOrigem">${_tmGetAllPokemonNames().map(v=>'<option value="'+v+'">').join('')}</datalist>
+                    <label style="${_tmLabelStyle()}">Tipo de Drop:</label>
+                    <input id="addTMTipoDrop" type="text" placeholder="Ex: Boss, Spawn, Craft..." list="dlAddTMTipoDrop" style="${_tmInputStyle()}">
+                    <datalist id="dlAddTMTipoDrop">${categorias.map(v=>`<option value="${v}">`).join('')}</datalist>
+                    <button id="btnSalvarNovoTM" style="width:100%;padding:12px;background:#ffd700;color:#23284a;font-weight:bold;border:none;border-radius:10px;font-size:16px;cursor:pointer;margin-top:8px;">Adicionar TM</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('btnSalvarNovoTM').onclick = salvarNovoTMFromModal;
+        };
+
+        // --- Salvar novo TM ---
+        async function salvarNovoTMFromModal() {
+            var user = {};
+            try { user = JSON.parse(localStorage.getItem('user') || '{}'); } catch(e){}
+            if (!user.email) { mostrarToastSucesso('ADM não autenticado!'); return; }
+
+            var tipoItem = (document.getElementById('addTMTipoItem') || {}).value || 'TM';
+            var numero = (document.getElementById('addTMNumero') || {}).value || '';
+            var nome = (document.getElementById('addTMNome') || {}).value || '';
+            var tipagem = (document.getElementById('addTMTipagem') || {}).value || '';
+            var origem = (document.getElementById('addTMOrigem') || {}).value || '';
+            var tipoDrop = (document.getElementById('addTMTipoDrop') || {}).value || '';
+
+            if (!numero.trim() || !nome.trim()) {
+                mostrarToastSucesso('Número e Nome do TM são obrigatórios!');
+                return;
+            }
+
+            var btn = document.getElementById('btnSalvarNovoTM');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adicionando...'; }
+
+            try {
+                var form = new URLSearchParams();
+                form.append('action', 'adicionarTM');
+                form.append('tipoItem', tipoItem.trim());
+                form.append('numero', numero.trim());
+                form.append('nome', nome.trim());
+                form.append('tipagem', tipagem.trim());
+                form.append('origem', origem.trim());
+                form.append('tipoDrop', tipoDrop.trim());
+                form.append('email', user.email || '');
+                form.append('authToken', user.authToken || '');
+                var resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: form });
+                var json = {};
+                try { json = await resp.json(); } catch(e) { try { json = JSON.parse(await resp.text()); } catch(_){} }
+                if (json.success) {
+                    var el = document.getElementById('modalAdicionarTM');
+                    if (el) el.remove();
+                    mostrarToastSucesso('TM adicionado com sucesso!');
+                    // Adicionar ao cache local e re-renderizar
+                    todosTMs.push({
+                        tipo: tipoItem.trim(),
+                        numero: numero.trim(),
+                        nome: nome.trim(),
+                        tipagem: tipagem.trim(),
+                        pokemon: origem.trim(),
+                        categoria: tipoDrop.trim(),
+                        sugestao: ''
+                    });
+                    renderizarTMs(todosTMs);
+                    configurarBuscaTMs();
+                } else {
+                    mostrarToastSucesso('Erro: ' + (json.message || 'desconhecido'));
+                    if (btn) { btn.disabled = false; btn.innerHTML = 'Adicionar TM'; }
+                }
+            } catch(e) {
+                mostrarToastSucesso('Erro ao adicionar. Tente novamente.');
+                if (btn) { btn.disabled = false; btn.innerHTML = 'Adicionar TM'; }
+            }
         }
         
         document.addEventListener('DOMContentLoaded', () => {
