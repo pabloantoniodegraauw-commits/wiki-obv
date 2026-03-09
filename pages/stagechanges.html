@@ -2,17 +2,18 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Stage Changes</title>
+    <title>Atacks</title>
     <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
     <div class="container">
         <div class="tabs-nav">
-            <button id="btnStage" class="tab-btn active">Stage Changes</button>
+            <button id="btnAtacks" class="tab-btn active">Atacks</button>
+            <button id="btnStage" class="tab-btn">Stage Changes</button>
+            <button id="btnAbilities" class="tab-btn">Abilities</button>
             <button id="btnEffects" class="tab-btn">Efeitos</button>
-            <button id="btnAtacks" class="tab-btn">Atacks</button>
         </div>
-        <div id="stagePage" style="display:block;">
+        <div id="stagePage" style="display:none;">
             <h2>O sistema de Stage Changes</h2>
             <p>O sistema de Stage Changes para o otPokémon permite que os jogadores alterem temporariamente os atributos de seus Pokémon através de movimentos especiais. Alguns desses movimentos podem aumentar ou diminuir os atributos de Attack, Sp Attack, Defense, Sp Def e Speed em um ou mais estágios.</p>
             <p>Essas alterações são persistentes e não são canceladas quando o Pokémon é recolhido em sua Poké Ball, permitindo que o Pokémon mantenha o bônus ou penalidade durante a batalha. Cada estágio de alteração de atributo tem uma duração de 15 segundos.</p>
@@ -46,10 +47,76 @@
             <p>Full Heal Potions: Use potions específicas para o efeito ou utilize uma Full Heal para curar qualquer condição.</p>
 
         </div>
-        <div id="atacksPage" style="display:none;">
+        <div id="atacksPage" style="display:block;">
             <p>Conteúdo de Atacks.</p>
+        </div>
+        <div id="abilitiesPage" style="display:none;">
+            <div class="navegacao-rapida">Abilities</div>
+
+            <div class="lead">
+                <p>As habilidades podem ser acessadas e compradas por <strong>Ability Points</strong>.</p>
+                <p><strong>Ability Points</strong> podem ser adquiridas: Upando de level, pesca, torneios, capsules, premios diarios, tasks, eventos e diversas formas dentro do jogo conforme vc joga.</p>
+                <p>Ao completar o bestiário de um Pokémon, você desbloqueia a possibilidade de comprar a Ability de sua versão <strong>Mega</strong>.</p>
+                <p>Lembrando que as abilities foram baseadas na franquia Pokémon.</p>
+                <p>Pokémon selvagem, incluindo os lendários, não possui ability no otPokémon.</p>
+            </div>
+
+            <div class="navegacao-rapida" style="margin-top: 30px;">Itens principais</div>
+            <div class="lead">Esses recursos especiais são essenciais para o processo de criação.</div>
+
+            <div class="core-grid">
+                <div class="core-card">
+                    <div class="core-sq">
+                        <img src="IMAGENS/imagens-itens/ability/Ability Capsule 10.png" alt="Ability Capsule 10" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';">
+                    </div>
+                    <div class="core-name">Ability Capsule 10</div>
+                    <div class="core-desc">Use para ganhar 10 Ability Points.</div>
+                </div>
+                <div class="core-card">
+                    <div class="core-sq">
+                        <img src="IMAGENS/imagens-itens/ability/Ability Capsule 25.png" alt="Ability Capsule 25" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';">
+                    </div>
+                    <div class="core-name">Ability Capsule 25</div>
+                    <div class="core-desc">Use para ganhar 25 Ability Points.</div>
+                </div>
+                <div class="core-card">
+                    <div class="core-sq">
+                        <img src="IMAGENS/imagens-itens/ability/Ability Capsule 50.png" alt="Ability Capsule 50" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';">
+                    </div>
+                    <div class="core-name">Ability Capsule 50</div>
+                    <div class="core-desc">Use para ganhar 50 Ability Points.</div>
+                </div>
+                <div class="core-card">
+                    <div class="core-sq">
+                        <img src="IMAGENS/imagens-itens/ability/Ability Patch.png" alt="Ability Patch" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';">
+                    </div>
+                    <div class="core-name">Ability Patch</div>
+                    <div class="core-desc">Use para desbloquear ou ativar uma Ability especial.</div>
+                </div>
+            </div>
+
+            <div class="navegacao-rapida" style="margin-top: 30px;">Lista de Abilities</div>
+
+            <div class="search-wrap">
+                <input type="text" id="abilitySearch" class="search-input" placeholder="Pesquisar por nome da ability ou nome do pokémon...">
+            </div>
+
+            <div class="pokedex-filters-panel" style="margin-top:8px;">
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-paw"></i> Pokémon</label>
+                    <select id="abilityFilterPokemon" class="filter-select"><option value="">Todos</option></select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label"><i class="fas fa-star"></i> Origem</label>
+                    <select id="abilityFilterOrigem" class="filter-select"><option value="">Todos</option></select>
+                </div>
+                <button id="abilityClearFilters" class="filter-clear-btn"><i class="fas fa-times"></i> Limpar Filtros</button>
+            </div>
+
+            <div id="abilitiesTableWrap">Carregando abilities...</div>
         </div>
     </div>
     <script src="../js/modules/stagechanges-tabs.js"></script>
+    <script src="../js/modules/abilities.js"></script>
 </body>
 </html>

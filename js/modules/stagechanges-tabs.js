@@ -625,53 +625,65 @@ window.setupStageTabs = function() {
     var btnStage = document.getElementById('btnStage');
     var btnEffects = document.getElementById('btnEffects');
     var btnAtacks = document.getElementById('btnAtacks');
+    var btnAbilities = document.getElementById('btnAbilities');
     var stagePage = document.getElementById('stagePage');
     var effectsPage = document.getElementById('effectsPage');
     var atacksPage = document.getElementById('atacksPage');
-    console.log('[Tabs] Inicializando tabs:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
+    var abilitiesPage = document.getElementById('abilitiesPage');
+    var allBtns = [btnStage, btnEffects, btnAtacks, btnAbilities].filter(Boolean);
+    var allPages = [stagePage, effectsPage, atacksPage, abilitiesPage].filter(Boolean);
+
+    function switchTab(activeBtn, activePage, loadFn) {
+        allBtns.forEach(function(b) { b.classList.remove('active'); });
+        allPages.forEach(function(p) { p.style.display = 'none'; });
+        if (activeBtn) activeBtn.classList.add('active');
+        if (activePage) activePage.style.display = 'block';
+        if (typeof loadFn === 'function') loadFn();
+    }
+
+    console.log('[Tabs] Inicializando tabs:', {btnStage, btnEffects, btnAtacks, btnAbilities, stagePage, effectsPage, atacksPage, abilitiesPage});
     if (btnStage && btnEffects && btnAtacks && stagePage && effectsPage && atacksPage) {
         console.log('[Tabs] Valor de window.carregarStageOuEfeitos:', window.carregarStageOuEfeitos);
         btnStage.onclick = function(e) {
             e.preventDefault();
             console.log('[Tabs] Clicou em Stage');
-            btnStage.classList.add('active');
-            btnEffects.classList.remove('active');
-            btnAtacks.classList.remove('active');
-            stagePage.style.display = 'block';
-            effectsPage.style.display = 'none';
-            atacksPage.style.display = 'none';
-            if (typeof window.carregarStageOuEfeitos === 'function') {
-                console.log('[Tabs] Chamando window.carregarStageOuEfeitos("stage")');
-                window.carregarStageOuEfeitos('stage');
-            }
+            switchTab(btnStage, stagePage, function() {
+                if (typeof window.carregarStageOuEfeitos === 'function') {
+                    console.log('[Tabs] Chamando window.carregarStageOuEfeitos("stage")');
+                    window.carregarStageOuEfeitos('stage');
+                }
+            });
         };
         btnEffects.onclick = function(e) {
             e.preventDefault();
             console.log('[Tabs] Clicou em Efeitos');
-            btnEffects.classList.add('active');
-            btnStage.classList.remove('active');
-            btnAtacks.classList.remove('active');
-            stagePage.style.display = 'none';
-            effectsPage.style.display = 'block';
-            atacksPage.style.display = 'none';
-            if (typeof window.carregarStageOuEfeitos === 'function') {
-                console.log('[Tabs] Chamando window.carregarStageOuEfeitos("efeitos")');
-                window.carregarStageOuEfeitos('efeitos');
-            }
+            switchTab(btnEffects, effectsPage, function() {
+                if (typeof window.carregarStageOuEfeitos === 'function') {
+                    console.log('[Tabs] Chamando window.carregarStageOuEfeitos("efeitos")');
+                    window.carregarStageOuEfeitos('efeitos');
+                }
+            });
         };
         btnAtacks.onclick = function(e) {
             e.preventDefault();
             console.log('[Tabs] Clicou em Atacks');
-            btnAtacks.classList.add('active');
-            btnStage.classList.remove('active');
-            btnEffects.classList.remove('active');
-            stagePage.style.display = 'none';
-            effectsPage.style.display = 'none';
-            atacksPage.style.display = 'block';
-            if (typeof carregarAtacksParaTabela === 'function') carregarAtacksParaTabela();
+            switchTab(btnAtacks, atacksPage, function() {
+                if (typeof carregarAtacksParaTabela === 'function') carregarAtacksParaTabela();
+            });
         };
-        // Carregar Stage por padrão ao abrir a página
-            if (typeof carregarStageOuEfeitos === 'function') carregarStageOuEfeitos('stage');
+        if (btnAbilities && abilitiesPage) {
+            btnAbilities.onclick = function(e) {
+                e.preventDefault();
+                console.log('[Tabs] Clicou em Abilities');
+                switchTab(btnAbilities, abilitiesPage, function() {
+                    if (typeof window.carregarAbilitiesParaTabela === 'function') window.carregarAbilitiesParaTabela();
+                });
+            };
+        }
+        // Carregar Atacks por padrão ao abrir a página
+            if (typeof carregarAtacksParaTabela === 'function') carregarAtacksParaTabela();
+        // Pré-carregar Abilities em background para exibição instantânea
+            if (typeof window.preCarregarAbilities === 'function') window.preCarregarAbilities();
     } else {
         console.error('[Tabs] Elementos de tabs não encontrados:', {btnStage, btnEffects, btnAtacks, stagePage, effectsPage, atacksPage});
     }

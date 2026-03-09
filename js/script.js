@@ -220,9 +220,10 @@ window.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('pokemonCount').textContent = todosPokemons.length + (temMaisPaginas ? '+' : '');
                 document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
                 
-                // Carregar TMs e Atacks em background para cross-reference na Pokédex e modal admin
+                // Carregar TMs, Atacks e Abilities em background para cross-reference na Pokédex e modal admin
                 carregarDadosTMs();
                 carregarDadosAtacks();
+                carregarDadosAbilities();
                 
                 renderizarPokemons(todosPokemons);
                 window.todosPokemons = todosPokemons;
@@ -414,6 +415,9 @@ window.addEventListener('DOMContentLoaded', function() {
             const tmsDoPokemons = obterTMsDoPokemon(nomePrincipal);
             const sugestoesTMs = obterSugestoesTMsParaPokemon(nomePrincipal);
 
+            // ⭐ Abilities (cross-reference com ORIGEM POKEMON) ⭐
+            const abilitiesDoPokemon = obterAbilitiesDoPokemon(nomePrincipal);
+
             const card = document.createElement('div');
             card.className = 'pokemon-card';
             card.setAttribute('data-pokemon-nome', nomeParaBusca);
@@ -471,6 +475,7 @@ window.addEventListener('DOMContentLoaded', function() {
                     ${formatarSugestaoLocHTML(sugestaoLocalizacao)}
                 </div>
                 ` : ''}
+                ${tmsDoPokemons.length > 0 ? `
                 <div class="pokemon-tms">
                     <div class="tms-title">
                         <i class="fas fa-compact-disc"></i> TMs / Moves
@@ -480,6 +485,17 @@ window.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 ${gerarSugestoesTMsHTML(sugestoesTMs)}
+                ` : ''}
+                ${abilitiesDoPokemon.length > 0 ? `
+                <div class="pokemon-tms" style="border-left-color:#a855f7;">
+                    <div class="tms-title" style="color:#a855f7;">
+                        <i class="fas fa-star"></i> Abilities
+                    </div>
+                    <div class="tms-content">
+                        ${gerarAbilitiesHTML(abilitiesDoPokemon)}
+                    </div>
+                </div>
+                ` : ''}
                 <button class="btn-sugerir" onclick="abrirModalSugestaoUnificado('${nomeParaBusca.replace(/'/g, "\\'")}')">
                     <i class="fas fa-lightbulb"></i> Sugerir
                 </button>`;
@@ -807,6 +823,47 @@ window.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 console.warn('⚠️ Erro ao carregar TMs para Pokédex:', e);
             }
+        }
+
+        // ⭐ Carregar Abilities em background para cross-reference na Pokédex
+        async function carregarDadosAbilities() {
+            if (window.todasAbilities && window.todasAbilities.length > 0) return;
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + '?acao=obter_abilities');
+                const resultado = await response.json();
+                if (resultado.success && resultado.data && resultado.data.length > 0) {
+                    window.todasAbilities = resultado.data;
+                    console.log('✅ Abilities carregadas para Pokédex:', window.todasAbilities.length);
+                }
+            } catch (e) {
+                console.warn('⚠️ Erro ao carregar Abilities para Pokédex:', e);
+            }
+        }
+
+        // ⭐ Buscar Abilities de um Pokémon específico (cross-reference com ORIGEM POKEMON)
+        function obterAbilitiesDoPokemon(nomePokemon) {
+            if (!window.todasAbilities || window.todasAbilities.length === 0) return [];
+            const nomeNorm = normalizarNome(nomePokemon);
+            return window.todasAbilities.filter(function(ab) {
+                const origemNorm = normalizarNome(ab['ORIGEM POKEMON'] || ab['origem_pokemon'] || '');
+                return origemNorm === nomeNorm;
+            });
+        }
+
+        // ⭐ Gerar HTML das Abilities para o card da Pokédex (formato similar a TMs)
+        function gerarAbilitiesHTML(abilitiesDoPokemon) {
+            if (!abilitiesDoPokemon || abilitiesDoPokemon.length === 0) {
+                return '<span class="sem-tms">Sem Abilities registradas</span>';
+            }
+            return abilitiesDoPokemon.map(function(ab) {
+                var ability = ab['ABILITY'] || ab['ability'] || '';
+                var descricao = ab['DESCRIÇÃO'] || ab['DESCRICAO'] || ab['descricao'] || '';
+                var html = '<div class="pokedex-tm-item">';
+                html += '<img class="pokedex-tm-disco" src="IMAGENS/imagens-itens/ability/Ability Patch.png" alt="Ability" onerror="this.src=\'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png\'">';
+                html += '<span class="pokedex-tm-nome" style="color:#ffd700;font-weight:600;">' + ability + '</span>';
+                html += '</div>';
+                return html;
+            }).join('');
         }
 
         // ⭐ Buscar TMs de um Pokémon específico (cross-reference com aba TMs)

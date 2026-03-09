@@ -2788,3 +2788,173 @@ footer {
         width: 100%;
     }
 }
+
+/* ====== Abilities Page ====== */
+
+/* Navegação rápida (título de seção) */
+.navegacao-rapida {
+    font-size: 1.4em;
+    font-weight: 700;
+    color: #ffd700;
+    padding: 14px 0 8px 0;
+    border-bottom: 2px solid rgba(255, 215, 0, 0.25);
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+/* Lead / descrição */
+.lead {
+    color: #d0d0d0;
+    font-size: 1em;
+    line-height: 1.7;
+    margin-bottom: 18px;
+}
+.lead p {
+    margin-bottom: 8px;
+}
+.lead strong {
+    color: #ffd700;
+}
+
+/* Core grid de itens */
+.core-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 16px 0 24px 0;
+}
+.core-card {
+    background: rgba(30, 60, 114, 0.55);
+    border-radius: 14px;
+    padding: 16px 10px;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid rgba(255, 215, 0, 0.12);
+}
+.core-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 24px rgba(255, 215, 0, 0.15);
+}
+.core-sq {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.core-sq img {
+    max-width: 64px;
+    max-height: 64px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+.core-name {
+    color: #ffd700;
+    font-weight: 700;
+    font-size: 0.95em;
+    margin-bottom: 4px;
+}
+.core-desc {
+    color: #b0b0b0;
+    font-size: 0.85em;
+    line-height: 1.4;
+}
+
+/* Search wrap */
+.search-wrap {
+    margin: 12px 0;
+}
+.search-input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 215, 0, 0.25);
+    background: rgba(30, 60, 114, 0.7);
+    color: #fff;
+    font-size: 0.95em;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-input::placeholder {
+    color: #888;
+}
+.search-input:focus {
+    border-color: #ffd700;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+/* Abilities table */
+.abilities-table {
+    background: rgba(30, 60, 114, 0.7);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    margin-top: 12px;
+}
+.abilities-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.abilities-table td {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    vertical-align: top;
+}
+.abilities-table tr:hover td {
+    background: rgba(255, 215, 0, 0.04);
+}
+
+/* Colapsável de pokémons / extras */
+.collapsible-ability {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 8px;
+    background: rgba(255, 215, 0, 0.12);
+    color: #ffd700;
+    font-size: 0.88em;
+    font-weight: 600;
+    transition: background 0.2s;
+    user-select: none;
+}
+.collapsible-ability:hover {
+    background: rgba(255, 215, 0, 0.22);
+}
+.collapsible-ability-icon {
+    font-size: 0.75em;
+    transition: transform 0.25s;
+}
+.collapsible-ability-icon.rotated {
+    transform: rotate(180deg);
+}
+.collapsible-ability-content {
+    margin-top: 8px;
+    background: rgba(30, 60, 114, 0.4);
+    border-radius: 10px;
+    padding: 8px;
+}
+.collapsible-ability-content table {
+    width: 100%;
+}
+.collapsible-ability-content td {
+    border-bottom: none !important;
+}
+
+/* Responsivo Abilities */
+@media (max-width: 768px) {
+    .core-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    .navegacao-rapida {
+        font-size: 1.15em;
+    }
+}
+@media (max-width: 480px) {
+    .core-grid {
+        grid-template-columns: 1fr;
+    }
+}

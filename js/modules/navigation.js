@@ -57,12 +57,35 @@ async function loadPage(pageName) {
                     script.src = 'js/modules/stagechanges-tabs.js';
                     script.onload = function() {
                         console.log('[Tabs] Script das abas carregado dinamicamente');
-                        if (window.setupStageTabs) window.setupStageTabs();
+                        // Carregar abilities.js após stagechanges-tabs.js
+                        if (!window.carregarAbilitiesParaTabela) {
+                            var scriptAb = document.createElement('script');
+                            scriptAb.src = 'js/modules/abilities.js';
+                            scriptAb.onload = function() {
+                                console.log('[Abilities] Script carregado dinamicamente');
+                                if (window.setupStageTabs) window.setupStageTabs();
+                            };
+                            document.body.appendChild(scriptAb);
+                        } else {
+                            if (window.setupStageTabs) window.setupStageTabs();
+                        }
                     };
                     document.body.appendChild(script);
                 } else {
-                    console.log('[Tabs] Chamando setupStageTabs após carregamento dinâmico');
-                    window.setupStageTabs();
+                    // stagechanges-tabs.js já carregado, garantir abilities.js também
+                    if (!window.carregarAbilitiesParaTabela) {
+                        var scriptAb = document.createElement('script');
+                        scriptAb.src = 'js/modules/abilities.js';
+                        scriptAb.onload = function() {
+                            console.log('[Abilities] Script carregado dinamicamente');
+                            console.log('[Tabs] Chamando setupStageTabs após carregamento dinâmico');
+                            window.setupStageTabs();
+                        };
+                        document.body.appendChild(scriptAb);
+                    } else {
+                        console.log('[Tabs] Chamando setupStageTabs após carregamento dinâmico');
+                        window.setupStageTabs();
+                    }
                 }
             }
         

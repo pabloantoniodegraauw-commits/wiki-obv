@@ -248,6 +248,15 @@ function doPost(e) {
       case 'excluirVenda':
         result = handleExcluirVenda(planilha, dados);
         break;
+      case 'atualizarAbility':
+        result = handleAtualizarAbility(planilha, dados);
+        break;
+      case 'salvarSugestaoAbility':
+        result = handleSalvarSugestaoAbility(planilha, dados);
+        break;
+      case 'aprovarSugestaoAbility':
+        result = handleAprovarSugestaoAbility(planilha, dados);
+        break;
       default:
         // Manter código existente de Pokémon
         result = handlePokemonUpdate(planilha, dados);
@@ -412,6 +421,35 @@ function doGet(e) {
         success: true,
         data: atacks,
         total: atacks.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Obter Abilities da aba "ABILITYS"
+    if (acao === 'obter_abilities') {
+      const abaAbilities = planilha.getSheetByName('ABILITYS');
+      if (!abaAbilities) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: false,
+          message: 'Aba ABILITYS não encontrada'
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      const dados = abaAbilities.getDataRange().getValues();
+      const cabecalho = dados[0];
+      const linhas = dados.slice(1);
+
+      const abilities = linhas.map(linha => {
+        const obj = {};
+        cabecalho.forEach((coluna, index) => {
+          obj[coluna] = linha[index];
+        });
+        return obj;
+      }).filter(a => a['ABILITY']);
+
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: abilities,
+        total: abilities.length
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1452,6 +1490,183 @@ function handleAtualizarAtack(planilha, dados) {
     return { success: false, message: 'Pokémon não encontrado: ' + dados.nomePokemon };
   } catch (erro) {
     return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+// =============================================
+// HANDLERS ABILITIES (ABILITYS sheet)
+// =============================================
+
+/**
+ * Atualizar ability na aba ABILITYS (ADM)
+ * Campos editáveis: DESCRIÇÃO, POKEMON QUE APRENDE, EXTRA, ORIGEM POKEMON
+ */
+function handleAtualizarAbility(planilha, dados) {
+  try {
+    // Validar admin
+    const adminEmail = validateTokenAndGetEmail(dados);
+    if (!adminEmail) {
+      return { success: false, message: 'Token de autenticação inválido ou ausente' };
+    }
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') isAdmin = true;
+        break;
+      }
+    }
+    if (!isAdmin) {
+      return { success: false, message: 'Sem permissão: apenas administradores podem editar abilities' };
+    }
+
+    const aba = planilha.getSheetByName('ABILITYS');
+    if (!aba) return { success: false, message: 'Aba ABILITYS não encontrada.' };
+
+    const todosOsDados = aba.getDataRange().getValues();
+    if (!todosOsDados || todosOsDados.length === 0) return { success: false, message: 'Aba ABILITYS vazia.' };
+    const cabecalho = todosOsDados[0];
+
+    const nomeAbility = (dados.ability || '').toString().trim();
+    if (!nomeAbility) return { success: false, message: 'Nome da ability não informado.' };
+
+    // Encontrar linha
+    const colAbility = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === 'ABILITY');
+    if (colAbility === -1) return { success: false, message: 'Coluna ABILITY não encontrada no cabeçalho.' };
+
+    let linhaIndex = -1;
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if ((todosOsDados[i][colAbility] || '').toString().trim() === nomeAbility) {
+        linhaIndex = i;
+        break;
+      }
+    }
+    if (linhaIndex === -1) return { success: false, message: 'Ability não encontrada: ' + nomeAbility };
+
+    // Mapeamento campo frontend -> nome(s) de coluna no cabeçalho
+    const camposMap = {
+      'descricao': ['DESCRIÇÃO', 'DESCRICAO'],
+      'pokemonQueAprende': ['POKEMON QUE APRENDE'],
+      'extra': ['EXTRA'],
+      'origemPokemon': ['ORIGEM POKEMON']
+    };
+
+    const setIfExists = (fieldNames, value) => {
+      for (const nomeCol of fieldNames) {
+        const idx = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === nomeCol.toUpperCase().trim());
+        if (idx !== -1) {
+          aba.getRange(linhaIndex + 1, idx + 1).setValue(value);
+          return true;
+        }
+      }
+      return false;
+    };
+
+    for (const key in camposMap) {
+      if (dados[key] !== undefined) {
+        setIfExists(camposMap[key], dados[key]);
+      }
+    }
+
+    return { success: true, message: 'Ability atualizada com sucesso: ' + nomeAbility };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Salvar sugestão de edição de ability (usuário comum)
+ * Salva na coluna SUGESTAO da aba ABILITYS
+ */
+function handleSalvarSugestaoAbility(planilha, dados) {
+  try {
+    const aba = planilha.getSheetByName('ABILITYS');
+    if (!aba) return { sucesso: false, mensagem: 'Aba ABILITYS não encontrada.' };
+
+    const nomeAbility = (dados.ability || '').toString().trim();
+    const sugestao = (dados.sugestao || '').toString().trim();
+    const emailUser = (dados.email || '').toString().trim();
+    if (!nomeAbility) return { sucesso: false, mensagem: 'Nome da ability não informado.' };
+    if (!sugestao) return { sucesso: false, mensagem: 'Sugestão vazia.' };
+
+    const todosOsDados = aba.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+
+    // Encontrar coluna ABILITY
+    const colAbility = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === 'ABILITY');
+    if (colAbility === -1) return { sucesso: false, mensagem: 'Coluna ABILITY não encontrada.' };
+
+    // Encontrar ou criar coluna SUGESTAO
+    let colSugestao = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === 'SUGESTAO');
+    if (colSugestao === -1) {
+      // Criar coluna SUGESTAO ao final
+      colSugestao = cabecalho.length;
+      aba.getRange(1, colSugestao + 1).setValue('SUGESTAO');
+    }
+
+    // Encontrar linha
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if ((todosOsDados[i][colAbility] || '').toString().trim() === nomeAbility) {
+        const valorAtual = (todosOsDados[i][colSugestao] || '').toString().trim();
+        const textoSugestao = emailUser ? (emailUser + ': ' + sugestao) : sugestao;
+        const novoValor = valorAtual ? valorAtual + ' - ' + textoSugestao : textoSugestao;
+        aba.getRange(i + 1, colSugestao + 1).setValue(novoValor);
+        return { sucesso: true, mensagem: 'Sugestão salva com sucesso!' };
+      }
+    }
+
+    return { sucesso: false, mensagem: 'Ability não encontrada: ' + nomeAbility };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Aprovar sugestão de ability (ADM) — remove a sugestão da coluna SUGESTAO
+ */
+function handleAprovarSugestaoAbility(planilha, dados) {
+  try {
+    const adminEmail = validateTokenAndGetEmail(dados);
+    if (!adminEmail) return { sucesso: false, mensagem: 'Token inválido.' };
+
+    const abaUsuarios = getOrCreateSheet(planilha, 'usuarios');
+    const usuarios = abaUsuarios.getDataRange().getValues();
+    let isAdmin = false;
+    for (let i = 1; i < usuarios.length; i++) {
+      if ((usuarios[i][0] || '').toString().toLowerCase() === adminEmail.toLowerCase()) {
+        if (usuarios[i][8] === 'admin') isAdmin = true;
+        break;
+      }
+    }
+    if (!isAdmin) return { sucesso: false, mensagem: 'Sem permissão.' };
+
+    const aba = planilha.getSheetByName('ABILITYS');
+    if (!aba) return { sucesso: false, mensagem: 'Aba ABILITYS não encontrada.' };
+
+    const todosOsDados = aba.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+    const colAbility = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === 'ABILITY');
+    const colSugestao = cabecalho.findIndex(h => (h || '').toString().toUpperCase().trim() === 'SUGESTAO');
+    if (colAbility === -1 || colSugestao === -1) return { sucesso: false, mensagem: 'Colunas não encontradas.' };
+
+    const nomeAbility = (dados.ability || '').toString().trim();
+    const idxSugestao = parseInt(dados.idx, 10);
+
+    for (let i = 1; i < todosOsDados.length; i++) {
+      if ((todosOsDados[i][colAbility] || '').toString().trim() === nomeAbility) {
+        const valorAtual = (todosOsDados[i][colSugestao] || '').toString().trim();
+        if (!valorAtual) return { sucesso: true, mensagem: 'Nenhuma sugestão para aprovar.' };
+        const arr = valorAtual.split(' - ');
+        arr.splice(idxSugestao, 1);
+        aba.getRange(i + 1, colSugestao + 1).setValue(arr.join(' - '));
+        return { sucesso: true, mensagem: 'Sugestão aprovada e removida!' };
+      }
+    }
+
+    return { sucesso: false, mensagem: 'Ability não encontrada.' };
+  } catch (erro) {
+    return { sucesso: false, mensagem: 'Erro: ' + erro.toString() };
   }
 }
 
