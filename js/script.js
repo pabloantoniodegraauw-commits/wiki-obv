@@ -3809,7 +3809,7 @@ window.addEventListener('DOMContentLoaded', function() {
         }
 
         async function tryOCR(imageUrl, isProcessed) {
-            const { data: { text } } = await Tesseract.recognize(
+            const { data: { text, words } } = await Tesseract.recognize(
                 imageUrl,
                 'eng',
                 {
@@ -3821,7 +3821,88 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             );
             console.log(`${isProcessed ? '🎨' : '📄'} Texto detectado:`, text);
+
+            // 🔀 Detectar layout de colunas e reordenar (coluna por coluna, cima→baixo)
+            if (words && words.length > 1) {
+                try {
+                    const reordenado = reordenarPorColunas(words);
+                    if (reordenado) {
+                        console.log('🔀 Texto reordenado por colunas:', reordenado);
+                        return reordenado;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Falha ao reordenar por colunas:', e);
+                }
+            }
             return text;
+        }
+
+        // Detectar colunas na imagem e reordenar palavras: coluna esquerda toda, depois direita
+        function reordenarPorColunas(words) {
+            if (!words || words.length < 2) return null;
+
+            // Agrupar palavras por linha (Y próximo = mesma linha)
+            const linhas = [];
+            const TOLERANCIA_Y = 15; // pixels de tolerância para considerar mesma linha
+
+            for (const word of words) {
+                if (!word.bbox) continue;
+                const centerY = (word.bbox.y0 + word.bbox.y1) / 2;
+                let encontrou = false;
+                for (const linha of linhas) {
+                    if (Math.abs(linha.centerY - centerY) < TOLERANCIA_Y) {
+                        linha.words.push(word);
+                        encontrou = true;
+                        break;
+                    }
+                }
+                if (!encontrou) {
+                    linhas.push({ centerY, words: [word] });
+                }
+            }
+
+            // Se só tem 1 coluna (palavras por linha), não precisa reordenar
+            const multiColuna = linhas.some(l => l.words.length >= 2);
+            if (!multiColuna) return null;
+
+            // Detectar ponto de divisão das colunas (mediana dos X centrais)
+            const allCenterX = words.filter(w => w.bbox).map(w => (w.bbox.x0 + w.bbox.x1) / 2);
+            allCenterX.sort((a, b) => a - b);
+            const imgWidth = Math.max(...words.filter(w => w.bbox).map(w => w.bbox.x1));
+            const divisao = imgWidth / 2;
+
+            console.log(`📐 Divisão de colunas em X=${divisao.toFixed(0)}, ${linhas.length} linhas detectadas`);
+
+            // Separar palavras em coluna esquerda e direita
+            const colunaEsq = [];
+            const colunaDir = [];
+
+            // Ordenar linhas por Y
+            linhas.sort((a, b) => a.centerY - b.centerY);
+
+            for (const linha of linhas) {
+                // Ordenar palavras da linha por X
+                linha.words.sort((a, b) => a.bbox.x0 - b.bbox.x0);
+
+                let textoEsq = [];
+                let textoDir = [];
+                for (const word of linha.words) {
+                    const centerX = (word.bbox.x0 + word.bbox.x1) / 2;
+                    if (centerX < divisao) {
+                        textoEsq.push(word.text);
+                    } else {
+                        textoDir.push(word.text);
+                    }
+                }
+                if (textoEsq.length > 0) colunaEsq.push(textoEsq.join(' '));
+                if (textoDir.length > 0) colunaDir.push(textoDir.join(' '));
+            }
+
+            console.log('📊 Coluna esquerda:', colunaEsq);
+            console.log('📊 Coluna direita:', colunaDir);
+
+            // Juntar: toda coluna esquerda primeiro, depois toda coluna direita
+            return [...colunaEsq, ...colunaDir].join('\n');
         }
 
         // Pré-processar imagem para melhorar OCR de screenshots de jogo
