@@ -1304,6 +1304,27 @@ window.addEventListener('DOMContentLoaded', function() {
                         const textoCompleto = `${nome} ${ev} ${tipo1} ${tipo2} ${loc}`;
                         return termos.some(t => textoCompleto.includes(t));
                     });
+
+                    // 🔢 Ordenar: TODOS normais primeiro (na ordem digitada), depois TODAS EVs (na ordem digitada)
+                    resultados.sort((a, b) => {
+                        const nomeA = ((a['POKEMON'] || '') + ' ' + (a['EV'] || '')).toLowerCase();
+                        const nomeB = ((b['POKEMON'] || '') + ' ' + (b['EV'] || '')).toLowerCase();
+                        const evA = (a['EV'] || '').toLowerCase();
+                        const evB = (b['EV'] || '').toLowerCase();
+                        const temEvA = evA.length > 0 ? 1 : 0;
+                        const temEvB = evB.length > 0 ? 1 : 0;
+
+                        // 1) Normal (sem EV) TODOS primeiro, depois EVs TODOS
+                        if (temEvA !== temEvB) return temEvA - temEvB;
+
+                        // 2) Dentro de cada grupo, manter a ordem dos termos digitados
+                        let idxA = termos.length, idxB = termos.length;
+                        for (let i = 0; i < termos.length; i++) {
+                            if (nomeA.includes(termos[i]) && i < idxA) idxA = i;
+                            if (nomeB.includes(termos[i]) && i < idxB) idxB = i;
+                        }
+                        return idxA - idxB;
+                    });
                     
                     // Renderizar resultados diretamente (sem lazy load, pois busca retorna poucos)
                     container.innerHTML = '';
@@ -3682,50 +3703,111 @@ window.addEventListener('DOMContentLoaded', function() {
             console.log('🤖 Busca por imagem configurada! Cole uma imagem com Ctrl+V');
         }
 
+        // ============================================
+        // 🧠 FUZZY MATCHING - Distância de Levenshtein
+        // ============================================
+        function levenshtein(a, b) {
+            const m = a.length, n = b.length;
+            const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+            for (let i = 0; i <= m; i++) dp[i][0] = i;
+            for (let j = 0; j <= n; j++) dp[0][j] = j;
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    dp[i][j] = a[i-1] === b[j-1]
+                        ? dp[i-1][j-1]
+                        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+                }
+            }
+            return dp[m][n];
+        }
+
+        // Cache da lista de nomes de Pokémon para fuzzy matching
+        let _pokemonNamesCache = null;
+        function obterListaNomesPokemon() {
+            if (_pokemonNamesCache) return _pokemonNamesCache;
+            const lista = (window.todosPokemons || todosPokemons || []);
+            _pokemonNamesCache = [...new Set(
+                lista.map(p => (p['POKEMON'] || p['EV'] || '')).filter(n => n.length > 0)
+            )];
+            return _pokemonNamesCache;
+        }
+
+        // Encontrar o nome de Pokémon mais próximo usando fuzzy matching
+        function encontrarPokemonMaisProximo(palavra) {
+            const nomes = obterListaNomesPokemon();
+            if (nomes.length === 0) return null;
+
+            const palavraLower = palavra.toLowerCase().trim();
+            if (palavraLower.length < 3) return null;
+
+            let melhorNome = null;
+            let melhorDistancia = Infinity;
+
+            for (const nome of nomes) {
+                const nomeLower = nome.toLowerCase();
+
+                // Match exato
+                if (nomeLower === palavraLower) return nome;
+
+                // Calcular distância
+                const dist = levenshtein(palavraLower, nomeLower);
+
+                // Limiar: aceitar até ~30% de erro no comprimento da palavra
+                const limiar = Math.max(2, Math.floor(Math.max(palavraLower.length, nomeLower.length) * 0.3));
+                if (dist < melhorDistancia && dist <= limiar) {
+                    melhorDistancia = dist;
+                    melhorNome = nome;
+                }
+            }
+
+            return melhorNome;
+        }
+
         // Extrair nomes de Pokémon da imagem usando OCR (Tesseract.js)
         async function extrairNomesPokemonComIA(imageFile) {
             try {
                 console.log('🔍 Iniciando OCR com Tesseract.js...');
-                
-                // Verificar se Tesseract está carregado
+
                 if (typeof Tesseract === 'undefined') {
                     throw new Error('⚠️ Tesseract.js não foi carregado. Verifique a conexão com internet.');
                 }
-                
+
+                // Invalidar cache para pegar lista mais atualizada
+                _pokemonNamesCache = null;
+
                 const imageUrl = URL.createObjectURL(imageFile);
-                
-                // 🎯 ESTRATÉGIA HÍBRIDA: Tentar múltiplas abordagens
-                console.log('🎯 Tentativa 1: OCR padrão...');
-                let text = await tryOCR(imageUrl, false);
-                
-                // Se não encontrou nada, tentar com pré-processamento
+
+                // 🎯 ESTRATÉGIA: Sempre pré-processar (game screenshots precisam)
+                console.log('🎯 Tentativa 1: OCR com pré-processamento otimizado...');
+                const processedUrl = await preprocessImage(imageFile);
+                let text = await tryOCR(processedUrl, true);
+                URL.revokeObjectURL(processedUrl);
+
+                // Fallback: tentar imagem original se nada foi extraído
                 if (!text || text.trim().length < 3) {
-                    console.log('🎯 Tentativa 2: OCR com pré-processamento...');
-                    const processedUrl = await preprocessImage(imageFile);
-                    text = await tryOCR(processedUrl, true);
-                    URL.revokeObjectURL(processedUrl);
+                    console.log('🎯 Tentativa 2: OCR na imagem original...');
+                    text = await tryOCR(imageUrl, false);
                 }
-                
-                // Limpar URL temporária
+
+                // Tentativa 3: pré-processamento com inversão forçada
+                if (!text || text.trim().length < 3) {
+                    console.log('🎯 Tentativa 3: OCR com inversão forçada...');
+                    const invertedUrl = await preprocessImage(imageFile, true);
+                    text = await tryOCR(invertedUrl, true);
+                    URL.revokeObjectURL(invertedUrl);
+                }
+
                 URL.revokeObjectURL(imageUrl);
-                
+
                 console.log('📝 Texto extraído final:', text);
-                
-                // Processar texto extraído
                 return processarERetornarNomes(text);
-                
+
             } catch (erro) {
                 console.error('❌ Erro no OCR:', erro);
                 throw erro;
             }
         }
 
-        /**
-         * Tentar OCR na imagem
-         * @param {string} imageUrl - URL da imagem
-         * @param {boolean} isProcessed - Se é imagem pré-processada
-         * @returns {Promise<string>} - Texto extraído
-         */
         async function tryOCR(imageUrl, isProcessed) {
             const { data: { text } } = await Tesseract.recognize(
                 imageUrl,
@@ -3738,123 +3820,159 @@ window.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             );
-            console.log(`${isProcessed ? '🎨' : '📄'} Texto detectado (${isProcessed ? 'processado' : 'original'}):`, text);
+            console.log(`${isProcessed ? '🎨' : '📄'} Texto detectado:`, text);
             return text;
         }
 
-        /**
-         * Pré-processar imagem para melhorar OCR
-         * - Inverte cores (branco → preto)
-         * - Aumenta contraste
-         * - Binariza (preto e branco puro)
-         * @param {File} imageFile - Arquivo de imagem
-         * @returns {Promise<string>} - URL da imagem processada
-         */
-        async function preprocessImage(imageFile) {
+        // Pré-processar imagem para melhorar OCR de screenshots de jogo
+        async function preprocessImage(imageFile, forceInvert = false) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
+
                 img.onload = () => {
-                    // Definir tamanho do canvas
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    
-                    // Desenhar imagem original
-                    ctx.drawImage(img, 0, 0);
-                    
-                    // Obter dados dos pixels
+                    // 🔍 ESCALAR 3x para melhorar leitura de texto pequeno
+                    const scale = 3;
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+
+                    // Desenhar imagem escalada com interpolação suave
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const data = imageData.data;
-                    
+
+                    // 📊 Detectar se fundo é escuro (amostrar pixels)
+                    let totalLuminance = 0;
+                    let sampleCount = 0;
+                    for (let i = 0; i < data.length; i += 16) { // Amostrar cada 4º pixel
+                        totalLuminance += 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+                        sampleCount++;
+                    }
+                    const avgLuminance = totalLuminance / sampleCount;
+                    const needsInvert = forceInvert || avgLuminance < 128;
+                    console.log(`📊 Luminância média: ${avgLuminance.toFixed(0)}, inverter: ${needsInvert}`);
+
                     // Processar cada pixel
                     for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
-                        
-                        // Calcular luminosidade (escala de cinza)
-                        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-                        
-                        // � AUMENTAR CONTRASTE (fator 2.0 - mais agressivo)
-                        let contrastedLuminance = (luminance - 128) * 2.0 + 128;
-                        contrastedLuminance = Math.max(0, Math.min(255, contrastedLuminance));
-                        
-                        // 🔄 INVERTER se fundo escuro (maioria dos pixels escuros)
-                        // Detectar automaticamente se precisa inverter
-                        let finalLuminance = contrastedLuminance;
-                        
-                        // ⚫⚪ BINARIZAR (limiar adaptativo 140): preto ou branco puro
-                        const binarized = finalLuminance > 140 ? 255 : 0;
-                        
-                        // Aplicar valores processados
-                        data[i] = binarized;     // R
-                        data[i + 1] = binarized; // G
-                        data[i + 2] = binarized; // B
-                        // data[i + 3] = alpha (não mexer)
+                        const r = data[i], g = data[i+1], b = data[i+2];
+
+                        // Escala de cinza
+                        let lum = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                        // Inverter se fundo escuro (texto claro → texto escuro em fundo branco)
+                        if (needsInvert) lum = 255 - lum;
+
+                        // Aumentar contraste (fator 2.5)
+                        lum = (lum - 128) * 2.5 + 128;
+                        lum = Math.max(0, Math.min(255, lum));
+
+                        // Binarizar com limiar Otsu simplificado (160 para texto)
+                        const bin = lum > 160 ? 255 : 0;
+
+                        data[i] = bin;
+                        data[i+1] = bin;
+                        data[i+2] = bin;
                     }
-                    
-                    // Aplicar dados processados de volta ao canvas
+
                     ctx.putImageData(imageData, 0, 0);
-                    
-                    // Converter canvas para blob e criar URL
+
                     canvas.toBlob(blob => {
                         const processedUrl = URL.createObjectURL(blob);
-                        console.log('✅ Imagem pré-processada com sucesso');
+                        console.log('✅ Imagem pré-processada (scale=' + scale + ', invert=' + needsInvert + ')');
                         resolve(processedUrl);
                     }, 'image/png');
                 };
-                
-                img.onerror = () => {
-                    reject(new Error('Erro ao carregar imagem para processamento'));
-                };
-                
-                // Carregar imagem
+
+                img.onerror = () => reject(new Error('Erro ao carregar imagem para processamento'));
                 img.src = URL.createObjectURL(imageFile);
             });
         }
 
-        /**
-         * Processar texto extraído do OCR e filtrar nomes de Pokémon
-         * @param {string} textoExtraido - Texto extraído pela OCR
-         * @returns {Array<string>} - Array com nomes dos Pokémon detectados
-         */
+        // Processar texto extraído do OCR e filtrar nomes de Pokémon
         function processarERetornarNomes(textoExtraido) {
             try {
                 console.log('📦 Processando texto:', textoExtraido);
-                
-                // Verificar se há texto
+
                 if (!textoExtraido || textoExtraido.trim().length === 0) {
                     console.warn('⚠️ Nenhum texto extraído');
                     return [];
                 }
-                
-                // Dividir texto em linhas e palavras
-                const palavras = textoExtraido.split(/[\s,;|\n\r]+/);
-                
-                console.log('📝 Palavras encontradas:', palavras);
-                
-                // Filtrar e limpar palavras que podem ser nomes de Pokémon
-                const namesArray = palavras
-                    .map(word => word.trim())
-                    .filter(name => {
-                        // Remove entradas vazias, números e texto indesejado
-                        return name && 
-                               name.length > 2 && 
-                               !/^\d+$/.test(name) &&              // Remove números puros
-                               !/^(lv|lvl|level|hp|atk|def|spa|spd)(\s*\d*)?$/i.test(name) && // Remove stats
-                               !/^(male|female|shiny|★|♂|♀)$/i.test(name); // Remove outros textos
-                    })
-                    .map(name => {
-                        // Capitalizar primeira letra
-                        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-                    });
-                
-                console.log('✅ Nomes extraídos:', namesArray);
-                
-                return namesArray;
-                
+
+                // 🧹 LIMPEZA AGRESSIVA: remover números, parênteses, artefatos
+                let textoLimpo = textoExtraido
+                    .replace(/\([\d\s]*\)/g, '')              // Remove "(60)", "(44)", "( 47 )"
+                    .replace(/\[[\d\s]*\]/g, '')              // Remove "[60]"
+                    .replace(/\b\d+\b/g, '')                  // Remove números isolados
+                    .replace(/[()[\]{}<>@#$%^&*+=~`]/g, '')   // Remove caracteres especiais
+                    .replace(/\blv\.?\s*\d*/gi, '')           // Remove "Lv.50", "lv 60"
+                    .replace(/\blvl\.?\s*\d*/gi, '')          // Remove "Lvl.50"
+                    .replace(/\blevel\s*\d*/gi, '')           // Remove "Level 50"
+                    .replace(/\b(hp|atk|def|spa|spd|spe|sp\.?\s*atk|sp\.?\s*def)\b/gi, '') // Remove stats
+                    .replace(/\b(male|female|shiny|nature)\b/gi, '') // Remove outros textos
+                    .replace(/[★♂♀✦✧◆◇●○■□]/g, '')          // Remove símbolos
+                    .replace(/[_\-\.]{2,}/g, ' ')             // Separadores repetidos → espaço
+                    .replace(/\s+/g, ' ')                     // Colapsar espaços
+                    .trim();
+
+                console.log('🧹 Texto limpo:', textoLimpo);
+
+                // Dividir por linhas E espaços, preservando nomes compostos por linha
+                const linhas = textoLimpo.split(/[\n\r]+/).map(l => l.trim()).filter(l => l);
+                let candidatos = [];
+
+                for (const linha of linhas) {
+                    // Cada linha pode ter múltiplos nomes separados por espaço
+                    const partes = linha.split(/\s+/).filter(p => p.length > 1);
+
+                    // Tentar a linha inteira como nome primeiro (nomes compostos como "Mr. Mime")
+                    if (partes.length <= 3) {
+                        candidatos.push(linha.replace(/\s+/g, ' ').trim());
+                    }
+                    // Adicionar cada palavra individual também
+                    for (const p of partes) {
+                        candidatos.push(p.trim());
+                    }
+                }
+
+                console.log('📝 Candidatos encontrados:', candidatos);
+
+                // 🧠 FUZZY MATCHING: validar contra lista real de Pokémon
+                const nomesEncontrados = [];
+                const nomesJaAdicionados = new Set();
+
+                for (const candidato of candidatos) {
+                    // Limpar candidato
+                    const limpo = candidato.replace(/[^a-zA-Z\s\-'.:]/g, '').trim();
+                    if (limpo.length < 3) continue;
+
+                    // Filtrar palavras comuns que não são Pokémon
+                    if (/^(the|and|with|from|for|has|was|are|you|this|that|not|but|can|all|wild|route|city|town)$/i.test(limpo)) continue;
+
+                    const match = encontrarPokemonMaisProximo(limpo);
+                    if (match && !nomesJaAdicionados.has(match.toLowerCase())) {
+                        nomesJaAdicionados.add(match.toLowerCase());
+                        nomesEncontrados.push(match);
+                        console.log(`✅ "${limpo}" → ${match}`);
+                    }
+                }
+
+                // Se fuzzy matching não encontrou nada (lista vazia), fallback ao método antigo
+                if (nomesEncontrados.length === 0) {
+                    console.log('⚠️ Fuzzy matching sem resultados, usando fallback...');
+                    const palavras = textoLimpo.split(/[\s,;|\n\r]+/);
+                    return palavras
+                        .map(w => w.replace(/[^a-zA-Z]/g, '').trim())
+                        .filter(n => n.length > 2 && !/^\d+$/.test(n))
+                        .map(n => n.charAt(0).toUpperCase() + n.slice(1).toLowerCase());
+                }
+
+                console.log('🎯 Nomes finais (fuzzy matched):', nomesEncontrados);
+                return nomesEncontrados;
+
             } catch (erro) {
                 console.error('❌ Erro ao processar texto:', erro);
                 return [];
