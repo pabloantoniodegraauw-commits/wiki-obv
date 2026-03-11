@@ -20,23 +20,16 @@ let marketHeldItems = [];
 let marketMegaStones = [];
 let marketItensVenda = []; // Todos exceto conta
 
-// Mapeamento tipo→pasta de imagem
-const ITEM_FOLDER_MAP = {
-    'pokébola': 'pokebolas',
-    'pokebola': 'pokebolas',
-    'held item': 'helditem',
-    'mega stone': 'megastones',
-    'stone': 'stones',
-    'addon': 'addonbox',
-    'addon box': 'addonbox',
-    'dinheiro': 'dinheiro',
-    'conta': 'conta',
-    'item normal': 'itens-task',
-    'item': 'itens-task'
-};
+// Todas as pastas de imagens de itens (busca automática, sem mapeamento manual)
+const ITEM_IMAGE_FOLDERS = [
+    'ability', 'addonbox', 'conta', 'dinheiro', 'helditem',
+    'itens-task', 'megastones', 'pokebolas', 'stones'
+];
 
-// Pastas cujos arquivos usam nomes normalizados (lowercase, sem espaços)
-const FOLDERS_NORMALIZED = ['itens-task'];
+// Cache de caminhos que funcionaram: { nomeItem → caminho relativo }
+const _imagemItemCache = {};
+// Controle de fallback por elemento img
+const _imgFallbackState = new WeakMap();
 
 // ── Inicialização ───────────────────────────────
 function initMarket() {
@@ -145,7 +138,7 @@ function _reconstruirImagensCarrinho() {
                 break;
             }
             case 'item': {
-                const novaImg = obterImagemItem(item.dados?.nome || item.nome, item.dados?.tipo || '');
+                const novaImg = obterImagemItem(item.dados?.nome || item.nome);
                 if (novaImg && item.imagem !== novaImg) {
                     item.imagem = novaImg;
                     alterou = true;
@@ -196,19 +189,63 @@ function normalizarNomeImagem(nome) {
 }
 
 // ── Imagens ─────────────────────────────────────
-function obterImagemItem(nomeItem, tipoItem) {
-    const tipoLower = (tipoItem || '').toLowerCase().trim();
-    for (const [key, folder] of Object.entries(ITEM_FOLDER_MAP)) {
-        if (tipoLower.includes(key)) {
-            const nomeArquivo = FOLDERS_NORMALIZED.includes(folder)
-                ? normalizarNomeImagem(nomeItem)
-                : nomeItem;
-            return `IMAGENS/imagens-itens/${folder}/${nomeArquivo}.png`;
+
+// Gera todas as tentativas de caminho para um item (nome original + normalizado em cada pasta)
+function _gerarCaminhosImagem(nomeItem) {
+    const caminhos = [];
+    const normalizado = normalizarNomeImagem(nomeItem);
+    // Se o nome contém " - ", tentar também o prefixo (ex: "Ability Patch - Adaptability" → "Ability Patch")
+    const prefixo = nomeItem.includes(' - ') ? nomeItem.split(' - ')[0].trim() : null;
+    const prefixoNorm = prefixo ? normalizarNomeImagem(prefixo) : null;
+
+    for (const folder of ITEM_IMAGE_FOLDERS) {
+        caminhos.push(`IMAGENS/imagens-itens/${folder}/${nomeItem}.png`);
+        if (normalizado !== nomeItem) {
+            caminhos.push(`IMAGENS/imagens-itens/${folder}/${normalizado}.png`);
+        }
+        if (prefixo) {
+            caminhos.push(`IMAGENS/imagens-itens/${folder}/${prefixo}.png`);
+            if (prefixoNorm !== prefixo) {
+                caminhos.push(`IMAGENS/imagens-itens/${folder}/${prefixoNorm}.png`);
+            }
         }
     }
-    // Fallback: tentar itens-task com nome normalizado
-    const nomeFallback = normalizarNomeImagem(nomeItem);
-    return `IMAGENS/imagens-itens/itens-task/${nomeFallback}.png`;
+    return caminhos;
+}
+
+// Retorna o melhor caminho conhecido (cache) ou o primeiro candidato
+function obterImagemItem(nomeItem /*, tipoItem não é mais necessário */) {
+    if (_imagemItemCache[nomeItem]) return _imagemItemCache[nomeItem];
+    return _gerarCaminhosImagem(nomeItem)[0];
+}
+
+// Handler de erro: tenta o próximo caminho da lista
+function onItemImgError(img) {
+    const nomeItem = img.dataset.itemName;
+    if (!nomeItem) { img.style.opacity = '0.3'; return; }
+
+    let state = _imgFallbackState.get(img);
+    if (!state) {
+        state = { caminhos: _gerarCaminhosImagem(nomeItem), idx: 0 };
+        _imgFallbackState.set(img, state);
+    }
+
+    state.idx++;
+    if (state.idx < state.caminhos.length) {
+        img.src = state.caminhos[state.idx];
+    } else {
+        img.onerror = null;
+        img.style.opacity = '0.3';
+    }
+}
+
+// Handler de load: salva no cache o caminho que funcionou
+function onItemImgLoad(img) {
+    const nomeItem = img.dataset.itemName;
+    if (!nomeItem) return;
+    const state = _imgFallbackState.get(img);
+    const caminho = state ? state.caminhos[state.idx] : _gerarCaminhosImagem(nomeItem)[0];
+    _imagemItemCache[nomeItem] = caminho;
 }
 
 function obterImagemTM(tipagem) {
@@ -520,12 +557,14 @@ function renderizarGridItem(grid) {
     grid.innerHTML = resultados.map(item => {
         const nome = item['NOME'] || '';
         const tipo = item['TIPO DO ITEM'] || '';
-        const imgSrc = obterImagemItem(nome, tipo);
+        const imgSrc = obterImagemItem(nome);
         return `
             <div class="market-grid-item" onclick="selecionarItemMarket('item', '${nome.replace(/'/g, "\\'")}')">
                 <div class="market-grid-item-img">
                     <img src="${imgSrc}" alt="${nome}"
-                         onerror="this.style.opacity='0.3'">
+                         data-item-name="${nome}"
+                         onerror="onItemImgError(this)"
+                         onload="onItemImgLoad(this)">
                 </div>
                 <div class="market-grid-item-name">${nome}</div>
                 <div class="market-grid-item-sub">${tipo}</div>
@@ -800,10 +839,13 @@ function renderizarCardItem(nomeItem) {
     const nome = item['NOME'] || '';
     const tipo = item['TIPO DO ITEM'] || '';
     const desc = item['DESCRIÇÃO'] || '';
-    const imgSrc = obterImagemItem(nome, tipo);
-
-    document.getElementById('marketCardImg').src = imgSrc;
-    document.getElementById('marketCardImg').alt = nome;
+    const imgSrc = obterImagemItem(nome);
+    const cardImg = document.getElementById('marketCardImg');
+    cardImg.src = imgSrc;
+    cardImg.alt = nome;
+    cardImg.dataset.itemName = nome;
+    cardImg.onerror = function() { onItemImgError(this); };
+    cardImg.onload = function() { onItemImgLoad(this); };
     document.getElementById('marketCardName').textContent = nome;
     document.getElementById('marketCardTypeLabel').textContent = 'ITEM';
 
@@ -917,7 +959,7 @@ function adicionarAoCarrinho() {
         case 'item':
             cartItem.dados = coletarDadosItem();
             cartItem.nome = cartItem.dados.nome;
-            cartItem.imagem = obterImagemItem(cartItem.dados.nome, cartItem.dados.tipo);
+            cartItem.imagem = obterImagemItem(cartItem.dados.nome);
             break;
         case 'conta':
             cartItem.dados = coletarDadosConta();
@@ -1304,8 +1346,8 @@ function renderizarCarrinho() {
                         </button>
                     </div>
                     <div class="market-cart-card-img">
-                        <img src="${item.imagem}" alt="${item.nome}"
-                             onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
+                        <img src="${item.tipo === 'item' ? obterImagemItem(item.dados?.nome || item.nome) : item.imagem}" alt="${item.nome}"
+                             ${item.tipo === 'item' ? `data-item-name="${item.dados?.nome || item.nome}" onerror="onItemImgError(this)" onload="onItemImgLoad(this)"` : `onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'"`}>
                     </div>
                     <div class="market-cart-card-name">${item.nome}</div>
                     <div class="market-cart-card-type">
@@ -1333,7 +1375,8 @@ function renderizarCarrinho() {
             return `
                 <div class="market-cart-item">
                     <div class="market-cart-item-img">
-                        <img src="${item.imagem}" alt="${item.nome}" onerror="this.style.opacity='0.3'">
+                        <img src="${item.tipo === 'item' ? obterImagemItem(item.dados?.nome || item.nome) : item.imagem}" alt="${item.nome}"
+                             ${item.tipo === 'item' ? `data-item-name="${item.dados?.nome || item.nome}" onerror="onItemImgError(this)" onload="onItemImgLoad(this)"` : `onerror="this.style.opacity='0.3'"`}>
                     </div>
                     <div class="market-cart-item-info">
                         <div class="market-cart-item-name">${item.nome}</div>

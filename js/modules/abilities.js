@@ -314,8 +314,9 @@
         var wrap = document.getElementById('abilitiesTableWrap');
         if (!wrap) return;
 
-        // Evitar re-renderizar se já renderizou
-        if (abilitiesCarregadas && window.todasAbilities.length > 0) return;
+        // Re-renderizar se o DOM foi recriado (tabela não existe mais no wrap)
+        var tabelaExiste = wrap.querySelector('#abilitiesTable');
+        if (abilitiesCarregadas && window.todasAbilities.length > 0 && tabelaExiste) return;
 
         // Se dados já foram pré-carregados, renderizar direto (instantâneo)
         if (window.todasAbilities && window.todasAbilities.length > 0) {
