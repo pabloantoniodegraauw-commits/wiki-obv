@@ -338,6 +338,120 @@ window.addEventListener('DOMContentLoaded', function() {
             return chave ? pokemon[chave] : '';
         }
 
+        // ═══════════════════════════════════════════════════
+        // 🎨 ÍCONES SVG DOS TIPOS POKÉMON (estilo franquia)
+        // ═══════════════════════════════════════════════════
+        const TYPE_ICONS = {
+            normal:   '<svg viewBox="0 0 512 512"><circle cx="256" cy="256" r="200" fill="none" stroke="currentColor" stroke-width="48"/><circle cx="256" cy="256" r="76" fill="currentColor"/></svg>',
+            fire:     '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 28c0 0-60 100-60 180 0 20 4 38 12 54-24-14-44-40-44-74 0 0-80 80-80 180 0 80 76 144 172 144s172-64 172-144c0-120-172-240-172-340zm0 420c-44 0-80-32-80-72 0-52 40-92 80-132 40 40 80 80 80 132 0 40-36 72-80 72z"/></svg>',
+            water:    '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 36L148 244c0 0-44 68-44 132 0 84 68 152 152 152s152-68 152-152c0-64-44-132-44-132L256 36zm0 396c-62 0-112-50-112-112 0-8 2-22 6-36l106 46 106-46c4 14 6 28 6 36 0 62-50 112-112 112z"/></svg>',
+            electric: '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M352 16L144 272h104L192 496l224-288H296L352 16z"/></svg>',
+            grass:    '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M396 64c0 0-160 16-240 136S76 448 76 448s32-8 72-8c56 0 96 24 140 24 80 0 160-80 160-180C448 168 396 64 396 64zm-152 320c-36 0-68-8-100-8-16 0-30 2-42 4 12-44 40-108 96-164l28 28c-40 44-64 96-76 140 20-8 48-16 78-16 24 0 52 8 76 8 20 0 36-4 52-12-16 44-56 80-112 80z"/></svg>',
+            ice:      '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 32l-40 96-96-40 40 96-96 40H160l-40 96 96-40-40 96 96-40V432l40-96 96 40-40-96 96-40H352l40-96-96 40 40-96-96 40V80z"/></svg>',
+            fighting: '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M384 64l-64 64H192l-64-64-32 32 80 120v72l-72 72v88h48v-64l64-64h80l64 64v64h48v-88l-72-72v-72l80-120-32-32zM240 240h-32v-48h32v48zm64 0h-32v-48h32v48z"/></svg>',
+            poison:   '<svg viewBox="0 0 512 512"><circle cx="256" cy="180" r="80" fill="currentColor"/><circle cx="192" cy="360" r="60" fill="currentColor"/><circle cx="320" cy="360" r="60" fill="currentColor"/></svg>',
+            ground:   '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M64 384l192-320 192 320H64zm192-224L148 352h216L256 160z"/></svg>',
+            flying:   '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M400 128c0 0-64-64-176-64-80 0-148 40-176 64l80 48c0 0 40-32 96-32 40 0 88 20 112 48l-48 32 176 16-16-176-48 64zm-288 160l48-32-176-16 16 176 48-64c0 0 64 64 176 64 80 0 148-40 176-64l-80-48c0 0-40 32-96 32-40 0-88-20-112-48z"/></svg>',
+            psychic:  '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 48c-28 0-52 20-58 46-40 10-70 46-70 88 0 24 10 46 24 62-14 16-24 38-24 62 0 42 30 78 70 88 6 26 30 46 58 46s52-20 58-46c40-10 70-46 70-88 0-24-10-46-24-62 14-16 24-38 24-62 0-42-30-78-70-88-6-26-30-46-58-46zm0 80c22 0 40 18 40 40s-18 40-40 40-40-18-40-40 18-40 40-40zm0 216c-22 0-40-18-40-40s18-40 40-40 40 18 40 40-18 40-40 40z"/></svg>',
+            bug:      '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 176c-44 0-80 36-80 80v112c0 44 36 80 80 80s80-36 80-80V256c0-44-36-80-80-80zm48 192c0 26-22 48-48 48s-48-22-48-48V256c0-26 22-48 48-48s48 22 48 48v112zM352 176l48-64h-48l-32-48h-32l24 48h-112l24-48h-32l-32 48h-48l48 64c-28 20-48 56-48 96h16c0-44 36-80 80-80h48c44 0 80 36 80 80h16c0-40-20-76-48-96z"/></svg>',
+            rock:     '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M340 80L236 80 128 192 160 400 352 400 432 272 340 80zM328 360H184l-24-152 76-88h80l72 152-60 88z"/></svg>',
+            ghost:    '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 64c-106 0-192 86-192 192v192l64-64 48 64 48-64 48 64 48-64 48 64 48-64 64 64V256c0-106-86-192-192-192zm-64 224c-26 0-48-22-48-48s22-48 48-48 48 22 48 48-22 48-48 48zm128 0c-26 0-48-22-48-48s22-48 48-48 48 22 48 48-22 48-48 48z"/></svg>',
+            dragon:   '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 48L192 160l-80-32 32 120-80 48 96 32-16 120 112-80 112 80-16-120 96-32-80-48 32-120-80 32L256 48z"/></svg>',
+            dark:     '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 64c-106 0-192 86-192 192s86 192 192 192c36 0 70-10 98-28-82-44-138-132-138-232 0-44 12-86 32-122 4-2 6-2 8-2zm32 0c-28 40-44 88-44 140 0 100 60 186 144 224-28 16-60 24-96 24-88 0-160-72-160-160s72-160 160-160c-2 0-2-4-4-4z"/></svg>',
+            steel:    '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 80l-160 96v160l160 96 160-96V176L256 80zm120 228l-120 72-120-72V204l120-72 120 72v104zm-120-128c-35 0-64 29-64 64s29 64 64 64 64-29 64-64-29-64-64-64zm0 96c-18 0-32-14-32-32s14-32 32-32 32 14 32 32-14 32-32 32z"/></svg>',
+            fairy:    '<svg viewBox="0 0 512 512"><path fill="currentColor" d="M256 48l-36 108-108 36 108 36 36 108 36-108 108-36-108-36L256 48zm0 296l-20 60-60 20 60 20 20 60 20-60 60-20-60-20-20-60z"/></svg>'
+        };
+
+        function getTypeIcon(type) {
+            const t = (type || '').toLowerCase().trim();
+            return TYPE_ICONS[t] || '';
+        }
+
+        function typeBadgeHTML(type, extraClass) {
+            const t = (type || '').toLowerCase().trim();
+            const cls = extraClass ? `type-badge type-${t} ${extraClass}` : `type-badge type-${t}`;
+            const icon = getTypeIcon(t);
+            return `<span class="${cls}">${icon ? `<span class="type-icon">${icon}</span>` : ''}${type}</span>`;
+        }
+
+        // ═══════════════════════════════════════════════════
+        // 🛡️ SISTEMA DE FRAQUEZAS POR TIPAGEM
+        // ═══════════════════════════════════════════════════
+        const TYPE_CHART = {
+            normal:   { fighting: 2, ghost: 0 },
+            fire:     { water: 2, ground: 2, rock: 2, fire: 0.5, grass: 0.5, ice: 0.5, bug: 0.5, steel: 0.5, fairy: 0.5 },
+            water:    { electric: 2, grass: 2, fire: 0.5, water: 0.5, ice: 0.5, steel: 0.5 },
+            electric: { ground: 2, electric: 0.5, flying: 0.5, steel: 0.5 },
+            grass:    { fire: 2, ice: 2, poison: 2, flying: 2, bug: 2, water: 0.5, electric: 0.5, grass: 0.5, ground: 0.5 },
+            ice:      { fire: 2, fighting: 2, rock: 2, steel: 2, ice: 0.5 },
+            fighting: { flying: 2, psychic: 2, fairy: 2, bug: 0.5, rock: 0.5, dark: 0.5 },
+            poison:   { ground: 2, psychic: 2, grass: 0.5, fighting: 0.5, poison: 0.5, bug: 0.5, fairy: 0.5 },
+            ground:   { water: 2, grass: 2, ice: 2, electric: 0, poison: 0.5, rock: 0.5 },
+            flying:   { electric: 2, ice: 2, rock: 2, grass: 0.5, fighting: 0.5, bug: 0.5, ground: 0 },
+            psychic:  { bug: 2, ghost: 2, dark: 2, fighting: 0.5, psychic: 0.5 },
+            bug:      { fire: 2, flying: 2, rock: 2, grass: 0.5, fighting: 0.5, ground: 0.5 },
+            rock:     { water: 2, grass: 2, fighting: 2, ground: 2, steel: 2, normal: 0.5, fire: 0.5, poison: 0.5, flying: 0.5 },
+            ghost:    { ghost: 2, dark: 2, poison: 0.5, bug: 0.5, normal: 0, fighting: 0 },
+            dragon:   { ice: 2, dragon: 2, fairy: 2, fire: 0.5, water: 0.5, electric: 0.5, grass: 0.5 },
+            dark:     { fighting: 2, bug: 2, fairy: 2, ghost: 0.5, dark: 0.5, psychic: 0 },
+            steel:    { fire: 2, fighting: 2, ground: 2, normal: 0.5, grass: 0.5, ice: 0.5, flying: 0.5, psychic: 0.5, bug: 0.5, rock: 0.5, dragon: 0.5, steel: 0.5, fairy: 0.5, poison: 0 },
+            fairy:    { poison: 2, steel: 2, fighting: 0.5, bug: 0.5, dark: 0.5, dragon: 0 }
+        };
+
+        const ALL_TYPES = ['normal','fire','water','electric','grass','ice','fighting','poison','ground','flying','psychic','bug','rock','ghost','dragon','dark','steel','fairy'];
+
+        function calcularFraquezas(tipo1, tipo2) {
+            const t1 = (tipo1 || '').toLowerCase().trim();
+            const t2 = (tipo2 || '').toLowerCase().trim();
+            const resultado = {};
+
+            ALL_TYPES.forEach(atk => {
+                let mult = 1;
+                if (TYPE_CHART[t1]) {
+                    mult *= (TYPE_CHART[t1][atk] !== undefined ? TYPE_CHART[t1][atk] : 1);
+                }
+                if (t2 && TYPE_CHART[t2]) {
+                    mult *= (TYPE_CHART[t2][atk] !== undefined ? TYPE_CHART[t2][atk] : 1);
+                }
+                if (mult !== 1) resultado[atk] = mult;
+            });
+            return resultado;
+        }
+
+        function gerarFraquezasHTML(tipo1, tipo2) {
+            const eficacia = calcularFraquezas(tipo1, tipo2);
+            const grupos = { 0: [], 0.25: [], 0.5: [], 2: [], 4: [] };
+
+            Object.entries(eficacia).forEach(([tipo, mult]) => {
+                if (grupos[mult] !== undefined) grupos[mult].push(tipo);
+            });
+
+            let html = '';
+
+            // Super eficaz (4x)
+            if (grupos[4].length > 0) {
+                html += '<div class="weakness-group">';
+                html += grupos[4].map(t => `<span class="type-badge type-${t} weakness-badge" data-type="${t}"><span class="type-icon">${getTypeIcon(t)}</span><span class="weak-mult">4x</span></span>`).join('');
+                html += '</div>';
+            }
+
+            // Super eficaz (2x)
+            if (grupos[2].length > 0) {
+                html += '<div class="weakness-group">';
+                html += grupos[2].map(t => `<span class="type-badge type-${t} weakness-badge" data-type="${t}"><span class="type-icon">${getTypeIcon(t)}</span><span class="weak-mult">2x</span></span>`).join('');
+                html += '</div>';
+            }
+
+            // Sem efeito (0x)
+            if (grupos[0].length > 0) {
+                html += '<div class="weakness-group weakness-immune">';
+                html += grupos[0].map(t => `<span class="type-badge type-${t} weakness-badge immune-badge" data-type="${t}"><span class="type-icon">${getTypeIcon(t)}</span><span class="weak-mult">0x</span></span>`).join('');
+                html += '</div>';
+            }
+
+            return html;
+        }
+
         /**
          * Formatar sugestão de localização como bullet points HTML
          * "Battle City > 1un / Fuchsia < 2un" → "• Battle City → 1un\n• Fuchsia ← 2un"
@@ -432,10 +546,26 @@ window.addEventListener('DOMContentLoaded', function() {
                 </h3>
                 ${nomeBase ? `<div class="pokemon-base">Forma base: ${nomeBase}</div>` : ''}
                 <div class="pokemon-types">
-                    <span class="type-badge type-${tipo1.toLowerCase()}">${tipo1}</span>
-                    ${tipo2 ? `<span class="type-badge type-${tipo2.toLowerCase()}">${tipo2}</span>` : ''}
+                    <span class="type-badge type-${tipo1.toLowerCase()}"><span class="type-icon">${getTypeIcon(tipo1)}</span>${tipo1}</span>
+                    ${tipo2 ? `<span class="type-badge type-${tipo2.toLowerCase()}"><span class="type-icon">${getTypeIcon(tipo2)}</span>${tipo2}</span>` : ''}
                 </div>
-                <div class="pokemon-stats">
+                <button class="btn-toggle-weaknesses" onclick="this.nextElementSibling.classList.toggle('weaknesses-hidden');this.classList.toggle('stats-open')">
+                    <i class="fas fa-shield-alt"></i> Fraquezas
+                    <i class="fas fa-chevron-down toggle-arrow"></i>
+                </button>
+                <div class="pokemon-weaknesses weaknesses-hidden">
+                    ${gerarFraquezasHTML(tipo1, tipo2)}
+                    <div class="weakness-legend">
+                        <span class="legend-item"><span class="weak-mult legend-4x">4x</span> Muito fraco</span>
+                        <span class="legend-item"><span class="weak-mult legend-2x">2x</span> Fraco</span>
+                        <span class="legend-item"><span class="weak-mult legend-0x">0x</span> Imune</span>
+                    </div>
+                </div>
+                <button class="btn-toggle-stats" onclick="this.nextElementSibling.classList.toggle('stats-hidden');this.classList.toggle('stats-open')">
+                    <i class="fas fa-chart-bar"></i> Status
+                    <i class="fas fa-chevron-down toggle-arrow"></i>
+                </button>
+                <div class="pokemon-stats stats-hidden">
                     <div class="stat">
                         <div class="stat-value">${hp}</div>
                         <div class="stat-label">HP</div>
@@ -924,7 +1054,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 html += '<img class="pokedex-tm-disco" src="' + discoSrc + '" alt="' + numFormatado + '" onerror="this.src=\'IMAGENS/imagens-itens/tipagens de tm/Normal_type_tm_disk.png\'">';
                 html += '<span class="pokedex-tm-numero">' + numFormatado + '</span>';
                 html += '<span class="pokedex-tm-nome">' + tm.nome + '</span>';
-                html += '<span class="type-badge type-' + tipagem + '" style="font-size:0.7em;padding:2px 8px;">' + tm.tipagem + '</span>';
+                html += '<span class="type-badge type-' + tipagem + '" style="font-size:0.7em;padding:2px 8px;"><span class="type-icon">' + getTypeIcon(tipagem) + '</span>' + tm.tipagem + '</span>';
                 if (tm.sugestao) {
                     html += '<div class="pokedex-tm-sugestao"><i class="fas fa-lightbulb"></i> ' + tm.sugestao + '</div>';
                 }
@@ -4081,6 +4211,8 @@ window.addEventListener('DOMContentLoaded', function() {
         window.renderizarPokemons = renderizarPokemons;
         window.configurarBuscaInstantanea = configurarBuscaInstantanea;
         window.todosPokemons = todosPokemons;
+        window.getTypeIcon = getTypeIcon;
+        window.typeBadgeHTML = typeBadgeHTML;
 
         // ============================================
         // 🔍 FILTROS AVANÇADOS DA POKÉDEX
