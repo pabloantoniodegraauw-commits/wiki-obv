@@ -125,6 +125,34 @@
             </div>
             <div id="parsedMovesList" style="margin-top:10px;max-height:220px;overflow:auto;"></div>
         </div>
+
+            <!-- Painel de TMs / Held / Mega -->
+            <div style="margin-top:18px;padding:10px;border-top:1px solid rgba(255,255,255,0.03);display:flex;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:260px;">
+                    <h4><i class="fas fa-compact-disc"></i> TMs detectados</h4>
+                    <div id="builderTmsList" style="max-height:200px;overflow:auto;padding:6px;border:1px solid rgba(255,255,255,0.03);"></div>
+                </div>
+                <div style="width:260px;">
+                    <h4><i class="fas fa-box"></i> Held Item</h4>
+                    <input id="inputHeldItem" placeholder="Nome do Held Item" style="width:100%;margin-bottom:6px;" />
+                    <button id="btnAddHeld" style="width:100%;">Adicionar Held</button>
+                    <div id="heldList" style="margin-top:8px;color:rgba(255,255,255,0.9);"></div>
+                </div>
+                <div style="width:260px;">
+                    <h4><i class="fas fa-crown"></i> Mega / Stone</h4>
+                    <input id="inputMega" placeholder="Nome da Mega Stone" style="width:100%;margin-bottom:6px;" />
+                    <button id="btnAddMega" style="width:100%;">Adicionar Mega</button>
+                    <div id="megaList" style="margin-top:8px;color:rgba(255,255,255,0.9);"></div>
+                </div>
+            </div>
+
+            <!-- Salvar/Carregar localmente -->
+            <div style="margin-top:12px;padding:10px;border-top:1px solid rgba(255,255,255,0.03);display:flex;gap:8px;align-items:center;">
+                <input id="inputNomeBuildLocal" placeholder="Nome da build local" style="flex:1;padding:6px;" />
+                <button id="btnSaveLocal" style="padding:6px 10px;">Salvar Local</button>
+                <button id="btnLoadLocal" style="padding:6px 10px;">Carregar Local</button>
+            </div>
+            <div id="localBuildsList" style="margin-top:8px;max-height:200px;overflow:auto;padding:6px;border-top:1px solid rgba(255,255,255,0.03);"></div>
     </div>
 </div>
 
