@@ -480,9 +480,12 @@ function atualizarCardSmeargle() {
                                 <i class='fas fa-hashtag'></i> Slot: <b>${slotOrigem}</b>
                             </span>
                         </span>
-                        <button class="btn-remove-move" onclick="removerGolpe(${index})">
-                            <i class="fas fa-times"></i>
-                        </button>
+                                <div style="display:flex;gap:6px;align-items:center;margin-left:8px;">
+                                    <button class="btn-edit-move" onclick="editarSlot(${index})" title="Editar"><i class="fas fa-edit"></i></button>
+                                    <button class="btn-move-left" onclick="moverGolpeEsquerda(${index})" title="Mover para a esquerda"><i class="fas fa-arrow-left"></i></button>
+                                    <button class="btn-move-right" onclick="moverGolpeDireita(${index})" title="Mover para a direita"><i class="fas fa-arrow-right"></i></button>
+                                    <button class="btn-remove-move" onclick="removerGolpe(${index})" title="Remover"><i class="fas fa-times"></i></button>
+                                </div>
                     </div>
                 `);
             } else {
@@ -501,6 +504,43 @@ function atualizarCardSmeargle() {
         movesList.innerHTML = items.join('');
     }
 }
+
+// Mover golpe para a esquerda (swap)
+window.moverGolpeEsquerda = function(index) {
+    if (index <= 0) return;
+    const tmp = smeargleSelectedMoves[index-1];
+    smeargleSelectedMoves[index-1] = smeargleSelectedMoves[index];
+    smeargleSelectedMoves[index] = tmp;
+    atualizarCardSmeargle();
+    reordenarGridMovesOrdenado();
+    buscarPokemonsCompativeis();
+};
+
+// Mover golpe para a direita (swap)
+window.moverGolpeDireita = function(index) {
+    if (index >= smeargleSelectedMoves.length - 1) return;
+    const tmp = smeargleSelectedMoves[index+1];
+    smeargleSelectedMoves[index+1] = smeargleSelectedMoves[index];
+    smeargleSelectedMoves[index] = tmp;
+    atualizarCardSmeargle();
+    reordenarGridMovesOrdenado();
+    buscarPokemonsCompativeis();
+};
+
+// Editar um slot manualmente
+window.editarSlot = function(index) {
+    if (typeof index !== 'number' || index < 0 || index >= smeargleSelectedMoves.length) return;
+    const atual = smeargleSelectedMoves[index];
+    const nome = prompt('Nome do ataque:', atual ? atual.nome : '');
+    if (!nome) return;
+    const tipo = prompt('Tipo (opcional):', atual ? atual.tipo : '');
+    const categoria = prompt('Categoria (opcional):', atual ? atual.categoria : '');
+    const origem = atual && atual.origem ? atual.origem : (window.builderSelectedPokemonName || 'Manual');
+    smeargleSelectedMoves[index] = { nome: nome.trim(), tipo: (tipo||'').trim(), categoria: (categoria||'').trim(), acao: '', efeito: '', origem: origem, local: `M${index+1}` };
+    atualizarCardSmeargle();
+    reordenarGridMovesOrdenado();
+    buscarPokemonsCompativeis();
+};
 
 // Calcular tipo dominante
 function tipoDominante(moves) {

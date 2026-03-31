@@ -1,0 +1,182 @@
+<div class="builder-container">
+    <!-- Card do Pokémon (Esquerda) -->
+    <div class="smeargle-card-wrapper">
+        <div class="smeargle-card" id="smeargleCard">
+            <div class="smeargle-header">
+                <div class="smeargle-number">#</div>
+                <div class="smeargle-type-icon" id="smeargleTypeIcon">
+                    <i class="fas fa-circle"></i>
+                </div>
+            </div>
+            
+            <div class="smeargle-img-container">
+                <img src="IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png" 
+                     alt="Pokémon" 
+                     class="smeargle-img">
+            </div>
+            
+            <h3 class="smeargle-name">Build</h3>
+            <div class="smeargle-type-badge" id="smeargleTypeBadge">
+                <span class="type-badge type-normal">Tipo</span>
+            </div>
+            
+            <div class="smeargle-moves-selected" id="smeargleMovesSelected">
+                <div class="moves-selected-title">
+                    <i class="fas fa-list"></i> Golpes Selecionados (<span id="movesCount">0</span>/9)
+                </div>
+                <div class="moves-selected-list" id="movesList">
+                    <div class="no-moves-yet">Nenhum golpe selecionado</div>
+                </div>
+            </div>
+            
+            <button class="btn-clear-moves" id="btnClearMoves">
+                <i class="fas fa-trash"></i> Limpar Tudo
+            </button>
+        </div>
+    </div>
+    
+    <!-- Painel de Golpes (Direita) -->
+    <div class="smeargle-moves-panel">
+        <div class="moves-panel-header">
+            <h2>
+                <i class="fas fa-palette"></i> Construtor de Pokémons
+            </h2>
+            <p class="moves-hint">
+                <i class="fas fa-info-circle"></i> Monte o moveset do Pokémon: altere posições, adicione TMs/helds/mega
+            </p>
+        </div>
+        
+        <!-- Seletor de Pokémon -->
+        <div class="filter-group" style="display:flex;gap:8px;align-items:center;margin:10px 0;">
+            <label style="min-width:110px;"><i class="fas fa-dog"></i> Pokémon</label>
+            <input type="text" id="pokemonSearch" placeholder="Pesquisar Pokémon (ex: Hydreigon)" style="flex:1;" autocomplete="off" />
+            <button id="btnClearPokemon" style="margin-left:8px;">Limpar</button>
+        </div>
+        <div id="pokemonSuggestions" style="max-height:200px;overflow:auto;margin-bottom:8px;"></div>
+        
+        <!-- Filtros -->
+        <div class="moves-filters">
+            <div class="filter-group">
+                <label><i class="fas fa-search"></i> Buscar</label>
+                <input type="text" id="filterNome" placeholder="Nome do golpe...">
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-fire"></i> Tipo</label>
+                <select id="filterTipo">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-running"></i> Ação</label>
+                <select id="filterAcao">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-fist-raised"></i> Categoria</label>
+                <select id="filterCategoria">
+                    <option value="">Todas</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label><i class="fas fa-map-marker-alt"></i> Posição do Move</label>
+                <select id="filterLocal">
+                    <option value="">Todos</option>
+                    <option value="M1">M1</option>
+                    <option value="M2">M2</option>
+                    <option value="M3">M3</option>
+                    <option value="M4">M4</option>
+                    <option value="M5">M5</option>
+                    <option value="M6">M6</option>
+                    <option value="M7">M7</option>
+                    <option value="M8">M8</option>
+                    <option value="M9">M9</option>
+                    <option value="M10">M10</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <button class="btn-builds" id="btnBuilds" onclick="abrirModalBuilds()">
+                    <i class="fas fa-save"></i> BUILDS
+                </button>
+            </div>
+        </div>
+        
+        <!-- Grid de Golpes -->
+        <div class="moves-grid" id="movesGrid">
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Carregando golpes...</p>
+            </div>
+        </div>
+
+        <!-- Editor de Movimentos (colar da Pokedex) -->
+        <div style="margin-top:12px;padding:10px;border-top:1px solid rgba(255,255,255,0.03);">
+            <h3 style="margin:6px 0"><i class="fas fa-file-import"></i> Importar da Pokedex</h3>
+            <p style="opacity:0.8;margin:6px 0;">Cole o bloco da Pokedex do jogo no campo abaixo e clique em <strong>Parsear</strong>. Você poderá adicionar os golpes do texto diretamente em um slot.</p>
+            <textarea id="pokedexPaste" placeholder="Cole aqui o texto da Pokedex..." style="width:100%;height:160px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.03);padding:8px;color:#fff;"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <button id="btnParsePokedex" class="btn-builds"><i class="fas fa-magic"></i> Parsear</button>
+                <button id="btnClearPokedex" class="btn-builds" style="background:#555;"><i class="fas fa-ban"></i> Limpar</button>
+            </div>
+            <div id="parsedMovesList" style="margin-top:10px;max-height:220px;overflow:auto;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Builds -->
+<div class="modal-builds" id="modalBuilds" style="display: none;">
+    <div class="modal-builds-content">
+        <div class="modal-builds-header">
+            <h2><i class="fas fa-save"></i> Gerenciar Builds</h2>
+            <button class="btn-close-modal" onclick="fecharModalBuilds()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Salvar Nova Build -->
+        <div class="modal-builds-section" id="sectionSalvar">
+            <h3><i class="fas fa-plus-circle"></i> Salvar Build Atual</h3>
+            <div class="save-build-form">
+                <input type="text" id="inputNomeBuild" placeholder="Nome da build (ex: HYDREIGON OFFENSIVO)" />
+                <button class="btn-save-build" onclick="salvarBuildAtual()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+            <p class="build-preview" id="buildPreview"></p>
+        </div>
+        
+        <!-- Carregar Build Existente -->
+        <div class="modal-builds-section">
+            <h3><i class="fas fa-list"></i> Builds Salvas</h3>
+            <div class="builds-list" id="buildsList">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Carregando...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seção de Pokémons Compatíveis -->
+<div class="compatible-section">
+    <div class="compatible-header">
+        <h2>
+            <i class="fas fa-check-circle"></i> Pokémons Compatíveis com a Sequência
+        </h2>
+        <p class="compatible-hint">
+            Pokémons que podem ensinar TODOS os golpes selecionados na ordem correta
+        </p>
+    </div>
+    
+    <div class="compatible-grid" id="compatibleGrid">
+        <div class="no-selection">
+            <i class="fas fa-hand-pointer"></i>
+            <p>Selecione golpes acima para ver os Pokémons compatíveis</p>
+        </div>
+    </div>
+</div>
