@@ -174,7 +174,8 @@
 
   function renderParsedTms(tms){
     // default rendering for the right-hand TM panel
-    const c = safe('builderTmsList'); if(!c) return; c.innerHTML='';
+    // try common target ids for TM panels (compatibility): prefer combinedTmsGrid, fall back to builderTmsList
+    const c = safe('combinedTmsGrid') || safe('builderTmsList'); if(!c) return; c.innerHTML='';
     if(!tms || tms.length===0){ c.innerHTML = '<div style="opacity:0.8">Nenhum TM detectado</div>'; return; }
     const grid = document.createElement('div'); grid.className='tm-grid';
     tms.forEach((tm,i)=>{
