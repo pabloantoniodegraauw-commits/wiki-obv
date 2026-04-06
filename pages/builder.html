@@ -106,6 +106,8 @@
     .tm-tile .tm-icon{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);font-size:20px}
     .tm-tile .tm-title{font-size:11px;margin-top:6px;text-align:center}
     .tm-tile.selected{box-shadow:0 10px 40px rgba(65,184,131,0.18),0 0 20px rgba(65,184,131,0.18);transform:translateY(-6px)}
+      /* Unified TM panel: hide legacy/duplicate TM containers to show a single TM window */
+      #builderTmsList, #assignTmsGrid, #assignTmsGridInline { display: none !important; }
     .parsed-move-item{display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid rgba(255,255,255,0.03)}
     .assigned-slot{background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:6px;margin-left:8px;font-size:13px;color:#ffd966}
     /* modal moves list */

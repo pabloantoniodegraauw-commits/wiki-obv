@@ -273,7 +273,11 @@
   // init UI handlers (call when page is inserted or on DOM ready)
   function initBuilderUI(){
     const btn = safe('btnParsePokedex'); if(btn){ btn.removeEventListener && btn.removeEventListener('click', null); btn.addEventListener('click', ()=>{ const txt = safe('pokedexPaste')?safe('pokedexPaste').value:''; const parsed = parsePokedexText(txt); renderParsedMoves(parsed); }); }
-    const btnClear = safe('btnClearPokedex'); if(btnClear){ btnClear.removeEventListener && btnClear.removeEventListener('click', null); btnClear.addEventListener('click', ()=>{ if(safe('pokedexPaste')) safe('pokedexPaste').value=''; if(safe('parsedMovesList')) safe('parsedMovesList').innerHTML=''; if(safe('builderTmsList')) safe('builderTmsList').innerHTML=''; window._builder_parsed = null; window.builderMeta = {tms:[]}; updateTmCounter(); }); }
+    const btnClear = safe('btnClearPokedex'); if(btnClear){ btnClear.removeEventListener && btnClear.removeEventListener('click', null); btnClear.addEventListener('click', ()=>{ if(safe('pokedexPaste')) safe('pokedexPaste').value=''; if(safe('parsedMovesList')) safe('parsedMovesList').innerHTML=''; // clear the unified TM panel
+      if(safe('combinedTmsGrid')) safe('combinedTmsGrid').innerHTML='';
+      // legacy fallback
+      if(safe('builderTmsList')) safe('builderTmsList').innerHTML='';
+      window._builder_parsed = null; window.builderMeta = {tms:[]}; updateTmCounter(); }); }
     const submit = safe('btnSubmitBuild'); if(submit){ submit.removeEventListener && submit.removeEventListener('click', null); submit.addEventListener('click', ()=>{ console.log('Build submit', {moves: window.smeargleSelectedMoves, meta: window.builderMeta}); alert('Build submetido (veja console)'); }); }
     // clicking a selected move in the left card opens the TM modal
     const movesList = safe('movesList'); if(movesList){ movesList.addEventListener('click', function(ev){ const item = ev.target.closest ? ev.target.closest('.selected-move-item') : null; if(!item) return; const slot = parseInt(item.dataset-slot,10); if(!slot) return; const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1]); openCombinedAssignInline(moveObj, slot-1); }); }
