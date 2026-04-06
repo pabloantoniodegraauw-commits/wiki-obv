@@ -131,6 +131,9 @@
     #combinedTmsGrid .tm-tile .tm-meta{font-size:12px;opacity:0.85}
     #combinedTmsGrid .tm-badge-top{left:12px;top:12px;background:rgba(0,0,0,0.35);padding:4px 6px;border-radius:8px;font-size:11px}
     #combinedTmsGrid .tm-number-badge{right:12px;top:12px;background:rgba(0,0,0,0.55);padding:4px 8px;border-radius:10px;font-size:12px}
+    /* Ensure inner grid created by JS uses single-column when inside combinedTmsGrid */
+    #combinedTmsGrid .tm-grid{grid-template-columns:1fr !important; display:grid; gap:12px}
+    #combinedTmsGrid .tm-grid .tm-tile{width:100% !important; min-height:64px}
 
     /* Smeargle-style move cards */
     .builder-card{border-radius:12px; padding:12px; color:#fff; box-shadow:0 12px 30px rgba(0,0,0,0.45); display:flex; flex-direction:column; justify-content:space-between; min-height:88px}
