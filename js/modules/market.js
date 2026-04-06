@@ -1493,11 +1493,53 @@ function gerarTextoVendaCompleto() {
     return texto.trim();
 }
 
+// Gera o texto da venda apenas com os itens atualmente filtrados na visualização do carrinho
+function gerarTextoVendaFiltrada() {
+    const filtrados = _obterItensFiltrados().map(f => f.item);
+    if (filtrados.length === 0) return '';
+
+    const pokemons = filtrados.filter(i => i.tipo === 'pokemon');
+    const tms = filtrados.filter(i => i.tipo === 'tm');
+    const itens = filtrados.filter(i => i.tipo === 'item');
+    const contas = filtrados.filter(i => i.tipo === 'conta');
+
+    let texto = '';
+
+    if (pokemons.length > 0) {
+        texto += '🔥 POKÉMONS\n\n';
+        pokemons.forEach(p => { texto += p.texto + '\n\n'; });
+    }
+    if (tms.length > 0) {
+        texto += '💿 TMs\n\n';
+        tms.forEach(t => { texto += t.texto + '\n\n'; });
+    }
+    if (itens.length > 0) {
+        texto += '📦 ITENS\n\n';
+        itens.forEach(i => { texto += i.texto + '\n\n'; });
+    }
+    if (contas.length > 0) {
+        texto += '👤 CONTAS\n\n';
+        contas.forEach(c => { texto += c.texto + '\n\n'; });
+    }
+
+    const telefone = document.getElementById('inputTelefone')?.value || '';
+    if (telefone) {
+        texto += `📞 Contato: ${telefone}\n`;
+    }
+
+    return texto.trim();
+}
+
 // ── Copiar Texto ────────────────────────────────
 function copiarTextoVenda() {
-    const texto = gerarTextoVendaCompleto();
+    // Se há filtro ativo, gerar texto apenas dos itens filtrados
+    const texto = (marketCarrinhoFiltro && marketCarrinhoFiltro.trim() !== '') ? gerarTextoVendaFiltrada() : gerarTextoVendaCompleto();
     if (!texto) {
-        alert('Carrinho vazio!');
+        if (marketCarrinhoFiltro && marketCarrinhoFiltro.trim() !== '') {
+            alert('Nenhum item corresponde à pesquisa.');
+        } else {
+            alert('Carrinho vazio!');
+        }
         return;
     }
 
