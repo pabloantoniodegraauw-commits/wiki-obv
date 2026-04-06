@@ -61,7 +61,7 @@
               </div>
               <div style="width:420px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;max-height:70vh;overflow:auto">
                 <h4 style="margin-top:0;margin-bottom:8px">TMs e MTs</h4>
-                <div id="combinedTmsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,84px);gap:12px"></div>
+                <div id="combinedTmsGrid" style="display:grid;grid-template-columns:1fr;gap:12px"></div>
               </div>
             </div>
           </div>
@@ -122,5 +122,13 @@
     #assignTmsGrid .tm-tile .tm-badge-top{left:6px;top:6px;font-size:10px;padding:3px 5px}
     #assignTmsGrid .tm-tile .tm-number-badge{right:6px;top:6px;font-size:10px;padding:3px 6px}
     #assignTmsGrid .tm-tile.selected{box-shadow:0 8px 30px rgba(65,184,131,0.25),0 0 24px rgba(65,184,131,0.24);transform:translateY(-6px);border:2px solid rgba(65,184,131,0.25)}
+    /* Style combined TMs as full-width move-cards to match parsed moves */
+    #combinedTmsGrid{display:grid;grid-template-columns:1fr;gap:12px}
+    #combinedTmsGrid .tm-tile{width:100%;height:auto;min-height:64px;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));display:flex;flex-direction:row;align-items:center;justify-content:space-between;position:relative;color:#fff;font-weight:800;box-shadow:0 10px 30px rgba(0,0,0,0.25);}
+    #combinedTmsGrid .tm-tile .tm-icon{width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:20px;margin-right:12px}
+    #combinedTmsGrid .tm-tile .tm-title{font-size:15px;margin:0;color:#fff}
+    #combinedTmsGrid .tm-tile .tm-meta{font-size:12px;opacity:0.85}
+    #combinedTmsGrid .tm-badge-top{left:12px;top:12px;background:rgba(0,0,0,0.35);padding:4px 6px;border-radius:8px;font-size:11px}
+    #combinedTmsGrid .tm-number-badge{right:12px;top:12px;background:rgba(0,0,0,0.55);padding:4px 8px;border-radius:10px;font-size:12px}
   </style>
 </div>
