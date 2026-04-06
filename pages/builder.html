@@ -58,7 +58,7 @@
             <div id="combinedPanel" style="display:flex;flex-direction:column;gap:12px;align-items:stretch;">
               <div style="width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;max-height:40vh;overflow:auto">
                 <h4 style="margin-top:0;margin-bottom:8px">Golpes detectados</h4>
-                <div id="combinedMovesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
+                <div id="combinedMovesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
               </div>
               <div style="width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;max-height:40vh;overflow:auto">
                 <h4 style="margin-top:0;margin-bottom:8px">TMs e MTs</h4>
@@ -123,17 +123,20 @@
     #assignTmsGrid .tm-tile .tm-badge-top{left:6px;top:6px;font-size:10px;padding:3px 5px}
     #assignTmsGrid .tm-tile .tm-number-badge{right:6px;top:6px;font-size:10px;padding:3px 6px}
     #assignTmsGrid .tm-tile.selected{box-shadow:0 8px 30px rgba(65,184,131,0.25),0 0 24px rgba(65,184,131,0.24);transform:translateY(-6px);border:2px solid rgba(65,184,131,0.25)}
-    /* Style combined TMs as full-width move-cards to match parsed moves */
-    #combinedTmsGrid{display:grid;grid-template-columns:1fr;gap:12px}
-    #combinedTmsGrid .tm-tile{width:100%;height:auto;min-height:64px;padding:12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));display:flex;flex-direction:row;align-items:center;justify-content:space-between;position:relative;color:#fff;font-weight:800;box-shadow:0 10px 30px rgba(0,0,0,0.25);}
-    #combinedTmsGrid .tm-tile .tm-icon{width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:20px;margin-right:12px}
-    #combinedTmsGrid .tm-tile .tm-title{font-size:15px;margin:0;color:#fff}
-    #combinedTmsGrid .tm-tile .tm-meta{font-size:12px;opacity:0.85}
-    #combinedTmsGrid .tm-badge-top{left:12px;top:12px;background:rgba(0,0,0,0.35);padding:4px 6px;border-radius:8px;font-size:11px}
-    #combinedTmsGrid .tm-number-badge{right:12px;top:12px;background:rgba(0,0,0,0.55);padding:4px 8px;border-radius:10px;font-size:12px}
-    /* Ensure inner grid created by JS uses single-column when inside combinedTmsGrid */
-    #combinedTmsGrid .tm-grid{grid-template-columns:1fr !important; display:grid; gap:12px}
-    #combinedTmsGrid .tm-grid .tm-tile{width:100% !important; min-height:64px}
+    /* Style combined TMs as a grid of Smeargle-like cards */
+    #combinedTmsGrid{display:block}
+    /* the JS injects an inner .tm-grid — style it as the same responsive card grid used for detected moves */
+    #combinedTmsGrid .tm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+    /* make each TM tile match the visual size/spacing of move-card/builder-card */
+    #combinedTmsGrid .tm-tile.move-card{position:relative;min-height:88px;padding:10px;border-radius:12px;background:transparent;border:none;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;text-align:left;box-shadow:0 8px 22px rgba(0,0,0,0.35)}
+    #combinedTmsGrid .tm-tile.move-card:hover{transform:translateY(-4px);box-shadow:0 14px 40px rgba(0,0,0,0.45)}
+    #combinedTmsGrid .tm-tile.move-card .move-tipo-icon{font-size:1.6em;margin-bottom:8px;color:#ffd700}
+    #combinedTmsGrid .tm-tile.move-card .move-name{font-weight:900;font-size:1.05em;margin-bottom:6px;color:#fff}
+    #combinedTmsGrid .tm-tile.move-card .move-details{margin-bottom:6px}
+    /* numeric badge as small circle at top-left (like Smeargle) */
+    #combinedTmsGrid .tm-tile.move-card .tm-number-badge{position:absolute;left:10px;top:10px;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);color:#fff;font-weight:800}
+    /* hide legacy small top badge */
+    #combinedTmsGrid .tm-tile.move-card .tm-badge-top{display:none}
 
     /* Smeargle-style move cards */
     .builder-card{border-radius:12px; padding:12px; color:#fff; box-shadow:0 12px 30px rgba(0,0,0,0.45); display:flex; flex-direction:column; justify-content:space-between; min-height:88px}
@@ -159,5 +162,11 @@
     /* make TM tiles match move-card inner layout */
     #combinedTmsGrid .tm-tile .tm-left{display:flex;align-items:center;gap:12px}
     #combinedTmsGrid .tm-tile .tm-right{display:flex;align-items:center;gap:10px}
+    /* Helpers for modal move items and inline lists */
+    .modal-move-inner{display:flex;gap:10px;align-items:center}
+    .modal-move-main{flex:1}
+    .tm-icon{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0}
+    .selected-move-highlight{outline:3px solid rgba(65,184,131,0.18)}
+    .slot-badge{background:rgba(255,255,255,0.05);padding:6px 8px;border-radius:999px;font-weight:800;color:#ffd966}
   </style>
 </div>

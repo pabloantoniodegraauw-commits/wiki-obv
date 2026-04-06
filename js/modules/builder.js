@@ -120,11 +120,30 @@
     const combined = safe('combinedMovesGrid'); if(combined) {
       combined.innerHTML = '';
       (parsed.moves||[]).forEach((mv, idx)=>{
-        const slotBadge = mv.assignedSlot ? `<div style="color:#ffd966;font-weight:700;font-size:12px">M${mv.assignedSlot}</div>` : '';
+        const slotBadge = mv.assignedSlot ? `<div class="slot-badge">M${mv.assignedSlot}</div>` : '';
         const card = document.createElement('div');
         card.className = `move-card builder-card type-${(mv.tipo||'').toString().toLowerCase()}`;
-        card.style.padding='10px'; card.style.borderRadius='12px'; card.style.background='linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04))'; card.style.cursor='pointer';
-        card.innerHTML = `<div style="font-weight:800">${mv.nome}</div><div style="opacity:0.85;font-size:12px">${mv.tipo||''} ${mv.categoria?('• '+mv.categoria):''}</div><div style="margin-top:8px;display:flex;gap:8px;align-items:center"><select id="parsed-slot-${idx}">${[...Array(slots)].map((_,i)=>`<option value="${i+1}" ${mv.assignedSlot===(i+1)?'selected':''}>M${i+1}</option>`).join('')}</select><button data-idx="${idx}" class="btn-add-parsed">Adicionar</button>${slotBadge}</div>`;
+        const origemName = (parsed && parsed.meta && parsed.meta.nome) ? parsed.meta.nome : 'Pokedex';
+        // use Smeargle-like inner structure so styles apply consistently
+        card.innerHTML = `
+          <div class="move-tipo-icon">⚡</div>
+          <div class="move-name">${mv.nome}</div>
+          <div class="move-details">
+            <span class="move-tipo">${mv.tipo||''}</span>
+            <span class="move-categoria">${mv.categoria?mv.categoria:''}</span>
+          </div>
+          <div class="move-acao" style="display:none"></div>
+          <div class="move-efeito" style="display:none"></div>
+          <div class="move-origem">${origemName}</div>
+          <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:6px;">
+            <i class="fas fa-hashtag"></i> Slot: <b>M${mv.assignedSlot||''}</b>
+          </div>
+          <div class="move-actions" style="margin-top:8px;display:flex;gap:8px;align-items:center">
+            <select id="parsed-slot-${idx}">${[...Array(slots)].map((_,i)=>`<option value="${i+1}" ${mv.assignedSlot===(i+1)?'selected':''}>M${i+1}</option>`).join('')}</select>
+            <button data-idx="${idx}" class="btn-add-parsed">Adicionar</button>
+            ${slotBadge}
+          </div>
+        `;
         card.addEventListener('click', function(ev){ if(ev.target && ev.target.classList && ev.target.classList.contains('btn-add-parsed')) return; openCombinedAssignInline(Object.assign({}, mv), mv.assignedSlot?mv.assignedSlot-1:0); });
         combined.appendChild(card);
       });
@@ -142,10 +161,10 @@
       if(!movesContainer || !tmsContainer) return;
       movesContainer.innerHTML = '';
       (parsed.moves||[]).forEach((mv,idx)=>{
-        const el = document.createElement('div'); el.className='inline-move-row'; el.style.padding='6px'; el.style.borderBottom='1px solid rgba(255,255,255,0.03)'; el.style.cursor='pointer';
-        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${mv.nome}</strong><div style="opacity:0.8;font-size:12px">${mv.tipo||''} ${mv.categoria?('• '+mv.categoria):''}</div></div><div style="color:#ffd966">${mv.assignedSlot?('M'+mv.assignedSlot):''}</div></div>`;
+        const el = document.createElement('div'); el.className='modal-move-item';
+        const assigned = mv.assignedSlot ? (`<span class="assigned-slot">M${mv.assignedSlot}</span>`) : '';
+        el.innerHTML = `<strong>${mv.nome}</strong><div class="move-sub">${mv.tipo||''} ${mv.categoria?('• '+mv.categoria):''}</div><div style="margin-top:6px">${assigned}</div>`;
         el.addEventListener('click', ()=>{ // select move -> render its TM selection
-          // simulate opening inline assign for a temporary move object
           const slotIdx = mv.assignedSlot ? mv.assignedSlot-1 : 0;
           const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slotIdx] : window.smeargleSelectedMoves && window.smeargleSelectedMoves[slotIdx]) || Object.assign({}, mv, {tms: mv.tms||[]});
           openCombinedAssignInline(moveObj, slotIdx);
@@ -156,8 +175,53 @@
       const parsedTms = (parsed.tms||[]);
       const grid = document.createElement('div'); grid.className='tm-grid';
       parsedTms.forEach((tm,i)=>{
-        const tile = document.createElement('div'); tile.className='tm-tile'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || '';
-        tile.innerHTML = `<div class="tm-badge-top">TM</div><div class="tm-number-badge">${tm.numero||''}</div><div class="tm-icon">⚡</div><div class="tm-title">${tm.nome}</div>`;
+        const tile = document.createElement('div'); tile.className='tm-tile move-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || '';
+          // try to detect type for this TM (check multiple datasets: tm object, global todosTMs, smeargleAtacksData)
+          (function(){
+            let tipo = (tm.tipagem || tm.tipo || tm.type || '').toString().trim();
+            // 1) try todosTMs (sheet) by number or by name
+            try{
+              const todos = window.todosTMs || [];
+              if(!tipo && Array.isArray(todos) && todos.length){
+                const nm = (tm.nome||'').toString().toLowerCase().trim();
+                const byNumber = todos.find(x=> String(x.numero||'') === String(tm.numero||'') );
+                const byName = todos.find(x=> (x.nome||'').toString().toLowerCase().trim() === nm || (x.nome||'').toString().toLowerCase().includes(nm) || nm.includes((x.nome||'').toString().toLowerCase().trim()));
+                const found = byNumber || byName;
+                if(found) tipo = (found.tipagem || found.TIPAGEM || found['TIPAGEM DO TM'] || found.type || found.tipo || '').toString().trim();
+              }
+            }catch(e){}
+            // 2) try smeargleAtacksData (attacks sheet)
+            if(!tipo){
+              try{
+                const lookup = (typeof smeargleAtacksData !== 'undefined') ? smeargleAtacksData : (window.smeargleAtacksData || []);
+                if(Array.isArray(lookup) && lookup.length){
+                  const nm = (tm.nome||'').toString().toLowerCase().trim();
+                  const found = lookup.find(a=> {
+                    const atn = (a['ATACK']||a['ATACK_NAME']||a['ATACK_NAME_PT']||a['ATACK_PT']||a['ATACK_BR']||'').toString().toLowerCase().trim();
+                    return atn === nm || atn.includes(nm) || nm.includes(atn);
+                  });
+                  if(found) tipo = (found['TYPE']||found['TYPE_PT']||found['Tipo']||found['TIPO']||found['TIPAGEM']||found['TIPAGEM DO TM']||found.type||found.tipo||'').toString().trim();
+                }
+              }catch(e){}
+            }
+            if(tipo) tile.className += ' type-'+tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'');
+          })();
+            const slotOrig = tm.numero ? tm.numero : '';
+            tile.innerHTML = `
+              <div class="move-tipo-icon">⚡</div>
+              <div class="move-name">${tm.nome}</div>
+              <div class="move-details">
+                <span class="move-tipo">${(tm.tipo||tm.tipagem||'TM')}</span>
+                <span class="move-categoria">${tm.categoria||''}</span>
+              </div>
+              <div class="move-acao" style="display:none"></div>
+              <div class="move-efeito" style="display:none"></div>
+              <div class="move-origem">${tm.pokemon||''}</div>
+              <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;">
+                <i class="fas fa-hashtag"></i> Slot: <b>${slotOrig}</b>
+              </div>
+              <div class="tm-number-badge">${tm.numero||''}</div>
+            `;
         tile.addEventListener('click', ()=>{
           // toggle global selection in builderMeta
           window.builderMeta = window.builderMeta || {tms:[]};
@@ -179,8 +243,42 @@
     if(!tms || tms.length===0){ c.innerHTML = '<div style="opacity:0.8">Nenhum TM detectado</div>'; return; }
     const grid = document.createElement('div'); grid.className='tm-grid';
     tms.forEach((tm,i)=>{
-      const tile = document.createElement('div'); tile.className='tm-tile'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
-      tile.innerHTML = `<div class="tm-badge-top">TM</div><div class="tm-number-badge">${tm.numero||''}</div><div class="tm-icon">⚡</div><div class="tm-title">${tm.nome}</div>`;
+      const tile = document.createElement('div'); tile.className='tm-tile move-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
+      (function(){
+        let tipo = (tm.tipagem || tm.tipo || tm.type || '').toString().trim();
+        try{
+          const todos = window.todosTMs || [];
+          if(!tipo && Array.isArray(todos) && todos.length){
+            const nm = (tm.nome||tm.name||'').toString().toLowerCase().trim();
+            const byNumber = todos.find(x=> String((x.numero||'') ) === String(tm.numero||''));
+            const byName = todos.find(x=> (x['NOME DO TM']||x.nome||'').toString().toLowerCase().trim() === nm || (x['NOME DO TM']||x.nome||'').toString().toLowerCase().includes(nm) || nm.includes(((x['NOME DO TM']||x.nome||'').toString().toLowerCase().trim())));
+            const found = byNumber || byName;
+            if(found) tipo = (found.tipagem || found.TIPAGEM || found['TIPAGEM DO TM'] || found.type || found.tipo || found['TIPAGEM_DO_TM'] || '').toString().trim();
+          }
+        }catch(e){}
+        if(!tipo){
+          try{ const lookup = (typeof smeargleAtacksData !== 'undefined') ? smeargleAtacksData : (window.smeargleAtacksData || []);
+            if(Array.isArray(lookup) && lookup.length){ const nm = (tm.nome||tm.name||'').toString().toLowerCase().trim(); const found = lookup.find(a=> { const atn=(a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||'').toString().toLowerCase().trim(); return atn===nm || atn.includes(nm) || nm.includes(atn); }); if(found) tipo=(found['TYPE']||found['type']||found['TIPAGEM']||found['TIPAGEM DO TM']||found.tipo||'').toString().trim(); }
+          }catch(e){}
+        }
+        if(tipo) tile.className += ' type-'+tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'');
+      })();
+      const slotOrig2 = tm.numero ? tm.numero : '';
+      tile.innerHTML = `
+        <div class="move-tipo-icon">⚡</div>
+        <div class="move-name">${tm.nome}</div>
+        <div class="move-details">
+          <span class="move-tipo">${(tm.tipo||tm.tipagem||'TM')}</span>
+          <span class="move-categoria">${tm.categoria||''}</span>
+        </div>
+        <div class="move-acao" style="display:none"></div>
+        <div class="move-efeito" style="display:none"></div>
+        <div class="move-origem" style="display:none">${tm.pokemon||''}</div>
+        <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;display:none;">
+          <i class="fas fa-hashtag"></i> Slot: <b>${slotOrig2}</b>
+        </div>
+        <div class="tm-number-badge">${tm.numero||''}</div>
+      `;
       tile.tabIndex=0; tile.setAttribute('role','button');
       tile.addEventListener('click', ()=>{
         window.builderMeta = window.builderMeta || {tms:[]};
@@ -203,10 +301,51 @@
     const grid = document.createElement('div'); grid.className='tm-grid';
     moveObj.tms = moveObj.tms || [];
     tms.forEach((tm,i)=>{
-      const tile = document.createElement('div'); tile.className='tm-tile'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
+      const tile = document.createElement('div'); tile.className='tm-tile move-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
+      (function(){
+        let tipo = (tm.tipagem || tm.tipo || tm.type || '').toString().trim();
+        try{
+          const todos = window.todosTMs || [];
+          if(!tipo && Array.isArray(todos) && todos.length){
+            const nm = (tm.nome||tm.name||'').toString().toLowerCase().trim();
+            const byNumber = todos.find(x=> String((x.numero||'')) === String(tm.numero||''));
+            const byName = todos.find(x=> (x['NOME DO TM']||x.nome||'').toString().toLowerCase().trim() === nm || (x['NOME DO TM']||x.nome||'').toString().toLowerCase().includes(nm) || nm.includes(((x['NOME DO TM']||x.nome||'').toString().toLowerCase().trim())));
+            const found = byNumber || byName;
+            if(found) tipo = (found.tipagem || found.TIPAGEM || found['TIPAGEM DO TM'] || found.type || found.tipo || found['TIPAGEM_DO_TM'] || '').toString().trim();
+          }
+        }catch(e){}
+        if(!tipo){
+          try{ const lookup = (typeof smeargleAtacksData !== 'undefined') ? smeargleAtacksData : (window.smeargleAtacksData || []);
+            if(Array.isArray(lookup) && lookup.length){
+              const nm=(tm.nome||tm.name||'').toString().toLowerCase().trim();
+              const found=lookup.find(a=> {
+                const atn=(a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||'').toString().toLowerCase().trim();
+                return atn===nm || atn.includes(nm) || nm.includes(atn);
+              });
+              if(found) tipo=(found['TYPE']||found['type']||found['TIPAGEM']||found['TIPAGEM DO TM']||found.tipo||'').toString().trim();
+            }
+          }catch(e){}
+        }
+        if(tipo) tile.className += ' type-'+tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'');
+      })();
       const isSel = moveObj.tms.find(x=> (x.nome||x).toString().toLowerCase()===(tile.dataset.tmName||'').toLowerCase());
       if(isSel) tile.classList.add('selected');
-      tile.innerHTML = `<div class="tm-badge-top">TM</div><div class="tm-number-badge">${tm.numero||''}</div><div class="tm-icon">⚡</div><div class="tm-title">${tm.nome}</div>`;
+      const slotOrig3 = tm.numero ? tm.numero : '';
+      tile.innerHTML = `
+        <div class="move-tipo-icon">⚡</div>
+        <div class="move-name">${tm.nome}</div>
+        <div class="move-details">
+          <span class="move-tipo">${(tm.tipo||tm.tipagem||'TM')}</span>
+          <span class="move-categoria">${tm.categoria||''}</span>
+        </div>
+        <div class="move-acao" style="display:none"></div>
+        <div class="move-efeito" style="display:none"></div>
+        <div class="move-origem">${tm.pokemon||''}</div>
+        <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;">
+          <i class="fas fa-hashtag"></i> Slot: <b>${slotOrig3}</b>
+        </div>
+        <div class="tm-number-badge">${tm.numero||''}</div>
+      `;
       tile.tabIndex=0; tile.setAttribute('role','button');
       tile.addEventListener('click', ()=>{
         const name = tile.dataset.tmName;
@@ -312,11 +451,11 @@
     function renderMovesLeft(){
       movesContainer.innerHTML = '';
       movesCopy.forEach((mv, i)=>{
-        const el = document.createElement('div'); el.className='modal-move-item'; el.style.padding='10px'; el.style.borderRadius='10px'; el.style.marginBottom='8px'; el.style.cursor='pointer'; el.style.display='flex'; el.style.gap='10px';
-        if(i===selectedIdx) el.style.outline='3px solid rgba(65,184,131,0.18)';
+        const el = document.createElement('div'); el.className='modal-move-item';
+        if(i===selectedIdx) el.classList.add('selected-move-highlight');
         const assigned = mv.assignedSlot ? `<span class="assigned-slot">M${mv.assignedSlot}</span>` : '';
-        const icon = `<div style="width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff">⚡</div>`;
-        el.innerHTML = `<div style="display:flex;gap:10px;align-items:center;flex:1">${icon}<div style="flex:1"><strong>${mv.nome}</strong><div style="opacity:0.8;font-size:12px">${mv.tipo||''} ${mv.categoria?('• '+mv.categoria):''}</div></div>${assigned}</div>`;
+        const icon = `<div class="tm-icon">⚡</div>`;
+        el.innerHTML = `<div class="modal-move-inner">${icon}<div class="modal-move-main"><strong>${mv.nome}</strong><div class="move-sub">${mv.tipo||''} ${mv.categoria?('• '+mv.categoria):''}</div></div>${assigned}</div>`;
         el.addEventListener('click', ()=>{ selectedIdx = i; // re-render tm grid for selected
           renderMovesLeft(); renderTmGridForMove(tmsContainer, (window._builder_parsed && window._builder_parsed.tms)?window._builder_parsed.tms:[], moveObjForModal());
         });
@@ -338,10 +477,10 @@
         function renderLeft(){
           movesContainer.innerHTML = '';
           movesCopy.forEach((mv,i)=>{
-            const el = document.createElement('div'); el.className='modal-move-item'; el.style.padding='6px'; el.style.borderRadius='8px'; el.style.marginBottom='6px'; el.style.cursor='pointer';
-            if(i===selectedIdx) el.style.outline='2px solid rgba(65,184,131,0.16)';
+            const el = document.createElement('div'); el.className='modal-move-item';
+            if(i===selectedIdx) el.classList.add('selected-move-highlight');
             const assigned = mv.assignedSlot ? `<span class="assigned-slot">M${mv.assignedSlot}</span>` : '';
-            el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${mv.nome}</strong><div style="opacity:0.8;font-size:12px">${mv.tipo||''} ${mv.categoria?('• '+mv.categoria):''}</div></div>${assigned}</div>`;
+            el.innerHTML = `<div class="modal-move-inner"><div class="modal-move-main"><strong>${mv.nome}</strong><div class="move-sub">${mv.tipo||''} ${mv.categoria?('• '+mv.categoria):''}</div></div>${assigned}</div>`;
             el.addEventListener('click', ()=>{ selectedIdx = i; renderLeft(); renderTmGridForMove(tmsContainer, (window._builder_parsed && window._builder_parsed.tms)?window._builder_parsed.tms:[], moveObjForInline()); });
             movesContainer.appendChild(el);
           });
