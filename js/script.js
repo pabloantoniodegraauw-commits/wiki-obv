@@ -538,7 +538,7 @@ window.addEventListener('DOMContentLoaded', function() {
             card.innerHTML = `
                 ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                 <div class="img-container">
-                    <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
+                    <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='">
                 </div>
                 ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
                 <h3 class="pokemon-name">

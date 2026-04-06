@@ -13,6 +13,7 @@ let marketDadosCarregados = { itens: false, natures: false, pokemon: false };
 let marketUsarStickers = false; // false = sprite-pokemon, true = stickers
 let marketVistaCarrinho = 'cards'; // 'lista' ou 'cards'
 let marketEditandoIndex = null; // índice do item sendo editado no carrinho
+let marketCarrinhoFiltro = ''; // string de busca para filtrar visualização do carrinho
 
 // Subconjuntos de Itens (preenchidos ao carregar)
 let marketPokebolas = [];
@@ -483,7 +484,7 @@ function renderizarGridPokemon(grid) {
                 ${evBadge}
                 <div class="market-grid-item-img">
                     <img src="${imgSrc}" alt="${nomePrincipal}"
-                         onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
+                        onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='">
                 </div>
                 <div class="market-grid-item-name">${nomePrincipal}</div>
                 <div class="market-grid-item-sub">${ev ? nomePokemon + ' · ' : ''}${tipo1}</div>
@@ -652,7 +653,7 @@ function renderizarCardPokemon(nomeOuEV) {
     document.getElementById('marketCardImg').alt = nomePrincipal;
     document.getElementById('marketCardImg').onerror = function() {
         this.onerror = null;
-        this.src = 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png';
+        this.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
     };
     document.getElementById('marketCardName').textContent = nomePrincipal;
     document.getElementById('marketCardTypeLabel').textContent = 'POKÉMON';
@@ -1275,6 +1276,50 @@ function alternarVistaCarrinho(vista) {
     renderizarCarrinho();
 }
 
+// Filtrar itens do carrinho com base em tokens separados por vírgula/espaço
+function filtrarCarrinho() {
+    const q = (document.getElementById('marketCartSearch')?.value || '').trim();
+    marketCarrinhoFiltro = q;
+    renderizarCarrinho();
+}
+
+// Limpa o campo de pesquisa do carrinho e re-renderiza
+function limparFiltroCarrinho() {
+    const input = document.getElementById('marketCartSearch');
+    if (input) {
+        input.value = '';
+        input.focus();
+    }
+    marketCarrinhoFiltro = '';
+    renderizarCarrinho();
+}
+
+function _obterItensFiltrados() {
+    const q = (marketCarrinhoFiltro || '').trim().toLowerCase();
+    const todos = marketCarrinho.map((it, idx) => ({ item: it, idx }));
+    if (!q) return todos;
+
+    const tokens = q.split(/[,\s]+/).map(t => t.trim()).filter(Boolean);
+    return todos.filter(({ item }) => {
+        const campos = [item.nome, item.tipo, item.dados?.nome, item.dados?.label, String(item.dados?.numero || '')]
+            .filter(Boolean).join(' ').toLowerCase();
+
+        return tokens.some(tok => {
+            if (!tok) return false;
+            if (campos.includes(tok)) return true;
+            // numeric fuzzy match: compare token without leading zeros
+            const tokNum = tok.replace(/^0+/, '');
+            const itemNum = String(item.dados?.numero || '').replace(/^0+/, '');
+            if (tokNum && itemNum && itemNum.includes(tokNum)) return true;
+            // also check padded number forms
+            if (String(item.dados?.numero || '').padStart(2, '0').includes(tok)) return true;
+            return false;
+        });
+    });
+}
+
+
+
 function renderizarCarrinho() {
     const list = document.getElementById('marketCartList');
     const count = document.getElementById('cartCount');
@@ -1284,6 +1329,21 @@ function renderizarCarrinho() {
     if (!list) return;
 
     if (count) count.textContent = marketCarrinho.length;
+
+    const tipoLabels = { pokemon: 'Pokémon', tm: 'TM', item: 'Item', conta: 'Conta' };
+
+    // Itens filtrados (retornam objeto {item, idx} onde idx é o índice original no marketCarrinho)
+    const filtrados = _obterItensFiltrados();
+
+    // Atualizar label de filtragem (por ex: mostrando X de Y)
+    const filteredLabel = document.getElementById('cartFilteredLabel');
+    if (filteredLabel) {
+        if (marketCarrinhoFiltro && marketCarrinhoFiltro.trim() !== '') {
+            filteredLabel.textContent = `(mostrando ${filtrados.length} de ${marketCarrinho.length})`;
+        } else {
+            filteredLabel.textContent = '';
+        }
+    }
 
     if (marketCarrinho.length === 0) {
         if (empty) empty.style.display = 'flex';
@@ -1298,11 +1358,9 @@ function renderizarCarrinho() {
 
     if (actions) actions.style.display = 'flex';
 
-    const tipoLabels = { pokemon: 'Pokémon', tm: 'TM', item: 'Item', conta: 'Conta' };
-
     if (marketVistaCarrinho === 'cards') {
         list.className = 'market-cart-list market-cart-cards-grid';
-        list.innerHTML = marketCarrinho.map((item, idx) => {
+        list.innerHTML = filtrados.map(({ item, idx }) => {
             const precoDisplay = [];
             if (item.precos.hd) precoDisplay.push(`<span class="market-cart-card-price-tag">💶 HD: ${item.precos.hd}</span>`);
             if (item.precos.ponto) precoDisplay.push(`<span class="market-cart-card-price-tag">💎 Ponto: ${item.precos.ponto}</span>`);
@@ -1346,8 +1404,8 @@ function renderizarCarrinho() {
                         </button>
                     </div>
                     <div class="market-cart-card-img">
-                        <img src="${item.tipo === 'item' ? obterImagemItem(item.dados?.nome || item.nome) : item.imagem}" alt="${item.nome}"
-                             ${item.tipo === 'item' ? `data-item-name="${item.dados?.nome || item.nome}" onerror="onItemImgError(this)" onload="onItemImgLoad(this)"` : `onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'"`}>
+                            <img src="${item.tipo === 'item' ? obterImagemItem(item.dados?.nome || item.nome) : item.imagem}" alt="${item.nome}"
+                                ${item.tipo === 'item' ? `data-item-name="${item.dados?.nome || item.nome}" onerror="onItemImgError(this)" onload="onItemImgLoad(this)"` : `onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='"`}>
                     </div>
                     <div class="market-cart-card-name">${item.nome}</div>
                     <div class="market-cart-card-type">
@@ -1363,7 +1421,7 @@ function renderizarCarrinho() {
         }).join('');
     } else {
         list.className = 'market-cart-list';
-        list.innerHTML = marketCarrinho.map((item, idx) => {
+        list.innerHTML = filtrados.map(({ item, idx }) => {
             const precoDisplay = [];
             if (item.precos.hd) precoDisplay.push(`💶${item.precos.hd}`);
             if (item.precos.ponto) precoDisplay.push(`💎${item.precos.ponto}`);

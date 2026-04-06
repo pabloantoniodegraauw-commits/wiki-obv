@@ -98,8 +98,13 @@
                     <h2>
                         <i class="fas fa-shopping-cart"></i> Carrinho de Vendas
                         <span class="market-cart-count" id="cartCount">0</span>
+                        <span class="market-cart-filtered" id="cartFilteredLabel" style="margin-left:8px; font-size:0.9em; opacity:0.85"></span>
                     </h2>
                     <div class="market-cart-header-actions">
+                        <div class="market-cart-search" style="margin-right:12px; display:flex; align-items:center; gap:8px;">
+                            <input type="text" id="marketCartSearch" placeholder="Pesquisar no carrinho (ex: 206, 105, 02, 10)" oninput="filtrarCarrinho()" style="padding:10px 12px; border-radius:10px; border:2px solid #ffd54d; min-width:260px; background:linear-gradient(180deg, rgba(255,245,157,0.08), rgba(255,238,88,0.03)); color:inherit; font-weight:700; box-shadow:0 10px 30px rgba(255,209,77,0.18), inset 0 0 12px rgba(255,235,59,0.05); outline:none">
+                            <button id="marketCartClearBtn" onclick="limparFiltroCarrinho()" title="Limpar pesquisa" style="background:#ff4d4d;border:none;color:white;padding:8px 10px;border-radius:8px;cursor:pointer;box-shadow:0 8px 24px rgba(255,77,77,0.28);font-weight:700">Limpar</button>
+                        </div>
                         <div class="market-cart-view-toggle">
                             <button class="market-cart-view-btn" data-view="lista" onclick="alternarVistaCarrinho('lista')" title="Vista em lista">
                                 <i class="fas fa-list"></i>

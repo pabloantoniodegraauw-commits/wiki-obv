@@ -27,6 +27,10 @@ function ensureSmeargleStyles() {
         .selected-move-item.selected-move-empty { display:flex; align-items:center; gap:8px; padding:8px; border-radius:8px; transition: box-shadow 200ms ease, transform 120ms ease, outline-color 200ms ease; }
         .selected-move-item.selected-move-empty .btn-add-slot { background:#ffd700;color:#23284a;border:none;padding:6px 8px;border-radius:6px;cursor:pointer }
         .selected-move-item.selected-move-empty.slot-active { outline: 3px solid rgba(255,215,0,0.95); box-shadow: 0 10px 30px rgba(255,215,0,0.18); transform: translateY(-4px); }
+        .selected-move-item { display:flex; align-items:flex-start; gap:10px; padding:10px; border-radius:10px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03)); margin-bottom:8px }
+        .selected-move-item .move-info small { display:block; opacity:0.85; margin-top:4px }
+        .move-tm-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+        .tm-badge-mini{background:rgba(255,255,255,0.04);padding:4px 8px;border-radius:10px;font-size:11px;color:#fff;border:1px solid rgba(255,255,255,0.03)}
     `;
     const s = document.createElement('style');
     s.id = 'smeargle-slot-styles';
@@ -250,7 +254,11 @@ function popularFiltrosSmeargle() {
 // Renderizar golpes no grid
 function renderizarGolpesSmeargle(golpes) {
     const grid = document.getElementById('movesGrid');
-    
+    if (!grid) {
+        console.warn('[Smeargle] renderizarGolpesSmeargle: elemento #movesGrid não encontrado. Pulando render.');
+        return;
+    }
+
     if (golpes.length === 0) {
         grid.innerHTML = `
             <div class="no-results">
@@ -395,12 +403,14 @@ function obterPosicoesDisponiveis(golpe) {
 
 // Reordenar grid para mostrar moves selecionados no topo
 function reordenarGridMovesOrdenado() {
+    // obter valores de filtros com fallback caso os elementos não existam (p.ex. na aba Builder)
+    const el = id => document.getElementById(id);
     const filtros = {
-        nome: document.getElementById('filterNome').value.toLowerCase(),
-        tipo: document.getElementById('filterTipo').value,
-        acao: document.getElementById('filterAcao').value,
-        categoria: document.getElementById('filterCategoria').value,
-        local: document.getElementById('filterLocal').value
+        nome: (el('filterNome') && el('filterNome').value) ? el('filterNome').value.toLowerCase() : '',
+        tipo: (el('filterTipo') && el('filterTipo').value) ? el('filterTipo').value : '',
+        acao: (el('filterAcao') && el('filterAcao').value) ? el('filterAcao').value : '',
+        categoria: (el('filterCategoria') && el('filterCategoria').value) ? el('filterCategoria').value : '',
+        local: (el('filterLocal') && el('filterLocal').value) ? el('filterLocal').value : ''
     };
     
     // Aplicar filtros primeiro
@@ -471,14 +481,15 @@ function atualizarCardSmeargle() {
                 // Exibir slot de origem
                 const slotOrigem = golpe.local ? golpe.local.toUpperCase() : '';
                 items.push(`
-                    <div class="selected-move-item">
+                    <div class="selected-move-item" data-slot="${index+1}">
                         <span class="move-number">${index + 1}</span>
                         <span class="move-info">
                             <strong>${golpe.nome}</strong>
                             <small>${golpe.tipo} • ${golpe.categoria}</small>
-                            <span class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-left:6px;">
+                            <span class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-left:6px;display:inline-block;margin-top:6px;">
                                 <i class='fas fa-hashtag'></i> Slot: <b>${slotOrigem}</b>
                             </span>
+                            ${golpe.tms && golpe.tms.length ? (`<div class="move-tm-badges">${golpe.tms.map(tm => `<span class="tm-badge-mini">${tm.numero?('TM'+tm.numero+' '):''}${tm.nome}</span>`).join('')}</div>`) : ''}
                         </span>
                                 <div style="display:flex;gap:6px;align-items:center;margin-left:8px;">
                                     <button class="btn-edit-move" onclick="editarSlot(${index})" title="Editar"><i class="fas fa-edit"></i></button>
@@ -491,7 +502,7 @@ function atualizarCardSmeargle() {
             } else {
                 const active = smeargleTargetSlot === index;
                 items.push(`
-                    <div class="selected-move-item selected-move-empty${active ? ' slot-active' : ''}">
+                    <div class="selected-move-item selected-move-empty${active ? ' slot-active' : ''}" data-slot="${index+1}">
                         <span class="move-number">${index + 1}</span>
                         <span class="move-info"><em>Slot livre</em></span>
                         <button class="btn-add-slot" onclick="iniciarSelecaoSlot(${index})" style="margin-left:8px;">
@@ -598,7 +609,11 @@ window.iniciarSelecaoSlot = function(index) {
 // Buscar Pokémons compatíveis (mostra o Pokémon de origem de cada golpe)
 function buscarPokemonsCompativeis() {
     const grid = document.getElementById('compatibleGrid');
-    
+    if (!grid) {
+        console.warn('[Smeargle] buscarPokemonsCompativeis: elemento #compatibleGrid não encontrado. Pulando render.');
+        return;
+    }
+
     const countSelected = smeargleSelectedMoves.filter(Boolean).length;
     if (countSelected === 0) {
         grid.innerHTML = `
@@ -615,20 +630,59 @@ function buscarPokemonsCompativeis() {
     for (let index = 0; index < smeargleSelectedMoves.length; index++) {
         const golpe = smeargleSelectedMoves[index];
         if (!golpe) continue;
-        const pokemon = smearglePokemonData.find(p => 
-            (p['POKEMON'] || '').toLowerCase() === golpe.origem.toLowerCase() ||
-            (p['EV'] || '').toLowerCase() === golpe.origem.toLowerCase()
-        );
+        // Normalizar campo origem: remover qualifiers comuns (Shiny, Mega, Alolan etc.) e parênteses
+        const rawOrigem = (golpe.origem || '').toString().trim();
+        let origemNorm = rawOrigem.replace(/\(.*\)/g, '').trim();
+        origemNorm = origemNorm.replace(/^(shiny|shadow|mega|alolan|galarian|hisui|crowned|male|female)\s+/i, '').trim();
+        origemNorm = origemNorm.replace(/\s+(shiny|shadow|mega|alolan|galarian|hisui|crowned|male|female)$/i, '').trim();
+
+        const pokemon = smearglePokemonData.find(p => {
+            const pok = (p['POKEMON'] || '').toLowerCase();
+            const ev = (p['EV'] || '').toLowerCase();
+            const o = origemNorm.toLowerCase();
+            if (!o) return false;
+            if (pok === o || ev === o) return true;
+            // tentar comparar pela última palavra (ex: 'hydreigon' em 'shiny hydreigon')
+            const parts = o.split(/\s+/).filter(Boolean);
+            const last = parts.length ? parts[parts.length - 1] : o;
+            if (last && (pok.includes(last) || ev.includes(last))) return true;
+            return false;
+        });
         if (!pokemon) {
-            console.warn(`[Smeargle] Não encontrou Pokémon para origem="${golpe.origem}" (procurando por M${index + 1}: ${golpe.nome}). Tentando sugerir candidatos...`);
-            // tentar sugerir candidatos aproximados (busca por substring no POKEMON/EV)
-            const termo = (golpe.origem || '').toLowerCase().split(/\s|\(|\-|_/)[0];
+            console.warn(`[Smeargle] Não encontrou Pokémon para origem="${rawOrigem}" (procurando por M${index + 1}: ${golpe.nome}). Tentando sugerir candidatos...`);
+            // tentar sugerir candidatos aproximados (busca por substring no POKEMON/EV) usando origem normalizada
+            const termo = (origemNorm || rawOrigem).toLowerCase().split(/\s|\(|\-|_/).pop();
             const candidatos = smearglePokemonData.filter(p => {
                 const pok = (p['POKEMON'] || '').toLowerCase();
                 const ev = (p['EV'] || '').toLowerCase();
-                return pok.includes(termo) || ev.includes(termo);
+                const allFields = Object.values(p).filter(v=>typeof v === 'string').map(v=>normalizeName(v)).join(' ');
+                // usar termo já normalizado
+                const t = normalizeName(termo || '');
+                return (t && (pok.includes(t) || ev.includes(t) || allFields.includes(t)));
             }).slice(0, 12).map(p => ({POKEMON: p['POKEMON'], EV: p['EV']}));
             console.warn('[Smeargle] Candidatos encontrados:', candidatos);
+            // Se nenhum candidato encontrado, tentar buscar por qual Pokémon possui este golpe nas colunas M1..M10
+            if (candidatos.length === 0) {
+                const moveTerm = normalizeName(golpe.nome || '');
+                if (moveTerm) {
+                    const byMove = [];
+                    smearglePokemonData.forEach(p => {
+                        for (let i = 1; i <= 10; i++) {
+                            const col = p[`M${i}`];
+                            if (!col) continue;
+                            const colNome = normalizeName((col || '').split('/')[0] || '');
+                            if (colNome && colNome.includes(moveTerm)) {
+                                byMove.push({POKEMON: p['POKEMON'], EV: p['EV']});
+                                break;
+                            }
+                        }
+                    });
+                    if (byMove.length) {
+                        console.warn('[Smeargle] Candidatos por golpe encontrados:', byMove.slice(0,12));
+                        candidatos.push(...byMove.slice(0,12));
+                    }
+                }
+            }
             cards.push(`
                 <div class="compatible-card">
                     <div class="compatible-img">
@@ -641,13 +695,14 @@ function buscarPokemonsCompativeis() {
             continue;
         }
         cards.push(`
-            <div class="compatible-card">
-                <div class="compatible-img">
-                    <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(
+                <div class="compatible-card">
+                    <div class="compatible-img">
+                        <!-- Usar placeholder inline para evitar 404 caso o arquivo não exista -->
+                        <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(
                         pokemon['EV'] ? pokemon['EV'].replace(/ /g, '-') : pokemon['POKEMON'],
-                        pokemon['POKEMON']) : 'IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'}" 
-                        alt="${pokemon['POKEMON']}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png'">
-                </div>
+                        pokemon['POKEMON']) : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='}" 
+                        alt="${pokemon['POKEMON']}" onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='">
+                    </div>
                 <div class="compatible-name">${pokemon['EV'] || pokemon['POKEMON']}</div>
                 <div class="compatible-move"><i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}</div>
                 <div class="compatible-location"><i class="fas fa-map-marker-alt"></i>${formatarLocalizacoesSmeargle(pokemon['LOCALIZAÇÃO'])}</div>

@@ -1,210 +1,124 @@
-<div class="builder-container">
-    <!-- Card do Pokémon (Esquerda) -->
-    <div class="smeargle-card-wrapper">
-        <div class="smeargle-card" id="smeargleCard">
-            <div class="smeargle-header">
-                <div class="smeargle-number">#</div>
-                <div class="smeargle-type-icon" id="smeargleTypeIcon">
-                    <i class="fas fa-circle"></i>
-                </div>
-            </div>
-            
-            <div class="smeargle-img-container">
-                <img src="IMAGENS/imagens-pokemon/sprite-pokemon/placeholder.png" 
-                     alt="Pokémon" 
-                     class="smeargle-img">
-            </div>
-            
-            <h3 class="smeargle-name">Build</h3>
-            <div class="smeargle-type-badge" id="smeargleTypeBadge">
-                <span class="type-badge type-normal">Tipo</span>
-            </div>
-            
-            <div class="smeargle-moves-selected" id="smeargleMovesSelected">
-                <div class="moves-selected-title">
-                    <i class="fas fa-list"></i> Golpes Selecionados (<span id="movesCount">0</span>/9)
-                </div>
-                <div class="moves-selected-list" id="movesList">
-                    <div class="no-moves-yet">Nenhum golpe selecionado</div>
-                </div>
-            </div>
-            
-            <button class="btn-clear-moves" id="btnClearMoves">
-                <i class="fas fa-trash"></i> Limpar Tudo
-            </button>
+<!DOCTYPE html>
+<div class="builder-page">
+  <header class="builder-header">
+    <h1>Construtor de Movesets</h1>
+    <p>Cole o bloco da Pokedex do jogo para gerar os golpes e TMs detectados.</p>
+  </header>
+
+  <section class="builder-top" style="display:flex;gap:16px;align-items:flex-start;">
+    <div style="flex:0 0 300px;">
+      <div id="smeargleCard" class="smeargle-card">
+        <div class="smeargle-header">
+            <div class="smeargle-number">#</div>
+            <div class="smeargle-type-icon" id="smeargleTypeIcon"><i class="fas fa-circle"></i></div>
         </div>
-    </div>
-    
-    <!-- Painel de Golpes (Direita) -->
-    <div class="smeargle-moves-panel">
-        <div class="moves-panel-header">
-            <h2>
-                <i class="fas fa-palette"></i> Construtor de Pokémons
-            </h2>
-            <p class="moves-hint">
-                <i class="fas fa-info-circle"></i> Monte o moveset do Pokémon: altere posições, adicione TMs/helds/mega
-            </p>
-        </div>
-        
-        <!-- Seletor de Pokémon -->
-        <div class="filter-group" style="display:flex;gap:8px;align-items:center;margin:10px 0;">
-            <label style="min-width:110px;"><i class="fas fa-dog"></i> Pokémon</label>
-            <input type="text" id="pokemonSearch" placeholder="Pesquisar Pokémon (ex: Hydreigon)" style="flex:1;" autocomplete="off" />
-            <button id="btnClearPokemon" style="margin-left:8px;">Limpar</button>
-        </div>
-        <div id="pokemonSuggestions" style="max-height:200px;overflow:auto;margin-bottom:8px;"></div>
-        
-        <!-- Filtros -->
-        <div class="moves-filters">
-            <div class="filter-group">
-                <label><i class="fas fa-search"></i> Buscar</label>
-                <input type="text" id="filterNome" placeholder="Nome do golpe...">
+        <div class="smeargle-img-container">
+        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Pokémon" class="smeargle-img">
+      </div>
+        <h3 class="smeargle-name">Build</h3>
+        <div class="smeargle-type-badge" id="smeargleTypeBadge"><span class="type-badge type-normal">Tipo</span></div>
+
+        <div class="smeargle-moves-selected" id="smeargleMovesSelected">
+            <div class="moves-selected-title">
+                <i class="fas fa-list"></i> Golpes Selecionados (<span id="movesCount">0</span>/9)
             </div>
-            
-            <div class="filter-group">
-                <label><i class="fas fa-fire"></i> Tipo</label>
-                <select id="filterTipo">
-                    <option value="">Todos</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label><i class="fas fa-running"></i> Ação</label>
-                <select id="filterAcao">
-                    <option value="">Todas</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label><i class="fas fa-fist-raised"></i> Categoria</label>
-                <select id="filterCategoria">
-                    <option value="">Todas</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label><i class="fas fa-map-marker-alt"></i> Posição do Move</label>
-                <select id="filterLocal">
-                    <option value="">Todos</option>
-                    <option value="M1">M1</option>
-                    <option value="M2">M2</option>
-                    <option value="M3">M3</option>
-                    <option value="M4">M4</option>
-                    <option value="M5">M5</option>
-                    <option value="M6">M6</option>
-                    <option value="M7">M7</option>
-                    <option value="M8">M8</option>
-                    <option value="M9">M9</option>
-                    <option value="M10">M10</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <button class="btn-builds" id="btnBuilds" onclick="abrirModalBuilds()">
-                    <i class="fas fa-save"></i> BUILDS
-                </button>
-            </div>
-        </div>
-        
-        <!-- Grid de Golpes -->
-        <div class="moves-grid" id="movesGrid">
-            <div class="loading">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Carregando golpes...</p>
+            <div class="moves-selected-list" id="movesList">
+                <div class="no-moves-yet">Nenhum golpe selecionado</div>
             </div>
         </div>
 
-        <!-- Editor de Movimentos (colar da Pokedex) -->
-        <div style="margin-top:12px;padding:10px;border-top:1px solid rgba(255,255,255,0.03);">
-            <h3 style="margin:6px 0"><i class="fas fa-file-import"></i> Importar da Pokedex</h3>
-            <p style="opacity:0.8;margin:6px 0;">Cole o bloco da Pokedex do jogo no campo abaixo e clique em <strong>Parsear</strong>. Você poderá adicionar os golpes do texto diretamente em um slot.</p>
-            <textarea id="pokedexPaste" placeholder="Cole aqui o texto da Pokedex..." style="width:100%;height:160px;background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.03);padding:8px;color:#fff;"></textarea>
-            <div style="display:flex;gap:8px;margin-top:8px;">
-                <button id="btnParsePokedex" class="btn-builds"><i class="fas fa-magic"></i> Parsear</button>
-                <button id="btnClearPokedex" class="btn-builds" style="background:#555;"><i class="fas fa-ban"></i> Limpar</button>
-            </div>
-            <div id="parsedMovesList" style="margin-top:10px;max-height:220px;overflow:auto;"></div>
+        <button class="btn-clear-moves" id="btnClearMoves"><i class="fas fa-trash"></i> Limpar Tudo</button>
+      </div>
+    </div>
+
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div id="tmCounter" style="padding:8px 12px;border-radius:8px;background:rgba(0,0,0,0.3);color:#fff;">TMs/MTs: <span id="tmCountVal">0</span></div>
+          <div id="maxMoves" style="padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.15);color:#fff">Max Base Moves: <select id="selectMaxBaseMoves"><option>9</option><option selected>10</option></select></div>
+        </div>
+        <div style="flex:0 0 420px;text-align:center;">
+          <button id="btnSubmitBuild" class="btn-submit">SUBMETER MOVESET</button>
+        </div>
+      </div>
+
+      <div class="builder-main">
+        <div style="margin-bottom:12px;">
+          <textarea id="pokedexPaste" placeholder="Cole aqui o texto da Pokedex..." style="width:100%;height:160px;padding:8px;background:rgba(0,0,0,0.35);color:#fff;border-radius:8px;border:1px solid rgba(255,255,255,0.03);"></textarea>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button id="btnParsePokedex" class="btn-action">Parsear</button>
+            <button id="btnClearPokedex" class="btn-action btn-alt">Limpar</button>
+          </div>
         </div>
 
-            <!-- Painel de TMs / Held / Mega -->
-            <div style="margin-top:18px;padding:10px;border-top:1px solid rgba(255,255,255,0.03);display:flex;gap:12px;flex-wrap:wrap;">
-                <div style="flex:1;min-width:260px;">
-                    <h4><i class="fas fa-compact-disc"></i> TMs detectados</h4>
-                    <div id="builderTmsList" style="max-height:200px;overflow:auto;padding:6px;border:1px solid rgba(255,255,255,0.03);"></div>
-                </div>
-                <div style="width:260px;">
-                    <h4><i class="fas fa-box"></i> Held Item</h4>
-                    <input id="inputHeldItem" placeholder="Nome do Held Item" style="width:100%;margin-bottom:6px;" />
-                    <button id="btnAddHeld" style="width:100%;">Adicionar Held</button>
-                    <div id="heldList" style="margin-top:8px;color:rgba(255,255,255,0.9);"></div>
-                </div>
-                <div style="width:260px;">
-                    <h4><i class="fas fa-crown"></i> Mega / Stone</h4>
-                    <input id="inputMega" placeholder="Nome da Mega Stone" style="width:100%;margin-bottom:6px;" />
-                    <button id="btnAddMega" style="width:100%;">Adicionar Mega</button>
-                    <div id="megaList" style="margin-top:8px;color:rgba(255,255,255,0.9);"></div>
-                </div>
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;">
+            <h3>Golpes detectados</h3>
+            <!-- Combined single window: moves grid (style Smeargle) + TMs on right -->
+            <div id="combinedPanel" style="display:flex;gap:12px;align-items:flex-start;">
+              <div style="flex:1;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;max-height:420px;overflow:auto">
+                <div id="combinedMovesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
+              </div>
+              <div style="width:420px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;max-height:420px;overflow:auto">
+                <h4 style="margin-top:0;margin-bottom:8px">TMs e MTs</h4>
+                <div id="combinedTmsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,84px);gap:12px"></div>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-            <!-- Salvar/Carregar localmente -->
-            <div style="margin-top:12px;padding:10px;border-top:1px solid rgba(255,255,255,0.03);display:flex;gap:8px;align-items:center;">
-                <input id="inputNomeBuildLocal" placeholder="Nome da build local" style="flex:1;padding:6px;" />
-                <button id="btnSaveLocal" style="padding:6px 10px;">Salvar Local</button>
-                <button id="btnLoadLocal" style="padding:6px 10px;">Carregar Local</button>
-            </div>
-            <div id="localBuildsList" style="margin-top:8px;max-height:200px;overflow:auto;padding:6px;border-top:1px solid rgba(255,255,255,0.03);"></div>
-    </div>
-</div>
+  <!-- Containers auxiliares para compatibilidade com funções Smeargle (mantidos ocultos) -->
+  <div id="movesGrid" style="display:none"></div>
+  <div id="compatibleGrid" style="display:none"></div>
 
-<!-- Modal de Builds -->
-<div class="modal-builds" id="modalBuilds" style="display: none;">
-    <div class="modal-builds-content">
-        <div class="modal-builds-header">
-            <h2><i class="fas fa-save"></i> Gerenciar Builds</h2>
-            <button class="btn-close-modal" onclick="fecharModalBuilds()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <!-- Salvar Nova Build -->
-        <div class="modal-builds-section" id="sectionSalvar">
-            <h3><i class="fas fa-plus-circle"></i> Salvar Build Atual</h3>
-            <div class="save-build-form">
-                <input type="text" id="inputNomeBuild" placeholder="Nome da build (ex: HYDREIGON OFFENSIVO)" />
-                <button class="btn-save-build" onclick="salvarBuildAtual()">
-                    <i class="fas fa-save"></i> Salvar
-                </button>
-            </div>
-            <p class="build-preview" id="buildPreview"></p>
-        </div>
-        
-        <!-- Carregar Build Existente -->
-        <div class="modal-builds-section">
-            <h3><i class="fas fa-list"></i> Builds Salvas</h3>
-            <div class="builds-list" id="buildsList">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i> Carregando...
-                </div>
-            </div>
-        </div>
+  <!-- Modal combinado: golpes (esq) + TMs (dir) -->
+  <div id="assignModal" style="display:none;position:fixed;right:24px;bottom:24px;width:880px;max-height:78vh;background:linear-gradient(180deg, rgba(10,10,10,0.95), rgba(20,20,20,0.95));border-radius:12px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,0.7);z-index:9999;overflow:auto;color:#fff">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div><strong id="assignTitle">Golpes e TMs</strong><div id="assignSubtitle" style="opacity:0.8;font-size:12px"></div></div>
+      <div style="display:flex;gap:8px;align-items:center"><button id="assignClose" class="btn-action">Fechar</button></div>
     </div>
-</div>
+    <div style="display:flex;gap:12px;align-items:flex-start">
+      <div style="width:380px;background:rgba(255,255,255,0.02);padding:8px;border-radius:10px;max-height:60vh;overflow:auto">
+        <div style="margin-bottom:6px;font-size:13px;opacity:0.9">Golpes detectados</div>
+        <div id="assignMovesList"></div>
+      </div>
+      <div style="flex:1;background:rgba(255,255,255,0.02);padding:8px;border-radius:10px;max-height:60vh;overflow:auto">
+        <div style="margin-bottom:6px;font-size:13px;opacity:0.9">TMs disponíveis</div>
+        <div id="assignTmsGrid"></div>
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px">
+      <button id="assignSave" class="btn-action">Salvar atribuições</button>
+    </div>
+  </div>
 
-<!-- Seção de Pokémons Compatíveis -->
-<div class="compatible-section">
-    <div class="compatible-header">
-        <h2>
-            <i class="fas fa-check-circle"></i> Pokémons Compatíveis com a Sequência
-        </h2>
-        <p class="compatible-hint">
-            Pokémons que podem ensinar TODOS os golpes selecionados na ordem correta
-        </p>
-    </div>
-    
-    <div class="compatible-grid" id="compatibleGrid">
-        <div class="no-selection">
-            <i class="fas fa-hand-pointer"></i>
-            <p>Selecione golpes acima para ver os Pokémons compatíveis</p>
-        </div>
-    </div>
+  <style>
+    .btn-submit{background:linear-gradient(135deg,#5b3fb8,#2b1f43);padding:12px 28px;border-radius:28px;border:none;color:#fff;font-weight:800;box-shadow:0 12px 36px rgba(44,27,70,0.45);}
+    .btn-action{padding:8px 12px;border-radius:8px;border:none;background:#3a3a3a;color:#fff}
+    .btn-alt{background:#555}
+    .tm-grid{display:grid;grid-template-columns:repeat(auto-fill,72px);gap:10px}
+    .tm-tile{width:72px;height:72px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;color:#fff;font-weight:700}
+    .tm-badge-top{position:absolute;left:8px;top:8px;background:rgba(0,0,0,0.35);padding:4px 6px;border-radius:8px;font-size:11px}
+    .tm-number-badge{position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.55);padding:3px 7px;border-radius:10px;font-size:11px}
+    .tm-tile .tm-icon{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);font-size:20px}
+    .tm-tile .tm-title{font-size:11px;margin-top:6px;text-align:center}
+    .tm-tile.selected{box-shadow:0 10px 40px rgba(65,184,131,0.18),0 0 20px rgba(65,184,131,0.18);transform:translateY(-6px)}
+    .parsed-move-item{display:flex;justify-content:space-between;align-items:center;padding:6px;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .assigned-slot{background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:6px;margin-left:8px;font-size:13px;color:#ffd966}
+    /* modal moves list */
+    #assignMovesList .modal-move-item{border-bottom:1px solid rgba(255,255,255,0.03)}
+    #assignMovesList .modal-move-item{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:10px}
+    #assignMovesList .modal-move-item strong{display:block;margin-bottom:6px}
+    #assignMovesList .modal-move-item .assigned-slot{background:rgba(255,255,255,0.06);padding:4px 8px;border-radius:10px;color:#ffd966;font-weight:700}
+    #assignTmsGrid .tm-grid{display:grid;grid-template-columns:repeat(auto-fill,84px);gap:12px;align-items:start}
+    #assignTmsGrid .tm-tile{width:84px;height:84px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.12));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02)}
+    #assignTmsGrid .tm-tile .tm-icon{width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:20px}
+    #assignTmsGrid .tm-tile .tm-title{font-size:11px;margin-top:6px;text-align:center}
+    #assignTmsGrid .tm-tile .tm-badge-top{left:6px;top:6px;font-size:10px;padding:3px 5px}
+    #assignTmsGrid .tm-tile .tm-number-badge{right:6px;top:6px;font-size:10px;padding:3px 6px}
+    #assignTmsGrid .tm-tile.selected{box-shadow:0 8px 30px rgba(65,184,131,0.25),0 0 24px rgba(65,184,131,0.24);transform:translateY(-6px);border:2px solid rgba(65,184,131,0.25)}
+  </style>
 </div>
