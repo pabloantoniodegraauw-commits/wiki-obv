@@ -131,5 +131,30 @@
     #combinedTmsGrid .tm-tile .tm-meta{font-size:12px;opacity:0.85}
     #combinedTmsGrid .tm-badge-top{left:12px;top:12px;background:rgba(0,0,0,0.35);padding:4px 6px;border-radius:8px;font-size:11px}
     #combinedTmsGrid .tm-number-badge{right:12px;top:12px;background:rgba(0,0,0,0.55);padding:4px 8px;border-radius:10px;font-size:12px}
+
+    /* Smeargle-style move cards */
+    .builder-card{border-radius:12px; padding:12px; color:#fff; box-shadow:0 12px 30px rgba(0,0,0,0.45); display:flex; flex-direction:column; justify-content:space-between; min-height:88px}
+    .builder-card .move-name{font-weight:900; font-size:15px}
+    .builder-card .move-sub{opacity:0.85; font-size:12px; margin-top:6px}
+    .builder-card .move-actions{margin-top:10px; display:flex; gap:8px; align-items:center}
+
+    /* color variants: basic mapping (fallbacks) */
+    .builder-card.type-fire{background:linear-gradient(180deg,#ff6b4d,#ff944d)}
+    .builder-card.type-water{background:linear-gradient(180deg,#4da6ff,#4dd0ff)}
+    .builder-card.type-electric{background:linear-gradient(180deg,#ffea4d,#ffd54d); color:#1b1b1b}
+    .builder-card.type-psychic{background:linear-gradient(180deg,#ff5fbf,#ff87d1)}
+    .builder-card.type-dragon{background:linear-gradient(180deg,#66ccff,#66a3ff)}
+    .builder-card.type-normal{background:linear-gradient(180deg,#bdbdbd,#9e9e9e); color:#111}
+    .builder-card.type-steel{background:linear-gradient(180deg,#9fb0c8,#7f98b0)}
+    .builder-card.type-ground{background:linear-gradient(180deg,#e89a4d,#d67a3a)}
+    .builder-card.type-grass{background:linear-gradient(180deg,#7bd47b,#4dbd4d)}
+    .builder-card.type-ghost{background:linear-gradient(180deg,#7b5aff,#5b3fb8)}
+
+    /* small badge for slot */
+    .builder-card .slot-badge{background:rgba(255,255,255,0.12);padding:6px 8px;border-radius:999px;font-weight:800;color:#ffd966}
+
+    /* make TM tiles match move-card inner layout */
+    #combinedTmsGrid .tm-tile .tm-left{display:flex;align-items:center;gap:12px}
+    #combinedTmsGrid .tm-tile .tm-right{display:flex;align-items:center;gap:10px}
   </style>
 </div>
