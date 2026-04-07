@@ -99,7 +99,7 @@
   }
 
   // Enviar golpes parseados para a planilha POKEDEX via Apps Script
-  async function savePokedexMovesToSheet(pokemonName, moves){
+  async function savePokedexMovesToSheet(pokemonName, moves, stats){
     if(!pokemonName || !moves || !moves.length) return {success:false, message:'No data'};
     try{
       const payload = moves.map((m, idx)=>({
@@ -113,7 +113,7 @@
       form.append('action','savePokedexMoves');
       form.append('pokemon', pokemonName);
       // enviar stats se presentes
-      try{ form.append('stats', JSON.stringify(meta && meta.stats ? meta.stats : {})); }catch(e){}
+      try{ form.append('stats', JSON.stringify(stats || {})); }catch(e){}
       form.append('moves', JSON.stringify(payload));
       const resp = await fetch(SHEETS_BASE_URL, { method: 'POST', body: form });
       const json = await resp.json().catch(()=>({success:resp.ok}));
@@ -597,7 +597,7 @@
           // salvar automaticamente na planilha POKEDEX (Apps Script)
           try{
             if(parsed && parsed.meta && parsed.meta.nome && parsed.moves && parsed.moves.length){
-              savePokedexMovesToSheet(parsed.meta.nome, parsed.moves).then(res=>{
+              savePokedexMovesToSheet(parsed.meta.nome, parsed.moves, parsed.meta && parsed.meta.stats ? parsed.meta.stats : {}).then(res=>{
                 if(res && res.success){ if(window.showToast) window.showToast('Pokedex salvo ✓','success'); else console.log('Pokedex salvo', res); }
                 else { if(window.showToast) window.showToast('Erro salvando Pokedex','error'); else console.warn('Erro salvando Pokedex', res); }
               }).catch(err=>{ if(window.showToast) window.showToast('Erro salvando Pokedex','error'); else console.warn('Erro saving',err); });
