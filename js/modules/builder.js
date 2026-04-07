@@ -114,13 +114,15 @@
         categoria: m.categoria || '',
         descricao: m.efeito || m.descricao || ''
       }));
-      const body = { action: 'savePokedexMoves', pokemon: pokemonName, moves: payload, stats: stats || {} };
-      // enviar como JSON; não bloquear a UI esperando JSON parseado
-      fetch(SHEETS_BASE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).catch(err=>{ console.warn('savePokedexMovesToSheet fetch err', err); });
+      // enviar como form-url-encoded para evitar preflight OPTIONS (CORS) e manter envio não-bloqueante
+      try{
+        const params = new URLSearchParams();
+        params.append('action','savePokedexMoves');
+        params.append('pokemon', pokemonName);
+        params.append('moves', JSON.stringify(payload));
+        params.append('stats', JSON.stringify(stats || {}));
+        fetch(SHEETS_BASE_URL, { method: 'POST', body: params }).catch(err=>{ console.warn('savePokedexMovesToSheet fetch err', err); });
+      }catch(e){ console.warn('savePokedexMovesToSheet build err', e); }
       return { success: true, message: 'request_sent' };
     }catch(err){ console.error('savePokedexMovesToSheet error', err); return {success:false, message: err && err.message ? err.message : String(err)}; }
   }
