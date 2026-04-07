@@ -1656,11 +1656,31 @@ function handleSavePokedexMoves(planilha, dados) {
     }
     if (!Array.isArray(moves)) moves = [];
 
+    // Normalizar stats enviados pelo frontend (opcional)
+    let stats = dados.stats || {};
+    if (typeof stats === 'string') {
+      try { stats = JSON.parse(stats); } catch (e) { stats = {}; }
+    }
+    if (!stats || typeof stats !== 'object') stats = {};
+
     // Colunas O(15) .. X(24) correspondem a M1..M10 na estrutura existente
     for (let i = 0; i < 10; i++) {
       const valor = (moves[i] && (moves[i].nome || moves[i].name)) ? (moves[i].nome || moves[i].name) : '';
       aba.getRange(linhaEncontrada, 15 + i).setValue(valor);
     }
+
+    // Gravar stats se existirem — colunas: I(9)=HP, J(10)=Attack, K(11)=Defense, L(12)=Sp.Attack, M(13)=Sp.Defense, N(14)=Speed
+    try {
+      if (stats && Object.keys(stats).length) {
+        const valOrEmpty = v => (v === undefined || v === null || v === '') ? '' : v;
+        aba.getRange(linhaEncontrada, 9).setValue(valOrEmpty(stats.hp || stats.HP || stats.HP));
+        aba.getRange(linhaEncontrada, 10).setValue(valOrEmpty(stats.atk || stats.attack || stats.Attack || stats.ATK));
+        aba.getRange(linhaEncontrada, 11).setValue(valOrEmpty(stats.def || stats.defense || stats.Defense));
+        aba.getRange(linhaEncontrada, 12).setValue(valOrEmpty(stats.spatk || stats['sp.atk'] || stats['sp.attack'] || stats['Sp. Attack'] || stats['Sp.Attack']));
+        aba.getRange(linhaEncontrada, 13).setValue(valOrEmpty(stats.spdef || stats['sp.def'] || stats['sp.defense'] || stats['Sp. Defense'] || stats['Sp.Defense']));
+        aba.getRange(linhaEncontrada, 14).setValue(valOrEmpty(stats.speed || stats.Speed));
+      }
+    } catch (e) { if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro gravando stats: ' + e.toString()); }
 
     return { success: true, message: 'Moves salvos na POKEDEX (M1..M10) para ' + nomeOriginal };
   } catch (erro) {

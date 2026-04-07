@@ -5,7 +5,7 @@
   function parsePokedexText(text){
     if(!text) return {moves:[], tms:[]};
     // simple existing robust parser: look for Move blocks and TM lines
-    const meta = { nome: '', tipos: [], clan: '' };
+    const meta = { nome: '', tipos: [], clan: '', stats: {} };
     const moves = [];
     const tms = [];
     const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
@@ -32,6 +32,23 @@
       if(clanMatch) meta.clan = clanMatch[1].trim();
       if(meta.nome && meta.tipos.length>0) break;
     }
+
+    // tentar extrair bloco de Status (Hp, Attack, Defense, Sp. Attack, Sp. Defense, Speed)
+    lines.forEach(ln=>{
+      // exemplos: [Hp]: 138  or [Attack]: 157.5
+      const mHp = /\[\s*hp\s*\]\s*[:\]]\s*(\d+(?:\.\d+)?)/i.exec(ln);
+      if(mHp) meta.stats.hp = parseFloat(mHp[1]);
+      const mAtk = /\[\s*attack\s*\]\s*[:\]]\s*(\d+(?:\.\d+)?)/i.exec(ln);
+      if(mAtk) meta.stats.atk = parseFloat(mAtk[1]);
+      const mDef = /\[\s*defense\s*\]\s*[:\]]\s*(\d+(?:\.\d+)?)/i.exec(ln);
+      if(mDef) meta.stats.def = parseFloat(mDef[1]);
+      const mSpA = /\[\s*sp\.\s*attack\s*\]\s*[:\]]\s*(\d+(?:\.\d+)?)/i.exec(ln);
+      if(mSpA) meta.stats.spatk = parseFloat(mSpA[1]);
+      const mSpD = /\[\s*sp\.\s*defense\s*\]\s*[:\]]\s*(\d+(?:\.\d+)?)/i.exec(ln);
+      if(mSpD) meta.stats.spdef = parseFloat(mSpD[1]);
+      const mSpe = /\[\s*speed\s*\]\s*[:\]]\s*(\d+(?:\.\d+)?)/i.exec(ln);
+      if(mSpe) meta.stats.speed = parseFloat(mSpe[1]);
+    });
 
     const moveBlockRx = /\[Move\s*\d+\]:[\s\S]*?(?=(\n\[Move|\n\n|$))/gi;
     let m;
@@ -95,6 +112,8 @@
       const form = new URLSearchParams();
       form.append('action','savePokedexMoves');
       form.append('pokemon', pokemonName);
+      // enviar stats se presentes
+      try{ form.append('stats', JSON.stringify(meta && meta.stats ? meta.stats : {})); }catch(e){}
       form.append('moves', JSON.stringify(payload));
       const resp = await fetch(SHEETS_BASE_URL, { method: 'POST', body: form });
       const json = await resp.json().catch(()=>({success:resp.ok}));
