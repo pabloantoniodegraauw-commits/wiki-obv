@@ -81,6 +81,27 @@
     return {moves, tms, meta};
   }
 
+  // Enviar golpes parseados para a planilha POKEDEX via Apps Script
+  async function savePokedexMovesToSheet(pokemonName, moves){
+    if(!pokemonName || !moves || !moves.length) return {success:false, message:'No data'};
+    try{
+      const payload = moves.map((m, idx)=>({
+        slot: `M${m.slot || (idx+1)}`,
+        nome: m.nome || '',
+        tipo: m.tipo || '',
+        categoria: m.categoria || '',
+        descricao: m.efeito || m.descricao || ''
+      }));
+      const form = new URLSearchParams();
+      form.append('action','savePokedexMoves');
+      form.append('pokemon', pokemonName);
+      form.append('moves', JSON.stringify(payload));
+      const resp = await fetch(SHEETS_BASE_URL, { method: 'POST', body: form });
+      const json = await resp.json().catch(()=>({success:resp.ok}));
+      return json;
+    }catch(err){ console.error('savePokedexMovesToSheet error', err); return {success:false, message: err && err.message ? err.message : String(err)}; }
+  }
+
   // Retorna a classe de ícone FontAwesome para uma tipagem (aceita nomes PT/EN)
   function getTypeIcon(tipo){
     try{
@@ -554,6 +575,15 @@
           const txt = safe('pokedexPaste') ? safe('pokedexPaste').value : '';
           const parsed = parsePokedexText(txt);
           renderParsedMoves(parsed);
+          // salvar automaticamente na planilha POKEDEX (Apps Script)
+          try{
+            if(parsed && parsed.meta && parsed.meta.nome && parsed.moves && parsed.moves.length){
+              savePokedexMovesToSheet(parsed.meta.nome, parsed.moves).then(res=>{
+                if(res && res.success){ if(window.showToast) window.showToast('Pokedex salvo ✓','success'); else console.log('Pokedex salvo', res); }
+                else { if(window.showToast) window.showToast('Erro salvando Pokedex','error'); else console.warn('Erro salvando Pokedex', res); }
+              }).catch(err=>{ if(window.showToast) window.showToast('Erro salvando Pokedex','error'); else console.warn('Erro saving',err); });
+            }
+          }catch(e){ console.warn('auto-save Pokedex failed', e); }
           // visual feedback
           const original = pb.textContent;
           pb.textContent = 'Parseado ✓';

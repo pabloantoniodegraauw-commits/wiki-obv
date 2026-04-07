@@ -236,6 +236,13 @@ function doPost(e) {
       case 'adicionarTM':
         result = handleAdicionarTM(planilha, dados);
         break;
+      case 'savePokedexMoves':
+        result = handleSavePokedexMoves(planilha, dados);
+        break;
+      case 'salvarPokedexMoves':
+        // alias em pt-br
+        result = handleSavePokedexMoves(planilha, dados);
+        break;
       case 'salvarBuild':
         result = handleSalvarBuild(planilha, dados);
         break;
@@ -1609,6 +1616,53 @@ function handleAtualizarAtack(planilha, dados) {
     }
     
     return { success: false, message: 'Pokémon não encontrado: ' + dados.nomePokemon };
+  } catch (erro) {
+    return { success: false, message: 'Erro: ' + erro.toString() };
+  }
+}
+
+/**
+ * Salvar moves parseados na aba POKEDEX (colunas M1..M10 -> O..X)
+ * Espera: dados.nomePokemon | dados.pokemonName e dados.moves (array de objetos com .nome)
+ */
+function handleSavePokedexMoves(planilha, dados) {
+  try {
+    if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('handleSavePokedexMoves chamado. payload: ' + JSON.stringify(dados));
+    const aba = planilha.getSheets()[0]; // POKEDEX
+    // aceitar vários nomes de campo do frontend: 'nomePokemon', 'pokemonName', 'nome' ou 'pokemon'
+    const nomeOriginal = (dados.nomePokemon || dados.pokemonName || dados.nome || dados.pokemon || '').toString().toLowerCase().trim();
+    if (!nomeOriginal) {
+      if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('handleSavePokedexMoves payload keys: ' + Object.keys(dados).join(', '));
+      return { success: false, message: 'nomePokemon não informado (campos esperados: nomePokemon|pokemonName|nome|pokemon)' };
+    }
+
+    const todosOsDados = aba.getDataRange().getValues();
+    const cabecalho = todosOsDados[0];
+
+    // Encontrar linha do Pokémon (usar EV ou POKEMON como nas outras funções)
+    let linhaEncontrada = -1;
+    for (let i = 1; i < todosOsDados.length; i++) {
+      const nomeEV = (todosOsDados[i][3] || '').toString().toLowerCase().trim();
+      const nomePokemon = (todosOsDados[i][2] || '').toString().toLowerCase().trim();
+      const nomeParaComparar = nomeEV || nomePokemon;
+      if (nomeParaComparar === nomeOriginal) { linhaEncontrada = i + 1; break; }
+    }
+    if (linhaEncontrada === -1) return { success: false, message: 'Pokémon não encontrado: ' + nomeOriginal };
+
+    // Normalizar moves
+    let moves = dados.moves || [];
+    if (typeof moves === 'string') {
+      try { moves = JSON.parse(moves); } catch (e) { moves = []; }
+    }
+    if (!Array.isArray(moves)) moves = [];
+
+    // Colunas O(15) .. X(24) correspondem a M1..M10 na estrutura existente
+    for (let i = 0; i < 10; i++) {
+      const valor = (moves[i] && (moves[i].nome || moves[i].name)) ? (moves[i].nome || moves[i].name) : '';
+      aba.getRange(linhaEncontrada, 15 + i).setValue(valor);
+    }
+
+    return { success: true, message: 'Moves salvos na POKEDEX (M1..M10) para ' + nomeOriginal };
   } catch (erro) {
     return { success: false, message: 'Erro: ' + erro.toString() };
   }
