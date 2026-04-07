@@ -590,6 +590,12 @@
   }
   window.refreshTmTypes = refreshTmTypes;
 
+  // Expor parse/save para outras abas (Pokedex / Smeargle)
+  try{
+    window.parsePokedexText = parsePokedexText;
+    window.savePokedexMovesToSheet = savePokedexMovesToSheet;
+  }catch(e){}
+
   // delegated click handler for parse button (works even if element inserted later)
   document.addEventListener('click', function(e){
     try {
