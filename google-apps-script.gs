@@ -317,6 +317,8 @@ function doGet(e) {
         return createCorsResponse(handleCarregarBuilds(planilha));
       case 'carregarStage':
         return createCorsResponse(handleCarregarStage(planilha));
+      case 'ping':
+        return createCorsResponse({ success: true, message: 'pong', ts: new Date().toISOString() });
     }
     
     // Sistema de Pokémon (código existente)

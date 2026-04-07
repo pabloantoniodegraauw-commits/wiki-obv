@@ -98,6 +98,11 @@
     return {moves, tms, meta};
   }
 
+  // pré-aquecer o Apps Script (ping) para reduzir cold-start
+  try{
+    setTimeout(()=>{ try{ fetch(SHEETS_BASE_URL + '?action=ping').catch(()=>{}); }catch(e){} }, 800);
+  }catch(e){}
+
   // Enviar golpes parseados para a planilha POKEDEX via Apps Script
   async function savePokedexMovesToSheet(pokemonName, moves, stats){
     if(!pokemonName || !moves || !moves.length) return {success:false, message:'No data'};
@@ -109,15 +114,14 @@
         categoria: m.categoria || '',
         descricao: m.efeito || m.descricao || ''
       }));
-      const form = new URLSearchParams();
-      form.append('action','savePokedexMoves');
-      form.append('pokemon', pokemonName);
-      // enviar stats se presentes
-      try{ form.append('stats', JSON.stringify(stats || {})); }catch(e){}
-      form.append('moves', JSON.stringify(payload));
-      const resp = await fetch(SHEETS_BASE_URL, { method: 'POST', body: form });
-      const json = await resp.json().catch(()=>({success:resp.ok}));
-      return json;
+      const body = { action: 'savePokedexMoves', pokemon: pokemonName, moves: payload, stats: stats || {} };
+      // enviar como JSON; não bloquear a UI esperando JSON parseado
+      fetch(SHEETS_BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).catch(err=>{ console.warn('savePokedexMovesToSheet fetch err', err); });
+      return { success: true, message: 'request_sent' };
     }catch(err){ console.error('savePokedexMovesToSheet error', err); return {success:false, message: err && err.message ? err.message : String(err)}; }
   }
 
