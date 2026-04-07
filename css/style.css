@@ -118,7 +118,8 @@ header {
     border-radius: 8px;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.3s;
+    transition: box-shadow 0.25s, transform 0.25s, border-color 0.25s;
+    will-change: transform;
 }
 
 .login-btn:hover {
@@ -1566,7 +1567,7 @@ footer {
     text-align: center;
     transition: all 0.5s ease;
     position: relative;
-    overflow: hidden;
+    overflow: hidden; /* keep card pseudo-layer contained */
 }
 
 .smeargle-card::before {
@@ -1655,8 +1656,10 @@ footer {
     border-radius: 15px;
     padding: 15px;
     margin: 20px 0;
-    max-height: 700px;
-    overflow-y: auto;
+     /* limit to viewport with room for header/card so page doesn't jump
+         but allow internal scrolling when content is large */
+     max-height: calc(100vh - 320px);
+     overflow-y: auto;
     position: relative;
     z-index: 1;
 }
@@ -1906,7 +1909,7 @@ footer {
 }
 
 .move-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
     border-color: rgba(255, 215, 0, 0.5);
 }
@@ -1915,21 +1918,28 @@ footer {
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
+    left: 0;
     width: 100%;
     height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.5s;
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+    pointer-events: none;
 }
 
 .move-card:hover::before {
-    left: 100%;
+    transform: translateX(100%);
 }
 
 .move-tipo-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
     font-size: 2em;
     margin-bottom: 10px;
     color: #ffd700;
+    text-align: center;
 }
 
 .move-name {

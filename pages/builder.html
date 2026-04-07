@@ -100,7 +100,7 @@
     .btn-submit{background:linear-gradient(135deg,#5b3fb8,#2b1f43);padding:12px 28px;border-radius:28px;border:none;color:#fff;font-weight:800;box-shadow:0 12px 36px rgba(44,27,70,0.45);}
     .btn-action{padding:8px 12px;border-radius:8px;border:none;background:#3a3a3a;color:#fff}
     .btn-alt{background:#555}
-    .tm-grid{display:grid;grid-template-columns:repeat(auto-fill,72px);gap:10px}
+    .tm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
     .tm-tile{width:72px;height:72px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;color:#fff;font-weight:700}
     .tm-badge-top{position:absolute;left:8px;top:8px;background:rgba(0,0,0,0.35);padding:4px 6px;border-radius:8px;font-size:11px}
     .tm-number-badge{position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.55);padding:3px 7px;border-radius:10px;font-size:11px}
@@ -137,6 +137,49 @@
     #combinedTmsGrid .tm-tile.move-card .tm-number-badge{position:absolute;left:10px;top:10px;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);color:#fff;font-weight:800}
     /* hide legacy small top badge */
     #combinedTmsGrid .tm-tile.move-card .tm-badge-top{display:none}
+
+    /* Override global small-tile sizing for builder-styled TM tiles so controls are visible */
+    .tm-tile.builder-card {
+      min-height:88px !important;
+      min-width:140px !important;
+      height: auto !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      padding:10px !important;
+      display:flex !important;
+      flex-direction:column !important;
+      align-items:stretch !important;
+      justify-content:flex-start !important;
+      overflow:visible !important;
+    }
+    .tm-tile.builder-card .move-actions { display:flex !important; }
+    .tm-tile.builder-card .move-name { white-space:normal !important; font-size:0.95em !important; }
+    /* hide empty category pills to avoid blank circles */
+    .move-details .move-categoria:empty { display:none !important; }
+
+    /* Make TM tiles visually match builder-card moves */
+    .tm-tile.builder-card { background: inherit; color: inherit; border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,0.45); padding:12px; }
+    .tm-tile.builder-card .tm-number-badge { display: none !important; }
+    .tm-tile.builder-card .slot-badge { display:inline-flex; margin-left:auto; background:rgba(255,255,255,0.12); padding:6px 8px; border-radius:999px; font-weight:800; color:#ffd966 }
+    /* centralized styles for generated tile internals */
+    .move-slot-origem{font-size:0.95em;color:#ffd700;margin-top:6px}
+    .move-actions{margin-top:8px;display:flex;gap:8px;align-items:center}
+    .move-actions select{padding:4px;border-radius:4px}
+    .move-actions button{padding:6px 8px;border-radius:6px;border:none;background:#fff;color:#111;cursor:pointer}
+    .move-actions button:focus{outline:3px solid rgba(255,255,255,0.12)}
+    .move-name{white-space:normal}
+    .tm-tile:focus{outline:3px solid rgba(65,184,131,0.18)}
+    .tm-tile{transition:transform 0.18s ease, box-shadow 0.18s ease}
+
+    /* Hide empty category pills and TM default pill visuals */
+    .move-details .move-categoria:empty{display:none}
+
+    /* responsive tweak: allow tighter grid on small screens */
+    @media (max-width:600px){
+      .tm-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+      .tm-tile.builder-card{min-width:120px}
+      .builder-card .move-name{font-size:14px}
+    }
 
     /* Smeargle-style move cards */
     .builder-card{border-radius:12px; padding:12px; color:#fff; box-shadow:0 12px 30px rgba(0,0,0,0.45); display:flex; flex-direction:column; justify-content:space-between; min-height:88px}

@@ -15,6 +15,8 @@ window.addEventListener('DOMContentLoaded', function() {
         let todosPokemons = [];
         let todosPokemonsCompleto = []; // Array com TODOS os dados para busca
         let todosTMs = [];
+        // expor também em window para módulos que esperam esta variável global
+        window.todosTMs = todosTMs;
         let todosAtacks = [];
         let todasTasks = [];
         let usuarioLogado = null;
@@ -918,10 +920,13 @@ window.addEventListener('DOMContentLoaded', function() {
                         categoria: (tm['TIPO DE DROP'] || tm['ORIGEM DO TM2'] || 'Spawn'),
                         sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || tm['SUGESTÃO DE POKEMON'] || '')
                     }));
+                    // atualizar referência global
+                    window.todosTMs = todosTMs;
                     console.log('✅ TMs carregados da planilha:', todosTMs.length);
                 } else {
                     console.warn('⚠️ Nenhum TM encontrado na planilha, usando dados locais');
                     todosTMs = [];
+                    window.todosTMs = todosTMs;
                 }
 
                 renderizarTMs(todosTMs);
@@ -948,6 +953,8 @@ window.addEventListener('DOMContentLoaded', function() {
                         categoria: (tm['TIPO DE DROP'] || tm['ORIGEM DO TM2'] || 'Spawn'),
                         sugestao: (tm['SUGESTÃO DE TM/POKEMON'] || tm['SUGESTÃO DE POKEMON'] || '')
                     }));
+                    // expor globalmente também
+                    window.todosTMs = todosTMs;
                     console.log('✅ TMs carregados para Pokédex:', todosTMs.length);
                 }
             } catch (e) {
