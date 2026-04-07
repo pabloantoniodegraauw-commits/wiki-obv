@@ -55,6 +55,9 @@
 
     // heurísticas por linha para linhas simples (Name / Type / Category) e TM simple lines
     lines.forEach(ln=>{
+      // Ignorar linhas que sejam apenas indicação de clã (ex: "Clã recomendado: Void")
+      if(/cl[ãa]\s*recomendad/i.test(ln)) return;
+      if(/^cl[ãa]\b/i.test(ln)) return;
       if(/\[Move\s*\d+\]|\[TM\s*\d+/i.test(ln)) return;
       if(/\bTM\b|\bMT\b/i.test(ln)){
         // extract name and optional number
@@ -76,6 +79,71 @@
     });
 
     return {moves, tms, meta};
+  }
+
+  // Retorna a classe de ícone FontAwesome para uma tipagem (aceita nomes PT/EN)
+  function getTypeIcon(tipo){
+    try{
+      if(!tipo) return 'fa-circle';
+      const t = tipo.toString().trim();
+      // 1) tentar usar o mapa global do Smeargle se disponível
+      if(window.TIPO_ICONS && window.TIPO_ICONS[t]) return window.TIPO_ICONS[t];
+      // 2) tentar capitalizar e buscar
+      const cap = t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+      if(window.TIPO_ICONS && window.TIPO_ICONS[cap]) return window.TIPO_ICONS[cap];
+      // 3) mapeamento PT -> EN comum
+      const pt2en = {
+        'normal':'Normal','fogo':'Fire','água':'Water','agua':'Water','elétrico':'Electric','eletrico':'Electric',
+        'grama':'Grass','gelo':'Ice','lutador':'Fighting','venenoso':'Poison','terra':'Ground','voador':'Flying',
+        'psíquico':'Psychic','psiquico':'Psychic','inseto':'Bug','pedra':'Rock','fantasma':'Ghost','dragão':'Dragon',
+        'noturno':'Dark','sombrio':'Dark','metálico':'Steel','metalico':'Steel','fada':'Fairy'
+      };
+      const low = t.toLowerCase();
+      if(pt2en[low] && window.TIPO_ICONS && window.TIPO_ICONS[pt2en[low]]) return window.TIPO_ICONS[pt2en[low]];
+      // 4) tentativa por substring em keys
+      if(window.TIPO_ICONS){
+        for(const k in window.TIPO_ICONS){ if(k.toLowerCase().includes(low) || low.includes(k.toLowerCase())) return window.TIPO_ICONS[k]; }
+      }
+    }catch(e){}
+    return 'fa-circle';
+  }
+
+  // Build a lookup for TM data coming from any loaded sheet/global (Google API)
+  function buildTmLookup(){
+    if(window.__tmLookup) return window.__tmLookup;
+    const candidates = [];
+    const knownGlobals = ['todosTMs','smeargleAtacksData','todos','todos_tms','dexSheet','DEX_TMS'];
+    knownGlobals.forEach(k=>{ try{ if(window[k] && Array.isArray(window[k])) candidates.push({name:k,arr:window[k]}); }catch(e){} });
+    // also scan window for array-like globals that look like a sheet
+    try{
+      for(const k in window){
+        if(candidates.find(c=>c.name===k)) continue;
+        try{
+          const v = window[k];
+          if(Array.isArray(v) && v.length && typeof v[0] === 'object'){
+            const keys = Object.keys(v[0]).join(' ').toUpperCase();
+            if(/TIPAG|TIPAGEM|NUMER|TM|NOME/.test(keys)) candidates.push({name:k,arr:v});
+          }
+        }catch(e){}
+      }
+    }catch(e){}
+    // choose the best candidate (prefer knownGlobals order)
+    let source = candidates.length ? candidates[0].arr : [];
+    if(candidates.length>1){
+      // try prefer explicit todosTMs
+      const prefer = candidates.find(c=>['todosTMs','todos','smeargleAtacksData'].includes(c.name));
+      if(prefer) source = prefer.arr;
+    }
+    const byNumber = new Map();
+    const byName = new Map();
+    (source||[]).forEach(obj=>{
+      const num = (obj.numero||obj.NUMERO||obj.Number||obj['Número']||obj['NUMERO DO TM']||'').toString();
+      const n = (obj.nome||obj['NOME DO TM']||obj.NOME||obj['NOME']||obj.name||'').toString().toLowerCase().trim();
+      if(num) byNumber.set(num, obj);
+      if(n) byName.set(n, obj);
+    });
+    const lookup = {sourceName: candidates[0]&&candidates[0].name || null, byNumber, byName, raw: source};
+    window.__tmLookup = lookup; return lookup;
   }
 
   function renderParsedMoves(parsed){
@@ -126,7 +194,7 @@
         const origemName = (parsed && parsed.meta && parsed.meta.nome) ? parsed.meta.nome : 'Pokedex';
         // use Smeargle-like inner structure so styles apply consistently
         card.innerHTML = `
-          <div class="move-tipo-icon">⚡</div>
+          <div class="move-tipo-icon"><i class="fas ${getTypeIcon(mv.tipo||mv.type||mv.tipagem||'')}"></i></div>
           <div class="move-name">${mv.nome}</div>
           <div class="move-details">
             <span class="move-tipo">${mv.tipo||''}</span>
@@ -175,7 +243,7 @@
       const parsedTms = (parsed.tms||[]);
       const grid = document.createElement('div'); grid.className='tm-grid';
       parsedTms.forEach((tm,i)=>{
-        const tile = document.createElement('div'); tile.className='tm-tile move-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || '';
+        const tile = document.createElement('div'); tile.className='tm-tile move-card builder-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || '';
           // try to detect type for this TM (check multiple datasets: tm object, global todosTMs, smeargleAtacksData)
           (function(){
             let tipo = (tm.tipagem || tm.tipo || tm.type || '').toString().trim();
@@ -204,23 +272,47 @@
                 }
               }catch(e){}
             }
-            if(tipo) tile.className += ' type-'+tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'');
+            // try to detect type using todosTMs or smeargleAtacksData; fallback to normal
+            const tipoClass = (tipo && tipo.toString().trim()) ? tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'') : 'normal';
+            tile.className += ' type-' + tipoClass;
           })();
             const slotOrig = tm.numero ? tm.numero : '';
+            const maxSel = document.getElementById('selectMaxBaseMoves') ? parseInt(document.getElementById('selectMaxBaseMoves').value,10) : 9;
+            const slots = Math.max(9, isNaN(maxSel) ? 9 : maxSel);
+            const slotOptions = [...Array(slots)].map((_,i)=>`<option value="${i+1}">M${i+1}</option>`).join('');
+            var displayTipo = '';
+            try{
+              const todos = window.todosTMs || [];
+              if(!displayTipo && Array.isArray(todos) && todos.length){
+                const byNumber = todos.find(x=> String(x.numero||x.NUMERO||x['Número']||x['NUMERO DO TM']||'') === String(tm.numero||''));
+                const nm = (tm.nome||'').toString().toLowerCase().trim();
+                const byName = todos.find(x=> (x.nome||x['NOME DO TM']||x['NOME']||'').toString().toLowerCase().trim() === nm || (x.nome||'').toString().toLowerCase().includes(nm) || nm.includes((x.nome||'').toString().toLowerCase().trim()));
+                const found = byNumber || byName;
+                if(found) displayTipo = (found['TIPAGEM DO TM']||found.TIPAGEM||found.tipagem||found.tipo||found.type||found['TIPAGEM_DO_TM']||'').toString().trim();
+                if(window.DEBUG_TM_MAP){ console.log('TM map check:', {tm, byNumber, byName, found, displayTipo}); }
+              }
+            }catch(e){ }
+            displayTipo = displayTipo || ((typeof tipo !== 'undefined' && tipo) ? tipo : (tm.tipo||tm.tipagem||'TM'));
             tile.innerHTML = `
-              <div class="move-tipo-icon">⚡</div>
-              <div class="move-name">${tm.nome}</div>
+              <div class="move-tipo-icon"><i class="fas ${getTypeIcon(displayTipo||tm.tipo||tm.tipagem||'')}"></i></div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;flex-direction:row;">
+                <div class="move-name" style="text-align:center;">${tm.nome}</div>
+                <div class="slot-badge" style="font-size:0.85em;background:rgba(255,255,255,0.04);padding:4px 8px;border-radius:8px;color:#ffd700;border:1px solid rgba(255,255,255,0.03);">TM${tm.numero||''}</div>
+              </div>
               <div class="move-details">
-                <span class="move-tipo">${(tm.tipo||tm.tipagem||'TM')}</span>
+                <span class="move-tipo">${displayTipo}</span>
                 <span class="move-categoria">${tm.categoria||''}</span>
               </div>
               <div class="move-acao" style="display:none"></div>
               <div class="move-efeito" style="display:none"></div>
               <div class="move-origem">${tm.pokemon||''}</div>
-              <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;">
+              <div class="move-slot-origem">
                 <i class="fas fa-hashtag"></i> Slot: <b>${slotOrig}</b>
               </div>
-              <div class="tm-number-badge">${tm.numero||''}</div>
+              <div class="move-actions">
+                <select id="tm-slot-${i}">${slotOptions}</select>
+                <button data-idx-tm="${i}" class="btn-add-tm" aria-label="Adicionar TM ${tm.nome || ''}" tabindex="0">Adicionar</button>
+              </div>
             `;
         tile.addEventListener('click', ()=>{
           // toggle global selection in builderMeta
@@ -243,7 +335,7 @@
     if(!tms || tms.length===0){ c.innerHTML = '<div style="opacity:0.8">Nenhum TM detectado</div>'; return; }
     const grid = document.createElement('div'); grid.className='tm-grid';
     tms.forEach((tm,i)=>{
-      const tile = document.createElement('div'); tile.className='tm-tile move-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
+      const tile = document.createElement('div'); tile.className='tm-tile move-card builder-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
       (function(){
         let tipo = (tm.tipagem || tm.tipo || tm.type || '').toString().trim();
         try{
@@ -261,23 +353,47 @@
             if(Array.isArray(lookup) && lookup.length){ const nm = (tm.nome||tm.name||'').toString().toLowerCase().trim(); const found = lookup.find(a=> { const atn=(a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||'').toString().toLowerCase().trim(); return atn===nm || atn.includes(nm) || nm.includes(atn); }); if(found) tipo=(found['TYPE']||found['type']||found['TIPAGEM']||found['TIPAGEM DO TM']||found.tipo||'').toString().trim(); }
           }catch(e){}
         }
-        if(tipo) tile.className += ' type-'+tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'');
+        // try to detect type using todosTMs or smeargleAtacksData; fallback to normal
+        const tipoClass2 = (tipo && tipo.toString().trim()) ? tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'') : 'normal';
+        tile.className += ' type-' + tipoClass2;
       })();
       const slotOrig2 = tm.numero ? tm.numero : '';
+      const maxSel2 = document.getElementById('selectMaxBaseMoves') ? parseInt(document.getElementById('selectMaxBaseMoves').value,10) : 9;
+      const slots2 = Math.max(9, isNaN(maxSel2) ? 9 : maxSel2);
+      const slotOptions2 = [...Array(slots2)].map((_,i)=>`<option value="${i+1}">M${i+1}</option>`).join('');
+      var displayTipo2 = '';
+      try{
+        const todos = window.todosTMs || [];
+        if(!displayTipo2 && Array.isArray(todos) && todos.length){
+          const byNumber = todos.find(x=> String(x.numero||x.NUMERO||x['Número']||x['NUMERO DO TM']||'') === String(tm.numero||''));
+          const nm = (tm.nome||'').toString().toLowerCase().trim();
+          const byName = todos.find(x=> (x.nome||x['NOME DO TM']||x['NOME']||'').toString().toLowerCase().trim() === nm || (x.nome||'').toString().toLowerCase().includes(nm) || nm.includes((x.nome||'').toString().toLowerCase().trim()));
+          const found = byNumber || byName;
+          if(found) displayTipo2 = (found['TIPAGEM DO TM']||found.TIPAGEM||found.tipagem||found.tipo||found.type||found['TIPAGEM_DO_TM']||'').toString().trim();
+          if(window.DEBUG_TM_MAP){ console.log('TM map check parsedTms:', {tm, byNumber, byName, found, displayTipo2}); }
+        }
+      }catch(e){}
+      displayTipo2 = displayTipo2 || ((typeof tipo !== 'undefined' && tipo) ? tipo : (tm.tipo||tm.tipagem||'TM'));
       tile.innerHTML = `
-        <div class="move-tipo-icon">⚡</div>
-        <div class="move-name">${tm.nome}</div>
-        <div class="move-details">
-          <span class="move-tipo">${(tm.tipo||tm.tipagem||'TM')}</span>
-          <span class="move-categoria">${tm.categoria||''}</span>
+        <div class="move-tipo-icon"><i class="fas ${getTypeIcon(displayTipo2||tm.tipo||tm.tipagem||'')}"></i></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;flex-direction:row;">
+          <div class="move-name" style="text-align:center;">${tm.nome}</div>
+          <div class="slot-badge" style="font-size:0.85em;background:rgba(255,255,255,0.04);padding:4px 8px;border-radius:8px;color:#ffd700;border:1px solid rgba(255,255,255,0.03);">TM${tm.numero||''}</div>
         </div>
+        <div class="move-details">
+            <span class="move-tipo">${displayTipo2}</span>
+            <span class="move-categoria">${tm.categoria||''}</span>
+          </div>
         <div class="move-acao" style="display:none"></div>
         <div class="move-efeito" style="display:none"></div>
         <div class="move-origem" style="display:none">${tm.pokemon||''}</div>
-        <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;display:none;">
+        <div class="move-slot-origem">
           <i class="fas fa-hashtag"></i> Slot: <b>${slotOrig2}</b>
         </div>
-        <div class="tm-number-badge">${tm.numero||''}</div>
+        <div class="move-actions">
+          <select id="tm-slot-parsed-${i}">${slotOptions2}</select>
+          <button data-idx-tm="${i}" class="btn-add-tm" aria-label="Adicionar TM ${tm.nome || ''}" tabindex="0">Adicionar</button>
+        </div>
       `;
       tile.tabIndex=0; tile.setAttribute('role','button');
       tile.addEventListener('click', ()=>{
@@ -301,7 +417,7 @@
     const grid = document.createElement('div'); grid.className='tm-grid';
     moveObj.tms = moveObj.tms || [];
     tms.forEach((tm,i)=>{
-      const tile = document.createElement('div'); tile.className='tm-tile move-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
+      const tile = document.createElement('div'); tile.className='tm-tile move-card builder-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
       (function(){
         let tipo = (tm.tipagem || tm.tipo || tm.type || '').toString().trim();
         try{
@@ -326,25 +442,49 @@
             }
           }catch(e){}
         }
-        if(tipo) tile.className += ' type-'+tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'');
+        // try to detect type using todosTMs or smeargleAtacksData; fallback to normal
+        const tipoClass3 = (tipo && tipo.toString().trim()) ? tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'') : 'normal';
+        tile.className += ' type-' + tipoClass3;
       })();
       const isSel = moveObj.tms.find(x=> (x.nome||x).toString().toLowerCase()===(tile.dataset.tmName||'').toLowerCase());
       if(isSel) tile.classList.add('selected');
       const slotOrig3 = tm.numero ? tm.numero : '';
+      const maxSel3 = document.getElementById('selectMaxBaseMoves') ? parseInt(document.getElementById('selectMaxBaseMoves').value,10) : 9;
+      const slots3 = Math.max(9, isNaN(maxSel3) ? 9 : maxSel3);
+      const slotOptions3 = [...Array(slots3)].map((_,i)=>`<option value="${i+1}">M${i+1}</option>`).join('');
+      var displayTipo3 = '';
+      try{
+        const todos = window.todosTMs || [];
+        if(!displayTipo3 && Array.isArray(todos) && todos.length){
+          const byNumber = todos.find(x=> String(x.numero||x.NUMERO||x['Número']||x['NUMERO DO TM']||'') === String(tm.numero||''));
+          const nm = (tm.nome||'').toString().toLowerCase().trim();
+          const byName = todos.find(x=> (x.nome||x['NOME DO TM']||x['NOME']||'').toString().toLowerCase().trim() === nm || (x.nome||'').toString().toLowerCase().includes(nm) || nm.includes((x.nome||'').toString().toLowerCase().trim()));
+          const found = byNumber || byName;
+          if(found) displayTipo3 = (found['TIPAGEM DO TM']||found.TIPAGEM||found.tipagem||found.tipo||found.type||found['TIPAGEM_DO_TM']||'').toString().trim();
+          if(window.DEBUG_TM_MAP){ console.log('TM map check renderTmGridForMove:', {tm, byNumber, byName, found, displayTipo3}); }
+        }
+      }catch(e){}
+      displayTipo3 = displayTipo3 || ((typeof tipo !== 'undefined' && tipo) ? tipo : (tm.tipo||tm.tipagem||'TM'));
       tile.innerHTML = `
-        <div class="move-tipo-icon">⚡</div>
-        <div class="move-name">${tm.nome}</div>
+        <div class="move-tipo-icon"><i class="fas ${getTypeIcon(displayTipo3||tm.tipo||tm.tipagem||'')}"></i></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;flex-direction:row;">
+          <div class="move-name" style="text-align:center;">${tm.nome}</div>
+          <div class="slot-badge" style="font-size:0.85em;background:rgba(255,255,255,0.04);padding:4px 8px;border-radius:8px;color:#ffd700;border:1px solid rgba(255,255,255,0.03);">TM${tm.numero||''}</div>
+        </div>
         <div class="move-details">
-          <span class="move-tipo">${(tm.tipo||tm.tipagem||'TM')}</span>
+          <span class="move-tipo">${displayTipo3}</span>
           <span class="move-categoria">${tm.categoria||''}</span>
         </div>
         <div class="move-acao" style="display:none"></div>
         <div class="move-efeito" style="display:none"></div>
         <div class="move-origem">${tm.pokemon||''}</div>
-        <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;">
+        <div class="move-slot-origem">
           <i class="fas fa-hashtag"></i> Slot: <b>${slotOrig3}</b>
         </div>
-        <div class="tm-number-badge">${tm.numero||''}</div>
+        <div class="move-actions">
+          <select id="tm-slot-formove-${i}">${slotOptions3}</select>
+          <button data-idx-tm="${i}" class="btn-add-tm" aria-label="Adicionar TM ${tm.nome || ''}" tabindex="0">Adicionar</button>
+        </div>
       `;
       tile.tabIndex=0; tile.setAttribute('role','button');
       tile.addEventListener('click', ()=>{
@@ -359,6 +499,50 @@
   }
 
   function updateTmCounter(){ const el = safe('tmCountVal'); if(!el) return; const n = (window.builderMeta && Array.isArray(window.builderMeta.tms))?window.builderMeta.tms.length:0; el.textContent = n; }
+
+  // Atualiza tipagens exibidas nos tiles de TM já renderizados.
+  function refreshTmTypes(){
+    try{
+      const todos = window.todosTMs || [];
+      const tiles = Array.from(document.querySelectorAll('.tm-tile'));
+      if(!tiles.length) return;
+      // se ainda não há dados, aguardar curto período e tentar novamente (uma vez)
+      if((!todos || todos.length===0) && !refreshTmTypes._retry){
+        refreshTmTypes._retry = true;
+        setTimeout(refreshTmTypes, 800);
+        return;
+      }
+      tiles.forEach(tile=>{
+        try{
+          const name = (tile.dataset.tmName||'').toString();
+          const idx = tile.dataset.idx ? parseInt(tile.dataset.idx,10) : null;
+          // extrair o texto de nome exibido
+          const nameText = (tile.querySelector('.move-name')||{textContent:''}).textContent || name;
+          const displayName = nameText.toString().trim();
+          // tentar achar por numero (badge) ou por nome
+          const badge = (tile.querySelector('.slot-badge')||{textContent:''}).textContent || '';
+          const tmNumero = (badge.match(/\d+/)||[])[0] || '';
+          let found = null;
+          if(tmNumero) found = todos.find(x=> String(x.numero||x.NUMERO||x['NUMERO DO TM']||'') === String(tmNumero));
+          if(!found){
+            const nm = displayName.toLowerCase().trim();
+            found = todos.find(x=> ((x.nome||x['NOME DO TM']||x.NOME||'')+ '').toString().toLowerCase().trim() === nm || (((x.nome||x['NOME DO TM']||'')+ '').toString().toLowerCase().includes(nm)) || (nm.includes(((x.nome||x['NOME DO TM']||'')+ '').toString().toLowerCase().trim())) );
+          }
+          if(found){
+            const tip = (found['TIPAGEM DO TM']||found.TIPAGEM||found.tipagem||found.tipo||found.type||'').toString().trim() || '';
+            const tipoText = tip || 'TM';
+            const tipoEl = tile.querySelector('.move-tipo');
+            if(tipoEl) tipoEl.textContent = tipoText;
+            // atualizar classe de tipo
+            const tipoClass = (tip && tip.toString().trim()) ? tip.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'') : 'normal';
+            // remover classes type-* existentes
+            tile.className = tile.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass;
+          }
+        }catch(e){}
+      });
+    }catch(e){ console.error('refreshTmTypes error', e); }
+  }
+  window.refreshTmTypes = refreshTmTypes;
 
   // delegated click handler for parse button (works even if element inserted later)
   document.addEventListener('click', function(e){
@@ -409,6 +593,123 @@
       return; }
   });
 
+  // add TM tile -> assign to selected slot
+  document.addEventListener('click', function(e){
+    const add = e.target.closest ? e.target.closest('.btn-add-tm') : null;
+    if(!add) return;
+    const tile = add.closest ? add.closest('.tm-tile') : null;
+    const tmName = tile && tile.dataset ? (tile.dataset.tmName || '') : '';
+    if(!tmName) return;
+    // try to find a select within this tile for chosen slot
+    const sel = tile.querySelector('select');
+    const slot = sel ? parseInt(sel.value,10) : null;
+    if(!slot || isNaN(slot)) return;
+    try {
+      // visual immediate feedback
+      tile && tile.classList.add('adding');
+      add.disabled = true;
+      setTimeout(()=>{ try{ add.disabled = false; tile && tile.classList.remove('adding'); }catch(e){} }, 600);
+
+      // determine origem/tipo/numero from parsed tms or sheet data so image lookup works
+      let origemName = 'TM';
+      let tipoForEntry = '';
+      let numeroForEntry = '';
+      try{
+        const idx = tile && tile.dataset && tile.dataset.idx ? parseInt(tile.dataset.idx,10) : null;
+        const parsed = window._builder_parsed && window._builder_parsed.tms ? window._builder_parsed.tms : null;
+        let tmObj = null;
+        if(parsed && idx !== null && parsed[idx]) tmObj = parsed[idx];
+        // fallback: usar buildTmLookup (mais robusto) ou procurar em window.todosTMs
+        if(!tmObj){
+          try{
+            const lookup = (typeof buildTmLookup === 'function') ? buildTmLookup() : (window.__tmLookup || null);
+            const nm = (tmName||'').toString().toLowerCase().trim();
+            const badgeNumMatch = tile && tile.querySelector('.slot-badge') ? ((tile.querySelector('.slot-badge').textContent||'').match(/\d+/)||[])[0] : '';
+            if(lookup){
+              // tentar por número (normalizando)
+              if(badgeNumMatch){
+                const byNum = lookup.byNumber.get(String(badgeNumMatch));
+                if(byNum) tmObj = byNum;
+              }
+              // tentar por nome
+              if(!tmObj && lookup.byName){
+                const byName = lookup.byName.get(nm);
+                if(byName) tmObj = byName;
+              }
+              // se ainda não achou, varrer raw com correspondência flexível
+              if(!tmObj && Array.isArray(lookup.raw)){
+                const rawFound = lookup.raw.find(x=>{
+                  try{
+                    const nval = ((x.nome||x['NOME DO TM']||x.NOME||'')+ '').toString().toLowerCase();
+                    const numval = String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'');
+                    if(badgeNumMatch && numval && numval === String(badgeNumMatch)) return true;
+                    if(nval && nm && (nval === nm || nval.includes(nm) || nm.includes(nval))) return true;
+                  }catch(e){}
+                  return false;
+                });
+                if(rawFound) tmObj = rawFound;
+              }
+            } else {
+              const todos = window.todosTMs || [];
+              const byNumber = todos.find(x=> String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'') === String((tile && tile.querySelector('.slot-badge'))?((tile.querySelector('.slot-badge').textContent||'').match(/\d+/)||[])[0]:''));
+              const byName = todos.find(x=> ((x.nome||x['NOME DO TM']||'') + '').toString().toLowerCase().trim() === nm || ((x.nome||x['NOME DO TM']||'') + '').toString().toLowerCase().includes(nm));
+              tmObj = byNumber || byName || null;
+            }
+          }catch(e){ /* silently ignore */ }
+        }
+        if(tmObj){
+          origemName = tmObj.pokemon || tmObj.POKEMON || origemName;
+          // extrair tipagem com várias chaves possíveis
+          const candidateTipo = (tmObj['TIPAGEM DO TM'] || tmObj['TIPAGEM_DO_TM'] || tmObj.TIPAGEM || tmObj.tipagem || tmObj.tipo || tmObj.type || tmObj.TIPO || '').toString().trim();
+          if(candidateTipo) tipoForEntry = candidateTipo;
+          numeroForEntry = (tmObj.numero||tmObj.NUMERO||tmObj['Número']||tmObj['NUMERO DO TM']||'') || numeroForEntry;
+        }
+      }catch(e){}
+
+      // preserve previous origem if new tmObj lacks pokemon info, but do NOT preserve previous tipo
+      try{
+        const prev = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves : window.smeargleSelectedMoves) || new Array(9).fill(null);
+        const prevEntry = prev[slot-1] || null;
+        if((!origemName || origemName === 'TM' || String(origemName).trim()==='') && prevEntry && prevEntry.origem){ origemName = prevEntry.origem; }
+        // Important: do not copy prevEntry.tipo here — prefer to resolve tipo from TM lookup or leave empty so obterTipoGolpe() can infer it
+      }catch(e){}
+
+      if (typeof smeargleSelectedMoves !== 'undefined') {
+        smeargleSelectedMoves = smeargleSelectedMoves || new Array(9).fill(null);
+        smeargleSelectedMoves[slot-1] = { nome: tmName, tipo: tipoForEntry || '', categoria: '', origem: origemName||'TM', numero: numeroForEntry||'', local: `M${slot}` };
+      } else {
+        window.smeargleSelectedMoves = window.smeargleSelectedMoves || new Array(9).fill(null);
+        window.smeargleSelectedMoves[slot-1] = { nome: tmName, tipo: tipoForEntry || '', categoria: '', origem: origemName||'TM', numero: numeroForEntry||'', local: `M${slot}` };
+      }
+      if(window.DEBUG_TM_ADD){ console.log('add-tm:', {slot, tmName, origemName, tipoForEntry, prevEntry: (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1])}); }
+
+      // update UI quickly
+      if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
+
+      // defer heavier UI (inline modal/grid rendering) to allow paint and avoid jank
+      setTimeout(()=>{
+        try{ const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1]); openCombinedAssignInline(moveObj, slot-1); }catch(e){}
+      }, 40);
+    } catch(e) {
+      // fallback (don't force tipo 'TM' — deixar vazio para que a resolução seja feita por obterTipoGolpe)
+      window.smeargleSelectedMoves = window.smeargleSelectedMoves || new Array(9).fill(null);
+      const origemName = 'TM';
+      window.smeargleSelectedMoves[slot-1] = { nome: tmName, tipo: '', categoria: '', origem: origemName, numero: '', local: `M${slot}` };
+      if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
+    }
+  });
+
+  // keyboard support: Enter/Space on focused tile activates click
+  document.addEventListener('keydown', function(e){
+    const active = document.activeElement;
+    if(!active) return;
+    if(active.classList && active.classList.contains('tm-tile')){
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault(); active.click();
+      }
+    }
+  });
+
   // init UI handlers (call when page is inserted or on DOM ready)
   function initBuilderUI(){
     const btn = safe('btnParsePokedex'); if(btn){ btn.removeEventListener && btn.removeEventListener('click', null); btn.addEventListener('click', ()=>{ const txt = safe('pokedexPaste')?safe('pokedexPaste').value:''; const parsed = parsePokedexText(txt); renderParsedMoves(parsed); }); }
@@ -417,7 +718,54 @@
       // legacy fallback
       if(safe('builderTmsList')) safe('builderTmsList').innerHTML='';
       window._builder_parsed = null; window.builderMeta = {tms:[]}; updateTmCounter(); }); }
-    const submit = safe('btnSubmitBuild'); if(submit){ submit.removeEventListener && submit.removeEventListener('click', null); submit.addEventListener('click', ()=>{ console.log('Build submit', {moves: window.smeargleSelectedMoves, meta: window.builderMeta}); alert('Build submetido (veja console)'); }); }
+    const submit = safe('btnSubmitBuild'); if(submit){
+      // change label to reflect copy action
+      try{ submit.textContent = 'Copiar Moveset'; }catch(e){}
+      submit.removeEventListener && submit.removeEventListener('click', null);
+      submit.addEventListener('click', async ()=>{
+        try{
+          const moves = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves : window.smeargleSelectedMoves) || [];
+          const meta = window.builderMeta || {};
+          // determine pokemon name: prefer parsed meta, then smeargle card, then fallback
+          let pokeName = '';
+          try{ if(window._builder_parsed && window._builder_parsed.meta && window._builder_parsed.meta.nome) pokeName = window._builder_parsed.meta.nome; }catch(e){}
+          if(!pokeName){ const el = document.querySelector('.smeargle-name'); if(el) pokeName = (el.textContent||'').toString().trim(); }
+          if(!pokeName) pokeName = meta.name || '';
+
+          const lines = [];
+          lines.push('Build Moveset');
+          lines.push('');
+          if(pokeName) lines.push(pokeName);
+          lines.push('');
+          for(let i=0;i<moves.length;i++){
+            const m = moves[i];
+            const slot = 'M' + (i+1);
+            if(!m || !m.nome){ lines.push(`${slot}: (vazio)`); continue; }
+            const tipoPart = m.tipo ? (' - ' + m.tipo) : '';
+            // if this slot is directly a TM, include its number
+            let tmSuffix = '';
+            if(m.numero) tmSuffix = ` | TM-${m.numero}`;
+            else if(Array.isArray(m.tms) && m.tms.length){ tmSuffix = ' | TMs: ' + m.tms.map(t=> (t.numero?(`${t.nome} (TM-${t.numero})`):(t.nome||''))).join(', '); }
+            lines.push(`${slot}: ${m.nome}${tipoPart}${tmSuffix}`);
+          }
+
+          const text = lines.join('\n');
+          // try modern clipboard API, fallback to legacy textarea copy
+          if(navigator.clipboard && navigator.clipboard.writeText){
+            await navigator.clipboard.writeText(text);
+          } else {
+            const ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          }
+          console.log('Build copied', {moves, meta});
+          const original = submit.textContent;
+          submit.textContent = 'Copiado ✓';
+          setTimeout(()=>{ try{ submit.textContent = original }catch(e){} }, 1200);
+        }catch(err){
+          console.error('Erro ao copiar build:', err);
+          alert('Não foi possível copiar os golpes. Veja o console (F12) para detalhes.');
+        }
+      });
+    }
     // clicking a selected move in the left card opens the TM modal
     const movesList = safe('movesList'); if(movesList){ movesList.addEventListener('click', function(ev){ const item = ev.target.closest ? ev.target.closest('.selected-move-item') : null; if(!item) return; const slot = parseInt(item.dataset-slot,10); if(!slot) return; const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1]); openCombinedAssignInline(moveObj, slot-1); }); }
     // also update counter display
@@ -523,7 +871,36 @@
           // otherwise, use selected parsed move and assign its tms into the slotIndex (if any)
           const sel = movesCopy[selectedIdx];
           const selTms = sel.tms || [];
-          try{ if(typeof smeargleSelectedMoves !=='undefined'){ smeargleSelectedMoves[slotIndex] = smeargleSelectedMoves[slotIndex]||{}; smeargleSelectedMoves[slotIndex].tms = selTms; } else { window.smeargleSelectedMoves[slotIndex] = window.smeargleSelectedMoves[slotIndex]||{}; window.smeargleSelectedMoves[slotIndex].tms = selTms; } } catch(e){ window.smeargleSelectedMoves[slotIndex] = window.smeargleSelectedMoves[slotIndex]||{}; window.smeargleSelectedMoves[slotIndex].tms = selTms; }
+          try{
+            if(typeof smeargleSelectedMoves !== 'undefined'){
+              smeargleSelectedMoves[slotIndex] = smeargleSelectedMoves[slotIndex]||{};
+              smeargleSelectedMoves[slotIndex].tms = selTms;
+            } else {
+              window.smeargleSelectedMoves[slotIndex] = window.smeargleSelectedMoves[slotIndex]||{};
+              window.smeargleSelectedMoves[slotIndex].tms = selTms;
+            }
+            // tentar inferir tipagem a partir dos TMs atribuídos
+            try{
+              const lookup = (typeof buildTmLookup === 'function') ? buildTmLookup() : (window.__tmLookup || null);
+              const tipos = [];
+              (selTms||[]).forEach(tm=>{
+                if(!tm) return;
+                if(tm.tipo) tipos.push(String(tm.tipo).trim());
+                else if(tm.numero && lookup && lookup.byNumber){
+                  const f = lookup.byNumber.get(String(tm.numero));
+                  if(f){ const tip = f['TIPAGEM DO TM']||f.TIPAGEM||f.tipagem||f.tipo||f.type||''; if(tip) tipos.push(String(tip).trim()); }
+                }
+              });
+              if(tipos.length){
+                const cnt = {}; tipos.forEach(t=>cnt[t]= (cnt[t]||0)+1);
+                const tipoEscolhido = Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+                if(typeof smeargleSelectedMoves !== 'undefined') smeargleSelectedMoves[slotIndex].tipo = tipoEscolhido; else window.smeargleSelectedMoves[slotIndex].tipo = tipoEscolhido;
+              }
+            }catch(e){}
+          } catch(e){
+            window.smeargleSelectedMoves[slotIndex] = window.smeargleSelectedMoves[slotIndex]||{};
+            window.smeargleSelectedMoves[slotIndex].tms = selTms;
+          }
         }
       }catch(e){ console.warn('Erro ao salvar atribuições do modal combinado', e); }
       if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();

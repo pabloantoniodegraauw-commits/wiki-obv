@@ -59,6 +59,8 @@ const TIPO_ICONS = {
     'Steel': 'fa-shield-alt',
     'Fairy': 'fa-star'
 };
+// Expor mapeamento globalmente para outros módulos (ex: builder)
+try{ window.TIPO_ICONS = TIPO_ICONS; }catch(e){}
 
 // Helpers de normalização para comparar nomes sem acento/maiús/minús
 function normalizeName(str) {
@@ -74,6 +76,22 @@ function initSmeargle() {
     console.log('🎨 Inicializando Smeargle Builder...');
     ensureSmeargleStyles();
     carregarDadosSmeargle();
+}
+
+// Extrai nome principal/species de uma string (remove qualifiers como Shiny/Mega/Alolan etc.)
+function extractSpeciesName(raw){
+    if(!raw) return '';
+    try{
+        let s = raw.toString().replace(/\(.*\)/g,'').trim();
+        s = s.replace(/\s+/g,' ');
+        const quals = ['shiny','mega','alolan','galarian','hisui','crowned','female','male','shadow'];
+        const parts = s.split(/\s+/).filter(Boolean);
+        // remove qualifiers at start/end
+        if(parts.length>1 && quals.includes(parts[0].toLowerCase())) parts.shift();
+        if(parts.length>1 && quals.includes(parts[parts.length-1].toLowerCase())) parts.pop();
+        const species = parts.join(' ');
+        return species.split(' ').map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+    }catch(e){ return raw; }
 }
 
 // Carregar dados do Google Sheets
@@ -270,22 +288,25 @@ function renderizarGolpesSmeargle(golpes) {
     }
     
     const nomesSelecionados = smeargleSelectedMoves.filter(Boolean).map(m => m.nome.toLowerCase());
-    
+
     grid.innerHTML = golpes.map(golpe => {
         const estaSelecionado = nomesSelecionados.includes(golpe.nome.toLowerCase());
         const classeExtra = estaSelecionado ? ' move-card-selected' : '';
         // Exibir slot de origem (ex: M7)
         const slotOrigem = golpe.local ? golpe.local.toUpperCase() : '';
+        const tipoResolvido = (typeof obterTipoGolpe === 'function') ? (obterTipoGolpe(golpe) || 'Normal') : (golpe.tipo || 'Normal');
+        const tipoClassSafe = (tipoResolvido||'Normal').toString().toLowerCase().replace(/\s+/g,'-');
+        const iconClass = TIPO_ICONS[tipoResolvido] || TIPO_ICONS[(tipoResolvido.charAt(0).toUpperCase()+tipoResolvido.slice(1).toLowerCase())] || 'fa-circle';
         return `
-            <div class="move-card type-${golpe.tipo.toLowerCase()}${classeExtra}" 
+            <div class="move-card type-${tipoClassSafe}${classeExtra}" 
                  data-move='${JSON.stringify(golpe)}'
                  onclick="selecionarGolpe(this)">
                 <div class="move-tipo-icon">
-                    <i class="fas ${TIPO_ICONS[golpe.tipo] || 'fa-circle'}"></i>
+                    <i class="fas ${iconClass}"></i>
                 </div>
                 <div class="move-name">${golpe.nome}</div>
                 <div class="move-details">
-                    <span class="move-tipo">${golpe.tipo}</span>
+                    <span class="move-tipo">${tipoResolvido}</span>
                     <span class="move-categoria">${golpe.categoria}</span>
                 </div>
                 <div class="move-acao">
@@ -464,10 +485,71 @@ function atualizarCardSmeargle() {
     card.className = `smeargle-card type-${tipoDom.toLowerCase()}`;
     
     // Atualizar ícone
-    typeIcon.innerHTML = `<i class="fas ${TIPO_ICONS[tipoDom] || 'fa-circle'}"></i>`;
+    const iconForDom = TIPO_ICONS[tipoDom] || TIPO_ICONS[(tipoDom.charAt(0).toUpperCase()+tipoDom.slice(1).toLowerCase())] || 'fa-circle';
+    typeIcon.innerHTML = `<i class="fas ${iconForDom}"></i>`;
     
     // Atualizar badge
     typeBadge.innerHTML = `<span class="type-badge type-${tipoDom.toLowerCase()}">${tipoDom}</span>`;
+    // Atualizar imagem do Smeargle/card principal
+    try{
+        const imgEl = document.querySelector('.smeargle-img');
+        if(imgEl){
+            // Preferência de imagem: se houver um Pokémon selecionado no primeiro slot, usar sua origem (EV/POKEMON)
+            const first = smeargleSelectedMoves.find(Boolean);
+            let nomeParaImagem = null;
+            if(first && first.origem){ nomeParaImagem = first.origem; }
+            // fallback: usar nome padrão do builder (se existir)
+            if(!nomeParaImagem && window.builderMeta && window.builderMeta.name) nomeParaImagem = window.builderMeta.name;
+            if(!nomeParaImagem && window.builderSelectedPokemonName) nomeParaImagem = window.builderSelectedPokemonName;
+            if(nomeParaImagem && typeof obterImagemPokemon === 'function'){
+                // tentar separar forma/qualificador (Shiny, Mega, Alolan, Galarian, etc.)
+                function splitNomeParaImagem(raw){
+                    if(!raw) return {nomePrincipal:'', nomeBase:''};
+                    let s = raw.replace(/\(.*\)/g,'').trim();
+                    s = s.replace(/\s+/g,' ');
+                    const quals = ['shiny','mega','alolan','galarian','hisui','crowned','female','male','shadow'];
+                    const parts = s.split(/\s+/).filter(Boolean);
+                    // detectar qualifier no início
+                    let qualifier = null;
+                    let species = s;
+                    if(parts.length>1 && quals.includes(parts[0].toLowerCase())){
+                        qualifier = parts[0];
+                        species = parts.slice(1).join(' ');
+                    } else if(parts.length>1 && quals.includes(parts[parts.length-1].toLowerCase())){
+                        qualifier = parts[parts.length-1];
+                        species = parts.slice(0, parts.length-1).join(' ');
+                    }
+                    // capitalizar corretamente
+                    const cap = str => str.split(' ').map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+                    const nomePrincipal = cap(species);
+                    const nomeBase = qualifier ? (nomePrincipal + '-' + (qualifier.charAt(0).toUpperCase()+qualifier.slice(1))) : '';
+                    return {nomePrincipal, nomeBase};
+                }
+                const parts = splitNomeParaImagem(nomeParaImagem);
+                const src = obterImagemPokemon(parts.nomePrincipal, parts.nomeBase);
+                imgEl.src = src;
+                imgEl.alt = nomeParaImagem;
+                imgEl.onerror = function(){ this.onerror=null; this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'; };
+            } else {
+                // manter placeholder pokebola
+                imgEl.src = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
+                imgEl.alt = 'Pokémon';
+            }
+        }
+    }catch(e){ console.warn('Erro atualizando imagem Smeargle', e); }
+        // Atualizar nome exibido no card
+        try{
+            const nameEl = document.querySelector('.smeargle-name');
+            if(nameEl){
+                let displayName = '';
+                const first = smeargleSelectedMoves.find(Boolean);
+                if(first && first.origem) displayName = extractSpeciesName(first.origem);
+                if(!displayName && window.builderMeta && window.builderMeta.name) displayName = extractSpeciesName(window.builderMeta.name);
+                if(!displayName && window.builderSelectedPokemonName) displayName = extractSpeciesName(window.builderSelectedPokemonName);
+                if(!displayName) displayName = 'Build';
+                nameEl.textContent = displayName;
+            }
+        }catch(e){ console.warn('Erro atualizando nome Smeargle', e); }
     
     // Atualizar lista de golpes
     if (countSelected === 0) {
@@ -477,15 +559,26 @@ function atualizarCardSmeargle() {
         const items = [];
         for (let index = 0; index < smeargleSelectedMoves.length; index++) {
             const golpe = smeargleSelectedMoves[index];
-            if (golpe) {
+                if (golpe) {
                 // Exibir slot de origem
                 const slotOrigem = golpe.local ? golpe.local.toUpperCase() : '';
+                // Resolver tipo usando obterTipoGolpe, priorizando tipagem do(s) TM(s)
+                let tmText = '';
+                if (golpe.numero) {
+                    tmText = `TM${golpe.numero}`;
+                } else if (golpe.tms && golpe.tms.length) {
+                    const nums = golpe.tms.map(t => t && t.numero ? (`TM${t.numero}`) : null).filter(Boolean);
+                    if (nums.length === 1) tmText = nums[0];
+                    else if (nums.length > 1) tmText = nums.join(', ');
+                }
+                const tipoResolvido = (typeof obterTipoGolpe === 'function') ? (obterTipoGolpe(golpe) || golpe.tipo || 'Normal') : (golpe.tipo || 'Normal');
+                const tipoCategoriaLine = `${tipoResolvido || ''}${tmText ? (' • ' + tmText) : (golpe.categoria ? (' • ' + golpe.categoria) : '')}`;
                 items.push(`
                     <div class="selected-move-item" data-slot="${index+1}">
                         <span class="move-number">${index + 1}</span>
                         <span class="move-info">
                             <strong>${golpe.nome}</strong>
-                            <small>${golpe.tipo} • ${golpe.categoria}</small>
+                            <small>${tipoCategoriaLine}</small>
                             <span class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-left:6px;display:inline-block;margin-top:6px;">
                                 <i class='fas fa-hashtag'></i> Slot: <b>${slotOrigem}</b>
                             </span>
@@ -556,14 +649,104 @@ window.editarSlot = function(index) {
 // Calcular tipo dominante
 function tipoDominante(moves) {
     if (moves.length === 0) return 'Normal';
-    
+
     const contagem = {};
     moves.forEach(m => {
-        contagem[m.tipo] = (contagem[m.tipo] || 0) + 1;
+        const t = obterTipoGolpe(m) || 'Normal';
+        contagem[t] = (contagem[t] || 0) + 1;
     });
-    
+
     return Object.entries(contagem)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'Normal';
+}
+
+// Resolve a tipagem efetiva de um golpe/slot, incluindo TMs atribuídos
+function obterTipoGolpe(golpe){
+    if(!golpe) return 'Normal';
+    // quick direct check in window.todosTMs (most reliable source when loaded)
+    try{
+        if(golpe.numero && window.todosTMs && Array.isArray(window.todosTMs)){
+            const numClean = String(golpe.numero).replace(/\D/g,'');
+            const found = (window.todosTMs||[]).find(x=> String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'') === numClean);
+            if(found){ const tip = found['TIPAGEM DO TM']||found.TIPAGEM||found.tipagem||found.tipo||found.type||''; if(tip){ if(window.DEBUG_TM_MAP) console.log('obterTipoGolpe: matched todosTMs by numero', found); return String(tip).trim(); } }
+        }
+        // try match by nome in todosTMs if numero not found
+        if(golpe.nome && window.todosTMs && Array.isArray(window.todosTMs)){
+            const nm = (golpe.nome||'').toString().toLowerCase().trim();
+            const foundByName = (window.todosTMs||[]).find(x=>{
+                const nval = ((x.nome||x['NOME DO TM']||x.NOME||'')+ '').toString().toLowerCase();
+                return nval === nm || nval.includes(nm) || nm.includes(nval);
+            });
+            if(foundByName){ const tip = foundByName['TIPAGEM DO TM']||foundByName.TIPAGEM||foundByName.tipagem||foundByName.tipo||foundByName.type||''; if(tip){ if(window.DEBUG_TM_MAP) console.log('obterTipoGolpe: matched todosTMs by nome', foundByName); return String(tip).trim(); } }
+        }
+    }catch(e){}
+    // 1) se é um TM direto com numero, tentar lookup
+    try{
+        const lookup = buildTmLookup && typeof buildTmLookup === 'function' ? buildTmLookup() : (window.__tmLookup || null);
+        if(golpe.numero && lookup){
+            let found = null;
+            if(lookup.byNumber) found = lookup.byNumber.get(String(golpe.numero));
+            if(!found && Array.isArray(lookup.raw)){
+                const numClean = String(golpe.numero).replace(/\D/g,'');
+                found = lookup.raw.find(x=> String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'') === numClean);
+            }
+            if(found){
+                const tip = found['TIPAGEM DO TM'] || found.TIPAGEM || found.tipagem || found.tipo || found.type || '';
+                if(tip) return String(tip).trim();
+            }
+        }
+        // se não houver um lookup estruturado, tentar consultar window.todosTMs diretamente
+        if(golpe.numero && !lookup && window.todosTMs && Array.isArray(window.todosTMs)){
+            const numClean = String(golpe.numero).replace(/\D/g,'');
+            const foundDirect = (window.todosTMs||[]).find(x=> String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'') === numClean);
+            if(foundDirect){ const tip = foundDirect['TIPAGEM DO TM']||foundDirect.TIPAGEM||foundDirect.tipagem||foundDirect.tipo||foundDirect.type||''; if(tip) return String(tip).trim(); }
+        }
+    }catch(e){}
+
+    // 3) se tem um array de TMs atribuídos ao slot, extrair tipos dos TMs
+    try{
+        if(Array.isArray(golpe.tms) && golpe.tms.length){
+            const tipos = [];
+            const lookup = buildTmLookup && typeof buildTmLookup === 'function' ? buildTmLookup() : (window.__tmLookup || null);
+            golpe.tms.forEach(tm=>{
+                if(!tm) return;
+                if(tm.tipo && String(tm.tipo).trim()) tipos.push(String(tm.tipo).trim());
+                else if(tm.numero && lookup){
+                    let found = null;
+                    if(lookup.byNumber) found = lookup.byNumber.get(String(tm.numero));
+                    if(!found && Array.isArray(lookup.raw)){
+                        const numClean = String(tm.numero).replace(/\D/g,'');
+                        found = lookup.raw.find(x=> String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'') === numClean);
+                    }
+                    if(found){ const tip = found['TIPAGEM DO TM'] || found.TIPAGEM || found.tipagem || found.tipo || found.type || ''; if(tip) tipos.push(String(tip).trim()); }
+                } else if(tm.nome && lookup && lookup.byName){
+                    const found = lookup.byName.get((tm.nome||'').toString().toLowerCase().trim());
+                    if(found){ const tip = found['TIPAGEM DO TM'] || found.TIPAGEM || found.tipagem || found.tipo || found.type || ''; if(tip) tipos.push(String(tip).trim()); }
+                }
+            });
+            if(tipos.length){
+                // escolher tipo mais frequente
+                const cnt = {}; tipos.forEach(t=>cnt[t]= (cnt[t]||0)+1);
+                return Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0][0];
+            }
+        }
+    }catch(e){}
+    // 4) se já tem tipo declarado no próprio objeto (fallback)
+    if(golpe.tipo && String(golpe.tipo).trim()) return String(golpe.tipo).trim();
+
+    // 5) fallback: se possuir nome, tentar buscar na tabela de ataques (smeargleAtacksData)
+    try{
+        if(window.smeargleAtacksData && golpe.nome){
+            const nm = (golpe.nome||'').toString().toLowerCase().trim();
+            const found = (window.smeargleAtacksData||[]).find(a=>{
+                const atn = ((a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a['ATACK_BR']||'')+ '').toString().toLowerCase().trim();
+                return atn === nm || atn.includes(nm) || nm.includes(atn);
+            });
+            if(found){ const tip = found['TYPE']||found.type||found['TIPAGEM']||found['TIPAGEM DO TM']||found.tipo||''; if(tip) return String(tip).trim(); }
+        }
+    }catch(e){}
+
+    return 'Normal';
 }
 
 // Remover golpe
@@ -636,31 +819,36 @@ function buscarPokemonsCompativeis() {
         origemNorm = origemNorm.replace(/^(shiny|shadow|mega|alolan|galarian|hisui|crowned|male|female)\s+/i, '').trim();
         origemNorm = origemNorm.replace(/\s+(shiny|shadow|mega|alolan|galarian|hisui|crowned|male|female)$/i, '').trim();
 
+        // Usar normalizeName para comparar nomes de forma mais robusta (remove acentos, parênteses, etc.)
         const pokemon = smearglePokemonData.find(p => {
-            const pok = (p['POKEMON'] || '').toLowerCase();
-            const ev = (p['EV'] || '').toLowerCase();
-            const o = origemNorm.toLowerCase();
-            if (!o) return false;
-            if (pok === o || ev === o) return true;
-            // tentar comparar pela última palavra (ex: 'hydreigon' em 'shiny hydreigon')
-            const parts = o.split(/\s+/).filter(Boolean);
-            const last = parts.length ? parts[parts.length - 1] : o;
-            if (last && (pok.includes(last) || ev.includes(last))) return true;
-            return false;
+            try{
+                const pokRaw = (p['POKEMON'] || '');
+                const evRaw = (p['EV'] || '');
+                const pok = typeof normalizeName === 'function' ? normalizeName(pokRaw) : (pokRaw||'').toString().toLowerCase();
+                const ev = typeof normalizeName === 'function' ? normalizeName(evRaw) : (evRaw||'').toString().toLowerCase();
+                const o = typeof normalizeName === 'function' ? normalizeName(origemNorm || rawOrigem) : (origemNorm||rawOrigem||'').toString().toLowerCase();
+                if(!o) return false;
+                if(pok === o || ev === o) return true;
+                // comparar por inclusão (última palavra ou qualquer parte)
+                if(pok.includes(o) || ev.includes(o)) return true;
+                const parts = o.split(/\s+/).filter(Boolean);
+                const last = parts.length ? parts[parts.length - 1] : o;
+                if (last && (pok.includes(last) || ev.includes(last))) return true;
+                return false;
+            }catch(e){ return false; }
         });
         if (!pokemon) {
-            console.warn(`[Smeargle] Não encontrou Pokémon para origem="${rawOrigem}" (procurando por M${index + 1}: ${golpe.nome}). Tentando sugerir candidatos...`);
+            if(window.DEBUG_SMEARGLE) console.warn(`[Smeargle] Não encontrou Pokémon para origem="${rawOrigem}" (procurando por M${index + 1}: ${golpe.nome}). Tentando sugerir candidatos...`);
             // tentar sugerir candidatos aproximados (busca por substring no POKEMON/EV) usando origem normalizada
-            const termo = (origemNorm || rawOrigem).toLowerCase().split(/\s|\(|\-|_/).pop();
+            const termo = (origemNorm || rawOrigem).toString();
+            const tnorm = typeof normalizeName === 'function' ? normalizeName(termo) : termo.toLowerCase();
             const candidatos = smearglePokemonData.filter(p => {
-                const pok = (p['POKEMON'] || '').toLowerCase();
-                const ev = (p['EV'] || '').toLowerCase();
-                const allFields = Object.values(p).filter(v=>typeof v === 'string').map(v=>normalizeName(v)).join(' ');
-                // usar termo já normalizado
-                const t = normalizeName(termo || '');
-                return (t && (pok.includes(t) || ev.includes(t) || allFields.includes(t)));
+                try{
+                    const pokAll = Object.values(p).filter(v=>typeof v === 'string').map(v=> typeof normalizeName === 'function' ? normalizeName(v) : v.toLowerCase()).join(' ');
+                    return tnorm && pokAll.includes(tnorm);
+                }catch(e){ return false; }
             }).slice(0, 12).map(p => ({POKEMON: p['POKEMON'], EV: p['EV']}));
-            console.warn('[Smeargle] Candidatos encontrados:', candidatos);
+            if(window.DEBUG_SMEARGLE) console.warn('[Smeargle] Candidatos encontrados:', candidatos);
             // Se nenhum candidato encontrado, tentar buscar por qual Pokémon possui este golpe nas colunas M1..M10
             if (candidatos.length === 0) {
                 const moveTerm = normalizeName(golpe.nome || '');
