@@ -108,31 +108,7 @@
     </div>
 </div>
 
-<!-- Painel rápido: Colar Pokedex e Salvar (Smeargle) -->
-<div class="paste-save-panel" style="margin-top:18px">
-    <h3>Colar Pokedex (Salvar direto)</h3>
-    <textarea id="smearglePokedexPaste" placeholder="Cole a Pokedex do jogo aqui" style="width:100%;min-height:120px;margin-bottom:8px"></textarea>
-    <div style="display:flex;gap:8px;align-items:center">
-        <button id="btnPasteSavePokedexSmeargle" class="btn-save-pokedex"><i class="fas fa-save"></i> Colar e Salvar</button>
-        <span id="pasteSaveStatusSmeargle" style="color:#9bbcff;margin-left:8px"></span>
-    </div>
-</div>
-
-<script>
-    document.getElementById('btnPasteSavePokedexSmeargle').addEventListener('click', async function(){
-        const txt = document.getElementById('smearglePokedexPaste').value || '';
-        if(!txt) return alert('Cole o texto da Pokedex primeiro');
-        try{
-            const parsed = (window.parsePokedexText) ? window.parsePokedexText(txt) : null;
-            if(!parsed){ alert('Parser não disponível. Abra a aba Builder primeiro ou recarregue a página.'); return; }
-            const name = parsed.meta && parsed.meta.nome ? parsed.meta.nome : (parsed.moves && parsed.moves[0] && parsed.moves[0].origem) || '';
-            document.getElementById('pasteSaveStatusSmeargle').textContent = 'Enviando...';
-            await window.savePokedexMovesToSheet(name, parsed.moves || [], parsed.meta && parsed.meta.stats ? parsed.meta.stats : {});
-            document.getElementById('pasteSaveStatusSmeargle').textContent = 'Enviado ✓';
-            setTimeout(()=>{ document.getElementById('pasteSaveStatusSmeargle').textContent=''; }, 1800);
-        }catch(e){ console.error('pasteSave error', e); alert('Erro ao salvar: ' + e.message); }
-    });
-</script>
+<!-- Paste panel removed — use the global "Colar e Parsear" button in the stats bar. -->
 
 <!-- Modal de Builds -->
 <div class="modal-builds" id="modalBuilds" style="display: none;">

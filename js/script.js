@@ -2,6 +2,26 @@
 window.addEventListener('DOMContentLoaded', function() {
     // (Removido: botão de limpeza de ataques antigos)
 });
+
+// Global: Handler para o botão "Colar e Parsear" na stats-bar
+document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('btnPasteParse');
+    if(!btn) return;
+    btn.addEventListener('click', async function(){
+        let txt = '';
+        try{ txt = await navigator.clipboard.readText(); }catch(e){ /* ignore */ }
+        if(!txt) txt = prompt('Cole o texto da Pokedex aqui:');
+        if(!txt) return;
+        const parsed = window.parsePokedexText ? window.parsePokedexText(txt) : null;
+        if(!parsed){ alert('Parser não disponível. Abra a aba Builder primeiro ou recarregue a página.'); return; }
+        const name = parsed.meta && parsed.meta.nome ? parsed.meta.nome : (parsed.moves && parsed.moves[0] && parsed.moves[0].origem) || '';
+        try{
+            mostrarToastSucesso('Enviando...');
+            await window.savePokedexMovesToSheet(name, parsed.moves || [], parsed.meta && parsed.meta.stats ? parsed.meta.stats : {});
+            mostrarToastSucesso('Enviado ✓');
+        }catch(e){ console.error('pasteParse error', e); alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); }
+    });
+});
 // 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
         

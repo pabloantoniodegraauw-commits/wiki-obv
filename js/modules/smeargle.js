@@ -543,9 +543,34 @@ function atualizarCardSmeargle() {
             if(nameEl){
                 let displayName = '';
                 const first = smeargleSelectedMoves.find(Boolean);
-                if(first && first.origem) displayName = extractSpeciesName(first.origem);
-                if(!displayName && window.builderMeta && window.builderMeta.name) displayName = extractSpeciesName(window.builderMeta.name);
-                if(!displayName && window.builderSelectedPokemonName) displayName = extractSpeciesName(window.builderSelectedPokemonName);
+                function hasQualifier(raw){
+                    if(!raw) return false;
+                    try{
+                        const s = raw.toString().toLowerCase();
+                        if(/\(.*\)/.test(raw)) return true;
+                        const quals = ['shiny','mega','alolan','galarian','hisui','crowned','shadow','female','male','alpha','beta'];
+                        const parts = s.split(/\s+|-/).filter(Boolean);
+                        if(parts.length>1){
+                            if(quals.includes(parts[0]) || quals.includes(parts[parts.length-1])) return true;
+                            for(const q of quals){ if(s.includes(q)) return true; }
+                        }
+                    }catch(e){ }
+                    return false;
+                }
+                function capitalize(raw){ if(!raw) return ''; return raw.toString().replace(/\(|\)/g,'').split(/\s+/).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ').trim(); }
+
+                if(first && first.origem){
+                    if(hasQualifier(first.origem)) displayName = capitalize(first.origem);
+                    else displayName = extractSpeciesName(first.origem);
+                }
+                if(!displayName && window.builderMeta && window.builderMeta.name){
+                    if(hasQualifier(window.builderMeta.name)) displayName = capitalize(window.builderMeta.name);
+                    else displayName = extractSpeciesName(window.builderMeta.name);
+                }
+                if(!displayName && window.builderSelectedPokemonName){
+                    if(hasQualifier(window.builderSelectedPokemonName)) displayName = capitalize(window.builderSelectedPokemonName);
+                    else displayName = extractSpeciesName(window.builderSelectedPokemonName);
+                }
                 if(!displayName) displayName = 'Build';
                 nameEl.textContent = displayName;
             }

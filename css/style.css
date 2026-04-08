@@ -150,6 +150,20 @@ header {
     box-shadow: 0 0 10px rgba(100, 200, 255, 0.5);
 }
 
+/* Botão ENVIAR DEX (dourado) */
+#btnPasteParse {
+    background: linear-gradient(135deg,#ffd54d 0%,#ffb300 100%);
+    border: 1px solid rgba(255, 183, 0, 0.6);
+    color: #222;
+    padding: 10px 18px;
+    font-weight: 800;
+    box-shadow: 0 8px 24px rgba(255, 179, 0, 0.18);
+}
+#btnPasteParse:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 14px 40px rgba(255, 179, 0, 0.24);
+}
+
 .user-info {
     position: absolute;
     top: 0;

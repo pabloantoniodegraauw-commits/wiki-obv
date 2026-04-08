@@ -10,11 +10,14 @@
     const tms = [];
     const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
 
-    // tentar extrair meta (Nome, Tipo, Clã) nas primeiras linhas
+    // tentar extrair meta (Nome, EV/Forma, Tipo, Clã) nas primeiras linhas
     for (let i=0;i<Math.min(20, lines.length); i++){
       const ln = lines[i];
       const nomeMatch = /^Nome:\s*(.+)/i.exec(ln);
       if(nomeMatch) meta.nome = nomeMatch[1].trim();
+      // detectar campo EV / Forma (padrões comuns: EV:, Forma:, Form:, Evolution:)
+      const evMatch = /^(?:EV|Forma|Form|Evolution|Evolução)\s*[:\-]\s*(.+)/i.exec(ln);
+      if(evMatch) meta.ev = evMatch[1].trim();
       const tipoMatch = /^Tipo:\s*(.+)/i.exec(ln);
       if(tipoMatch){
         // exemplos: (Dark)(Dragon)  OR Dark / Dragon
@@ -30,6 +33,7 @@
       }
       const clanMatch = /Clã recomendado:\s*(.+)/i.exec(ln);
       if(clanMatch) meta.clan = clanMatch[1].trim();
+      // não sobrescrever `meta.nome` aqui — apenas registrar `meta.ev`.
       if(meta.nome && meta.tipos.length>0) break;
     }
 
@@ -94,6 +98,56 @@
         if(!moves.find(x=>x.nome.toLowerCase()===ln.toLowerCase())) moves.push({nome:ln, tipo:'', categoria:''});
       }
     });
+
+    // Tentar extrair EV/qualificador mesmo quando estiver embutido no `meta.nome`
+    try{
+      if(!meta.ev && meta.nome){
+        const quals = ['shiny','mega','alolan','galarian','hisui','crowned','shadow','female','male','alpha','beta'];
+        const raw = (meta.nome||'').toString().trim();
+        // caso: "Nome (Shiny)" ou "Tyranitar (Shiny)"
+        const par = /\(([^)]+)\)/.exec(raw);
+        if(par && par[1]){
+          meta.ev = par[1].trim();
+          meta.nome = raw.replace(par[0],'').trim();
+        } else {
+          // caso: "Shiny Tyranitar" ou "Tyranitar Shiny"
+          const parts = raw.split(/\s+/).filter(Boolean);
+          if(parts.length>1){
+            const first = parts[0].toLowerCase();
+            const last = parts[parts.length-1].toLowerCase();
+            if(quals.includes(first)){
+              meta.ev = parts[0];
+              meta.nome = parts.slice(1).join(' ');
+            } else if(quals.includes(last)){
+              meta.ev = parts[parts.length-1];
+              meta.nome = parts.slice(0, parts.length-1).join(' ');
+            } else if(raw.includes('-')){
+              const p = raw.split('-').map(s=>s.trim()).filter(Boolean);
+              const pfirst = p[0] && p[0].toLowerCase();
+              const plast = p[p.length-1] && p[p.length-1].toLowerCase();
+              if(quals.includes(pfirst)) { meta.ev = p[0]; meta.nome = p.slice(1).join(' '); }
+              else if(quals.includes(plast)) { meta.ev = p[p.length-1]; meta.nome = p.slice(0,p.length-1).join(' '); }
+            }
+          }
+        }
+      }
+
+    }catch(e){ /* ignore */ }
+
+    // Após analisar todo o cabeçalho, montar nome exibido preferencialmente com EV + nome base
+    try{
+      const base = (meta.nome || '').trim();
+      const ev = (meta.ev || '').trim();
+      if(ev && base){
+        // evitar duplicar: se base já contém ev, manter base
+        if(base.toLowerCase().includes(ev.toLowerCase())) meta.nome = base;
+        else meta.nome = (ev + ' ' + base).trim();
+      } else if(ev){
+        meta.nome = ev;
+      } else {
+        meta.nome = base;
+      }
+    }catch(e){ /* ignore */ }
 
     return {moves, tms, meta};
   }
