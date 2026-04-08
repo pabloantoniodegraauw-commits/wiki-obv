@@ -78,6 +78,48 @@ function initSmeargle() {
     carregarDadosSmeargle();
 }
 
+// Mostra um banner informando que os dados de ataques não foram carregados
+function showAttacksMissingBanner(){
+    try{
+        const container = document.getElementById('combinedPanel') || document.getElementById('combinedMovesGrid') || document.body;
+        if(!container) return;
+        let b = document.getElementById('attacksMissingBanner');
+        if(b) return; // já exibido
+        b = document.createElement('div');
+        b.id = 'attacksMissingBanner';
+        b.style.cssText = 'background:#3a2f14;color:#fff;padding:10px;border-radius:8px;margin-bottom:8px;border:1px solid rgba(255,215,0,0.12);display:flex;align-items:center;justify-content:space-between;gap:12px';
+        b.innerHTML = `<div style="font-weight:700">Aviso: dados de ataques (ATACKS) não carregaram — informações Ação/Efeito/Stats estarão vazias.</div><div style="display:flex;gap:8px"><button id="retryAtacksBtn" style="background:#ffd700;border:none;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700">Tentar novamente</button><button id="hideAtacksBanner" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px 10px;border-radius:6px;cursor:pointer">Fechar</button></div>`;
+        // inserir no topo do painel
+        if(container===document.body) document.body.insertBefore(b, document.body.firstChild);
+        else container.insertBefore(b, container.firstChild);
+        document.getElementById('retryAtacksBtn').addEventListener('click', retryFetchAttacks);
+        document.getElementById('hideAtacksBanner').addEventListener('click', ()=>{ try{ const el=document.getElementById('attacksMissingBanner'); if(el) el.remove(); }catch(e){} });
+    }catch(e){ console.warn('showAttacksMissingBanner error', e); }
+}
+
+// Re-tenta buscar a tabela de ataques do Apps Script
+async function retryFetchAttacks(){
+    try{
+        console.log('retryFetchAttacks: tentando nova requisição de ATACKS...');
+        const ATACKS_URL = SHEETS_BASE_URL + '?acao=obter_atacks&page=1&limit=10000';
+        const resp = await fetch(ATACKS_URL);
+        if(!resp.ok){ console.warn('retryFetchAttacks: response not ok', resp.status); return; }
+        const text = await resp.text();
+        let data;
+        try{ data = JSON.parse(text); }catch(e){ console.warn('retryFetchAttacks: parse error', e); return; }
+        let arr = [];
+        if(Array.isArray(data)) arr = data;
+        else if(data.data && Array.isArray(data.data)) arr = data.data;
+        if(!arr || arr.length===0){ console.warn('retryFetchAttacks: ainda vazio'); return; }
+        smeargleAtacksData = arr;
+        console.log('retryFetchAttacks: dados de ataques carregados, count=', arr.length);
+        // remover banner
+        try{ const b=document.getElementById('attacksMissingBanner'); if(b) b.remove(); }catch(e){}
+        // atualizar views
+        try{ if(window.refreshParsedMovesAttacks) window.refreshParsedMovesAttacks(); if(window.refreshTmTypes) window.refreshTmTypes(); }catch(e){}
+    }catch(e){ console.warn('retryFetchAttacks error', e); }
+}
+
 // Extrai nome principal/species de uma string (remove qualifiers como Shiny/Mega/Alolan etc.)
 function extractSpeciesName(raw){
     if(!raw) return '';
@@ -144,12 +186,22 @@ async function carregarDadosSmeargle() {
         } else {
             throw new Error('Formato de resposta de ataques não reconhecido');
         }
-        smeargleAtacksData = atacksData;
+                smeargleAtacksData = atacksData;
 
+                // se a tabela de ataques veio vazia, mostrar banner e tentar um retry automático
+                try{
+                    if(!Array.isArray(smeargleAtacksData) || smeargleAtacksData.length===0){
+                        console.warn('smeargleAtacksData is empty, scheduling retry');
+                        showAttacksMissingBanner();
+                        setTimeout(()=>{ try{ retryFetchAttacks(); }catch(e){} }, 1200);
+                    }
+                }catch(e){}
         extrairGolpesSmeargle(dados);
         popularFiltrosSmeargle();
         renderizarGolpesSmeargle(smeargleMovesData);
         configurarEventosSmeargle();
+        // Após carregar os dados de ataques, pedir ao builder que atualize cards/parsers
+        try{ setTimeout(()=>{ if(window.refreshParsedMovesAttacks) window.refreshParsedMovesAttacks(); if(window.refreshTmTypes) window.refreshTmTypes(); }, 80); }catch(e){}
     } catch (erro) {
         console.error('❌ Erro ao carregar dados:', erro);
         grid.innerHTML = `
@@ -297,6 +349,13 @@ function renderizarGolpesSmeargle(golpes) {
         const tipoResolvido = (typeof obterTipoGolpe === 'function') ? (obterTipoGolpe(golpe) || 'Normal') : (golpe.tipo || 'Normal');
         const tipoClassSafe = (tipoResolvido||'Normal').toString().toLowerCase().replace(/\s+/g,'-');
         const iconClass = TIPO_ICONS[tipoResolvido] || TIPO_ICONS[(tipoResolvido.charAt(0).toUpperCase()+tipoResolvido.slice(1).toLowerCase())] || 'fa-circle';
+        const pp = golpe.PP || golpe.pp || golpe['PP'] || golpe.POWER || golpe.power || golpe.POWER_POINTS || '';
+        const power = golpe.POWER || golpe.power || golpe.Power || golpe['Power'] || golpe['POWER'] || '';
+        const accuracy = golpe.ACCURACY || golpe.accuracy || golpe.ACC || golpe.Acc || '';
+        const gen = golpe.GEN || golpe.gen || golpe.Gen || '';
+        const efeito = golpe.EFEITO || golpe.efeito || golpe['EFFECT'] || golpe.Effect || golpe.effect || '';
+        const acao = golpe.ACAO || golpe.AÇÃO || golpe.acao || golpe['AÇÃO'] || golpe.Action || golpe.action || '';
+        const categoria = golpe.CATEGORIA || golpe.categoria || golpe.Category || golpe.category || '';
         return `
             <div class="move-card type-${tipoClassSafe}${classeExtra}" 
                  data-move='${JSON.stringify(golpe)}'
@@ -313,7 +372,13 @@ function renderizarGolpesSmeargle(golpes) {
                     <i class="fas fa-running"></i> ${golpe.acao}
                 </div>
                 <div class="move-efeito">
-                    <i class="fas fa-magic"></i> ${golpe.efeito}
+                    <i class="fas fa-magic"></i> ${efeito}
+                </div>
+                <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.9">
+                    ${pp ? `<span>PP: <b>${pp}</b></span>` : ''}
+                    ${power ? `<span style="margin-left:8px">Power: <b>${power}</b></span>` : ''}
+                    ${accuracy ? `<span style="margin-left:8px">Acc: <b>${accuracy}</b></span>` : ''}
+                    ${gen ? `<span style="margin-left:8px">Gen: <b>${gen}</b></span>` : ''}
                 </div>
                 <div class="move-origem">
                     <i class="fas fa-paw"></i> ${golpe.origem}
