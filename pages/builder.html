@@ -2,7 +2,7 @@
 <div class="builder-page">
   <header class="builder-header">
     <h1>Construtor de Movesets</h1>
-    <p>Cole o bloco da Pokedex do jogo para gerar os golpes e TMs detectados.</p>
+    <p style="font-size:1.25em;font-weight:900;color:#ffd966;margin-top:6px;line-height:1.4;text-transform:uppercase;">Copie a DEX do Pokémon no jogo e, em seguida, clique no botão <strong style="font-weight:900;">ENVIAR MOVE7</strong> para gerar automaticamente os golpes e TMs detectados. Aguarde a confirmação de envio antes de fechar a aba.</p>
   </header>
 
   <section class="builder-top" style="display:flex;gap:16px;align-items:flex-start;">
@@ -37,20 +37,13 @@
           <div id="tmCounter" style="padding:8px 12px;border-radius:8px;background:rgba(0,0,0,0.3);color:#fff;">TMs/MTs: <span id="tmCountVal">0</span></div>
           <div id="maxMoves" style="padding:6px 8px;border-radius:6px;background:rgba(0,0,0,0.15);color:#fff">Max Base Moves: <select id="selectMaxBaseMoves"><option>9</option><option selected>10</option></select></div>
         </div>
-        <div style="flex:0 0 420px;text-align:center;">
-          <button id="btnSubmitBuild" class="btn-submit">SUBMETER MOVESET</button>
+        <div style="flex:0 0 420px;text-align:center;display:flex;justify-content:center;gap:12px;">
+          <button id="btnEnviarMove7" class="btn-submit btn-submit-large" title="Enviar para planilha POKEDEX">ENVIAR MOVE7</button>
+          <button id="btnSubmitBuild" class="btn-submit btn-submit-large">Copiar Moveset</button>
         </div>
       </div>
 
       <div class="builder-main">
-        <div style="margin-bottom:12px;">
-          <textarea id="pokedexPaste" placeholder="Cole aqui o texto da Pokedex..." style="width:100%;height:160px;padding:8px;background:rgba(0,0,0,0.35);color:#fff;border-radius:8px;border:1px solid rgba(255,255,255,0.03);"></textarea>
-          <div style="margin-top:8px;display:flex;gap:8px;">
-            <button id="btnParsePokedex" class="btn-action">Parsear</button>
-            <button id="btnClearPokedex" class="btn-action btn-alt">Limpar</button>
-          </div>
-        </div>
-
         <div style="display:flex;gap:12px;">
           <div style="flex:1;">
             <h3>Golpes detectados</h3>
@@ -98,6 +91,7 @@
 
   <style>
     .btn-submit{background:linear-gradient(135deg,#5b3fb8,#2b1f43);padding:12px 28px;border-radius:28px;border:none;color:#fff;font-weight:800;box-shadow:0 12px 36px rgba(44,27,70,0.45);}
+    .btn-submit-large{padding:18px 40px;font-size:1.15em;border-radius:34px}
     .btn-action{padding:8px 12px;border-radius:8px;border:none;background:#3a3a3a;color:#fff}
     .btn-alt{background:#555}
     .tm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}

@@ -154,11 +154,17 @@
 
   // pré-aquecer o Apps Script (ping) para reduzir cold-start
   try{
-    setTimeout(()=>{ try{ fetch(SHEETS_BASE_URL + '?action=ping').catch(()=>{}); }catch(e){} }, 800);
+    setTimeout(()=>{
+      try{
+        const base = (window.SHEETS_BASE_URL) ? window.SHEETS_BASE_URL : (window.APPS_SCRIPT_URL ? window.APPS_SCRIPT_URL : null);
+        if(base) fetch(base + '?action=ping').catch(()=>{});
+      }catch(e){}
+    }, 800);
   }catch(e){}
 
   // Enviar golpes parseados para a planilha POKEDEX via Apps Script
   async function savePokedexMovesToSheet(pokemonName, moves, stats){
+    console.log('savePokedexMovesToSheet called', { pokemonName, moves, stats });
     if(!pokemonName || !moves || !moves.length) return {success:false, message:'No data'};
     try{
       const payload = moves.map((m, idx)=>({
@@ -175,7 +181,19 @@
         params.append('pokemon', pokemonName);
         params.append('moves', JSON.stringify(payload));
         params.append('stats', JSON.stringify(stats || {}));
-        fetch(SHEETS_BASE_URL, { method: 'POST', body: params }).catch(err=>{ console.warn('savePokedexMovesToSheet fetch err', err); });
+        const base = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || null;
+        console.log('savePokedexMovesToSheet will POST to', base);
+        if(base){
+          try{
+            const resp = await fetch(base, { method: 'POST', body: params });
+            console.log('savePokedexMovesToSheet response', resp && resp.status);
+            if(!resp.ok){
+              try{ const text = await resp.text(); console.warn('savePokedexMovesToSheet non-ok response:', text); }catch(e){}
+            }
+          }catch(err){ console.warn('savePokedexMovesToSheet fetch err', err); }
+        } else {
+          console.warn('savePokedexMovesToSheet: nenhum endpoint configurado (window.SHEETS_BASE_URL/window.APPS_SCRIPT_URL)');
+        }
       }catch(e){ console.warn('savePokedexMovesToSheet build err', e); }
       return { success: true, message: 'request_sent' };
     }catch(err){ console.error('savePokedexMovesToSheet error', err); return {success:false, message: err && err.message ? err.message : String(err)}; }
@@ -908,37 +926,37 @@
     window.savePokedexMovesToSheet = savePokedexMovesToSheet;
   }catch(e){}
 
-  // delegated click handler for parse button (works even if element inserted later)
-  document.addEventListener('click', function(e){
-    try {
-      const pb = e.target.closest ? e.target.closest('#btnParsePokedex') : null;
-      if (pb) {
-        console.log('builder: btnParsePokedex clicked');
-        try{
-          const txt = safe('pokedexPaste') ? safe('pokedexPaste').value : '';
-          const parsed = parsePokedexText(txt);
-          renderParsedMoves(parsed);
-          // salvar automaticamente na planilha POKEDEX (Apps Script)
-          try{
-            if(parsed && parsed.meta && parsed.meta.nome && parsed.moves && parsed.moves.length){
-              savePokedexMovesToSheet(parsed.meta.nome, parsed.moves, parsed.meta && parsed.meta.stats ? parsed.meta.stats : {}).then(res=>{
-                if(res && res.success){ if(window.showToast) window.showToast('Pokedex salvo ✓','success'); else console.log('Pokedex salvo', res); }
-                else { if(window.showToast) window.showToast('Erro salvando Pokedex','error'); else console.warn('Erro salvando Pokedex', res); }
-              }).catch(err=>{ if(window.showToast) window.showToast('Erro salvando Pokedex','error'); else console.warn('Erro saving',err); });
-            }
-          }catch(e){ console.warn('auto-save Pokedex failed', e); }
-          // visual feedback
-          const original = pb.textContent;
-          pb.textContent = 'Parseado ✓';
-          setTimeout(()=>{ try{ pb.textContent = original } catch(e){} }, 900);
-          } catch(err){
-            console.error('Erro ao parsear Pokedex:', err);
-            const msg = (err && err.message) ? err.message : String(err);
-            alert('Erro ao parsear — ' + msg + '\nVeja console (F12) para mais detalhes.');
-          }
-      }
-    } catch (err) { console.error('builder delegated click error', err); }
-  });
+  // ENVIAR MOVE7: ler da área de transferência e apresentar os golpes parseados
+  const enviarBtnHandler = async function() {
+    try{
+      console.log('ENVIAR MOVE7 clicked');
+      let txt = '';
+      try{
+        if(navigator.clipboard && navigator.clipboard.readText) txt = await navigator.clipboard.readText();
+      }catch(e){ /* ignorar */ }
+      if(!txt) txt = prompt('Cole o texto da Pokedex aqui:');
+      if(!txt) { if(window.showToast) window.showToast('Nenhum texto fornecido','error'); return; }
+      const parsed = parsePokedexText(txt);
+      if(!parsed || !parsed.moves || parsed.moves.length===0){ if(window.showToast) window.showToast('Nenhum golpe detectado','error'); return; }
+      window._builder_parsed = parsed;
+      console.log('ENVIAR MOVE7 parsed moves:', parsed.moves && parsed.moves.length);
+      renderParsedMoves(parsed);
+      // ensure user can copy moveset afterwards
+      if(window.refreshParsedMovesAttacks) try{ window.refreshParsedMovesAttacks(); }catch(e){}
+      if(window.refreshTmTypes) try{ window.refreshTmTypes(); }catch(e){}
+      // se disponível, enviar para a planilha automaticamente
+      try{
+        if(typeof savePokedexMovesToSheet === 'function'){
+          try{ if(window.mostrarToastSucesso) window.mostrarToastSucesso('Enviando...'); }catch(e){}
+          await savePokedexMovesToSheet(parsed.meta && parsed.meta.nome ? parsed.meta.nome : '', parsed.moves || [], parsed.meta && parsed.meta.stats ? parsed.meta.stats : {});
+          try{ if(window.mostrarToastSucesso) window.mostrarToastSucesso('Enviado ✓'); }catch(e){}
+        }
+      }catch(err){ console.error('ENVIAR MOVE7 save error', err); }
+    }catch(e){ console.error('Enviar Move7 parse error', e); if(window.showToast) window.showToast('Erro ao processar texto','error'); }
+  };
+
+  // attach handler if button exists (also called from initBuilderUI)
+  const enviarBtnImmediate = safe('btnEnviarMove7'); if(enviarBtnImmediate){ enviarBtnImmediate.removeEventListener && enviarBtnImmediate.removeEventListener('click', null); enviarBtnImmediate.addEventListener('click', enviarBtnHandler); }
 
   // add parsed move to selected slot
   document.addEventListener('click', function(e){
@@ -1060,16 +1078,7 @@
       if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
 
       // defer heavier UI (inline modal/grid rendering) to allow paint and avoid jank
-      setTimeout(()=>{
-        try{ const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1]); openCombinedAssignInline(moveObj, slot-1); }catch(e){}
-      }, 40);
-    } catch(e) {
-      // fallback (don't force tipo 'TM' — deixar vazio para que a resolução seja feita por obterTipoGolpe)
-      window.smeargleSelectedMoves = window.smeargleSelectedMoves || new Array(9).fill(null);
-      const origemName = 'TM';
-      window.smeargleSelectedMoves[slot-1] = { nome: tmName, tipo: '', categoria: '', origem: origemName, numero: '', local: `M${slot}` };
-      if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
-    }
+    }catch(e){ console.warn('add-tm handler error', e); }
   });
 
   // keyboard support: Enter/Space on focused tile activates click
@@ -1154,6 +1163,14 @@
 
   // register initializer so SPA navigation can call it
   if(typeof registerPageInitializer !== 'undefined') registerPageInitializer('builder', function(){ initBuilderUI(); console.log('Builder initialized'); });
+
+  // Expose key functions globally for other scripts (ENVIAR DEX, global paste+parse)
+  try{
+    window.parsePokedexText = parsePokedexText;
+    window.savePokedexMovesToSheet = savePokedexMovesToSheet;
+    window.renderParsedMoves = renderParsedMoves;
+    window.initBuilderUI = initBuilderUI;
+  }catch(e){ console.warn('builder: failed to expose globals', e); }
 
   // -- Modal combinado: golpes + TMs --
   function openCombinedAssignModal(moveObj, slotIndex){

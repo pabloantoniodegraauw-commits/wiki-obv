@@ -1632,7 +1632,8 @@ function handleSavePokedexMoves(planilha, dados) {
     if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('handleSavePokedexMoves chamado. payload: ' + JSON.stringify(dados));
     const aba = planilha.getSheets()[0]; // POKEDEX
     // aceitar vários nomes de campo do frontend: 'nomePokemon', 'pokemonName', 'nome' ou 'pokemon'
-    const nomeOriginal = (dados.nomePokemon || dados.pokemonName || dados.nome || dados.pokemon || '').toString().toLowerCase().trim();
+    const rawNome = (dados.nomePokemon || dados.pokemonName || dados.nome || dados.pokemon || '').toString().trim();
+    const nomeOriginal = rawNome.toLowerCase().trim();
     if (!nomeOriginal) {
       if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('handleSavePokedexMoves payload keys: ' + Object.keys(dados).join(', '));
       return { success: false, message: 'nomePokemon não informado (campos esperados: nomePokemon|pokemonName|nome|pokemon)' };
@@ -1649,7 +1650,7 @@ function handleSavePokedexMoves(planilha, dados) {
       const nomeParaComparar = nomeEV || nomePokemon;
       if (nomeParaComparar === nomeOriginal) { linhaEncontrada = i + 1; break; }
     }
-    if (linhaEncontrada === -1) return { success: false, message: 'Pokémon não encontrado: ' + nomeOriginal };
+    // (Se não encontrado, vamos criar após normalizar `moves` e `stats`)
 
     // Normalizar moves
     let moves = dados.moves || [];
@@ -1664,6 +1665,111 @@ function handleSavePokedexMoves(planilha, dados) {
       try { stats = JSON.parse(stats); } catch (e) { stats = {}; }
     }
     if (!stats || typeof stats !== 'object') stats = {};
+
+    // Extrair possíveis tipos enviados (aceitar vários formatos)
+    let tipos = [];
+    try {
+      if (Array.isArray(stats.tipos)) tipos = stats.tipos;
+      else if (Array.isArray(stats.types)) tipos = stats.types;
+      else if (typeof stats.tipos === 'string' && stats.tipos.trim()) tipos = stats.tipos.replace(/[()]/g,'').split(/[\/;,|]+/).map(s=>s.trim()).filter(Boolean);
+      else if (typeof dados.tipos === 'string' && dados.tipos.trim()) tipos = dados.tipos.replace(/[()]/g,'').split(/[\/;,|]+/).map(s=>s.trim()).filter(Boolean);
+      else if (Array.isArray(dados.tipos)) tipos = dados.tipos;
+      else if (dados.meta && Array.isArray(dados.meta.tipos)) tipos = dados.meta.tipos;
+    } catch(e){ tipos = []; }
+
+    // Se não encontrou a linha, criar uma nova linha antes de gravar (incluir EV e tipos e stats)
+    if (linhaEncontrada === -1) {
+      try {
+        // função auxiliar: separar EV(s) e nome base
+        const splitEvBase = (raw) => {
+          if (!raw) return { base: '', ev: '' };
+          let s = raw.toString().trim();
+          // remover caracteres extras
+          s = s.replace(/\s+-\s+/g,' ').trim();
+          // extrair parenteses
+          const par = /\(([^)]+)\)/.exec(s);
+          if (par && par[1]) {
+            const ev = par[1].trim();
+            const base = s.replace(par[0],'').trim();
+            return { base: base, ev: ev };
+          }
+          // split por espaços e detectar qualifiers
+          const quals = ['shiny','mega','alolan','galarian','hisui','crowned','shadow','female','male','alpha','beta'];
+          let parts = s.split(/\s+/).filter(Boolean);
+          if (parts.length>1) {
+            // coletar qualifiers do início
+            let startQuals = [];
+            while(parts.length>1 && quals.indexOf(parts[0].toLowerCase())!==-1){ startQuals.push(parts.shift()); }
+            // coletar qualifiers do fim
+            let endQuals = [];
+            while(parts.length>1 && quals.indexOf(parts[parts.length-1].toLowerCase())!==-1){ endQuals.unshift(parts.pop()); }
+            const ev = [...startQuals, ...endQuals].join(' ').trim();
+            const base = parts.join(' ').trim();
+            if (ev) return { base: base, ev: ev };
+          }
+          // fallback: nenhum qualifier detectado
+          return { base: s, ev: '' };
+        };
+
+        const parsed = splitEvBase(rawNome);
+        const baseName = parsed.base || rawNome;
+        const evName = parsed.ev || '';
+
+        
+
+        // montar uma linha em branco e preencher campos conhecidos
+        const novaLinha = new Array(cabecalho.length).fill('');
+        // Coluna C (índice 2) = POKEMON (nome base)
+        novaLinha[2] = baseName;
+        // Coluna D (índice 3) = EV (quando aplicável) — gravar EV completo (ex: "Mega Shiny Scizor")
+        if (evName) novaLinha[3] = rawNome;
+        // Tipos: colunas G(7)->index6 e H(8)->index7
+        if (tipos && tipos.length) {
+          if (tipos[0]) novaLinha[6] = tipos[0];
+          if (tipos[1]) novaLinha[7] = tipos[1];
+        }
+        // Tentar localizar o Pokémon base existente para copiar número (col A) e geração (col B)
+        try {
+          const baseLower = (baseName || '').toString().toLowerCase().trim();
+          if (baseLower) {
+            for (let j = 1; j < todosOsDados.length; j++) {
+              const existing = (todosOsDados[j][2] || '').toString().toLowerCase().trim(); // Coluna C (POKEMON)
+              if (existing === baseLower) {
+                // copiar número (A) e geração (B)
+                const numero = todosOsDados[j][0];
+                const ger = todosOsDados[j][1];
+                if (numero !== undefined && numero !== null && String(numero).trim() !== '') novaLinha[0] = numero;
+                if (ger !== undefined && ger !== null && String(ger).trim() !== '') novaLinha[1] = ger;
+                break;
+              }
+            }
+          }
+        } catch(e){ if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro buscando base para número/ger: ' + e.toString()); }
+        // Stats: I(9)=index8, J(10)=9, K(11)=10, L(12)=11, M(13)=12, N(14)=13
+        const valOrEmpty = v => (v === undefined || v === null || v === '') ? '' : v;
+        if (stats && Object.keys(stats).length) {
+          novaLinha[8] = valOrEmpty(stats.hp || stats.HP || stats.Hp || stats.Hp);
+          novaLinha[9] = valOrEmpty(stats.atk || stats.attack || stats.Attack || stats.ATK);
+          novaLinha[10] = valOrEmpty(stats.def || stats.defense || stats.Defense);
+          novaLinha[11] = valOrEmpty(stats.spatk || stats['sp.atk'] || stats['sp.attack'] || stats['Sp. Attack'] || stats['Sp.Attack']);
+          novaLinha[12] = valOrEmpty(stats.spdef || stats['sp.def'] || stats['sp.defense'] || stats['Sp. Defense'] || stats['Sp.Defense']);
+          novaLinha[13] = valOrEmpty(stats.speed || stats.Speed || stats.SPEED);
+        }
+        // Preencher colunas O(15) .. X(24) com M1..M10 (caso existam)
+        for (let i = 0; i < 10; i++) {
+          const valor = (moves[i] && (moves[i].nome || moves[i].name)) ? (moves[i].nome || moves[i].name) : '';
+          const colunaIndex = 14 + i;
+          if (colunaIndex < novaLinha.length) novaLinha[colunaIndex] = valor;
+        }
+
+        const appended = aba.appendRow(novaLinha);
+        // obter linha criada
+        try { linhaEncontrada = appended.getRow(); } catch(e){ linhaEncontrada = aba.getLastRow(); }
+      } catch (e) {
+        if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro ao criar nova linha: ' + e.toString());
+        return { success: false, message: 'Erro ao criar Pokémon: ' + e.toString() };
+      }
+    }
 
     // Colunas O(15) .. X(24) correspondem a M1..M10 na estrutura existente
     for (let i = 0; i < 10; i++) {
@@ -1683,6 +1789,21 @@ function handleSavePokedexMoves(planilha, dados) {
         aba.getRange(linhaEncontrada, 14).setValue(valOrEmpty(stats.speed || stats.Speed));
       }
     } catch (e) { if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro gravando stats: ' + e.toString()); }
+
+    // Gravar tipos se foram enviados (colunas G(7) e H(8))
+    try {
+      let tiposToWrite = [];
+      if (Array.isArray(stats.tipos)) tiposToWrite = stats.tipos;
+      else if (Array.isArray(stats.types)) tiposToWrite = stats.types;
+      else if (Array.isArray(dados.tipos)) tiposToWrite = dados.tipos;
+      else if (dados.meta && Array.isArray(dados.meta.tipos)) tiposToWrite = dados.meta.tipos;
+      else if (typeof dados.tipos === 'string' && dados.tipos.trim()) tiposToWrite = dados.tipos.replace(/[()]/g,'').split(/[\/;,|]+/).map(s=>s.trim()).filter(Boolean);
+
+      if (tiposToWrite && tiposToWrite.length) {
+        if (tiposToWrite[0]) aba.getRange(linhaEncontrada, 7).setValue(tiposToWrite[0]);
+        if (tiposToWrite[1]) aba.getRange(linhaEncontrada, 8).setValue(tiposToWrite[1]);
+      }
+    } catch(e){ if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro gravando tipos: ' + e.toString()); }
 
     return { success: true, message: 'Moves salvos na POKEDEX (M1..M10) para ' + nomeOriginal };
   } catch (erro) {

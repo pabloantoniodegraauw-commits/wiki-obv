@@ -10,6 +10,8 @@ function formatarLocalizacoesSmeargle(localizacoes) {
 // URL do Google Sheets - IMPORTANTE: Usar "acao" (sem "ti") conforme esperado pelo Apps Script
 const SHEETS_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec?acao=obter_todos&page=1&limit=10000";
 const SHEETS_BASE_URL = "https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec";
+// expor globalmente para outros módulos
+try{ window.SHEETS_BASE_URL = SHEETS_BASE_URL; }catch(e){}
 
 let smearglePokemonData = [];
 let smeargleMovesData = [];
@@ -70,6 +72,23 @@ function normalizeName(str) {
     } catch (e) {
         return str.toString().toLowerCase().trim();
     }
+}
+// Simplifica string para comparação tolerante: remove acentos, espaços, hífens e caracteres não alfanuméricos
+function simplifyForCompare(s) {
+    try {
+        return normalizeName(s).replace(/[^a-z0-9]/g, '');
+    } catch (e) { return (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''); }
+}
+// Extrai o nome primário de um campo que pode conter qualifiers como " - passive - poison"
+function extractPrimaryMoveName(raw) {
+    if (!raw) return '';
+    let s = raw.toString().trim();
+    // Remover conteúdo entre parênteses
+    s = s.replace(/\(.*?\)/g, '').trim();
+    // Se houver separadores com ' - ' ou '–' ou ':' pegar a primeira parte
+    const parts = s.split(/\s[-–:]\s/);
+    if (parts && parts.length > 0) return parts[0].trim();
+    return s;
 }
 
 function initSmeargle() {
@@ -188,6 +207,29 @@ async function carregarDadosSmeargle() {
         }
                 smeargleAtacksData = atacksData;
 
+                // 2.5 Tentar carregar abilities (fallback) — algumas habilidades aparecem como "Flame Body" etc.
+                try {
+                    if (window.todasAbilities && window.todasAbilities.length > 0) {
+                        // usar cache global se já pré-carregado
+                        smeargleAbilitiesData = window.todasAbilities;
+                        console.log('[Smeargle] Usando abilities pré-carregadas:', smeargleAbilitiesData.length);
+                    } else {
+                        const AB_URL = SHEETS_BASE_URL + '?acao=obter_abilities&page=1&limit=10000';
+                        try {
+                            const abResp = await fetch(AB_URL);
+                            if (abResp.ok) {
+                                const abText = await abResp.text();
+                                const abRes = JSON.parse(abText);
+                                smeargleAbilitiesData = Array.isArray(abRes) ? abRes : (abRes.data && Array.isArray(abRes.data) ? abRes.data : []);
+                                console.log('[Smeargle] Abilities carregadas:', smeargleAbilitiesData.length);
+                            }
+                        } catch(e) {
+                            console.warn('[Smeargle] Não foi possível carregar abilities localmente:', e);
+                            smeargleAbilitiesData = [];
+                        }
+                    }
+                } catch(e) { smeargleAbilitiesData = []; }
+
                 // se a tabela de ataques veio vazia, mostrar banner e tentar um retry automático
                 try{
                     if(!Array.isArray(smeargleAtacksData) || smeargleAtacksData.length===0){
@@ -232,15 +274,18 @@ function extrairGolpesSmeargle(pokemons) {
                 if (index < 3 && i === 1) {
                     console.log(`M1 de ${pokemon['POKEMON']}:`, celula);
                 }
-                // Buscar detalhes do ataque na aba de ataques (usar normalização)
-                const nomeAtaque = celula.split('/')[0].trim();
-                const nomeNorm = normalizeName(nomeAtaque);
-                let atackDetalhes = smeargleAtacksData.find(a => normalizeName(a['ATACK']) === nomeNorm);
+                // Buscar detalhes do ataque na aba de ataques (usar normalização tolerante)
+                const rawNomeAtaque = celula.split('/')[0].trim();
+                const primaryName = extractPrimaryMoveName(rawNomeAtaque);
+                const nomeNorm = normalizeName(primaryName);
+                const nomeSimple = simplifyForCompare(nomeNorm);
+
+                let atackDetalhes = smeargleAtacksData.find(a => simplifyForCompare(normalizeName(a['ATACK'])) === nomeSimple);
                 // fallback: busca por inclusão (ex: 'Knock Off' vs 'Knock-Off' ou variações)
                 if (!atackDetalhes) {
                     atackDetalhes = smeargleAtacksData.find(a => {
-                        const an = normalizeName(a['ATACK']);
-                        return an.includes(nomeNorm) || nomeNorm.includes(an);
+                        const anSimple = simplifyForCompare(normalizeName(a['ATACK']));
+                        return anSimple.includes(nomeSimple) || nomeSimple.includes(anSimple);
                     });
                 }
                 if (atackDetalhes) {
@@ -261,7 +306,36 @@ function extrairGolpesSmeargle(pokemons) {
                     }
                 }
                 else {
-                    console.warn(`[Smeargle] Ataque não encontrado em atacks: "${nomeAtaque}" (origem ${pokemon['POKEMON']} / EV=${pokemon['EV']})`);
+                    // Se não achou em atacks, tentar buscar em abilities (ex: Flame Body)
+                    let abilityMatch = null;
+                    try {
+                        const pool = (smeargleAbilitiesData && smeargleAbilitiesData.length>0) ? smeargleAbilitiesData : (window.todasAbilities || []);
+                        abilityMatch = pool.find(ab => simplifyForCompare(normalizeName(ab['ABILITY'] || ab['Ability'] || ab['ability'])) === nomeSimple);
+                        if (!abilityMatch) {
+                            abilityMatch = pool.find(ab => {
+                                const aSimple = simplifyForCompare(normalizeName(ab['ABILITY'] || ab['Ability'] || ab['ability']));
+                                return aSimple.includes(nomeSimple) || nomeSimple.includes(aSimple);
+                            });
+                        }
+                    } catch(e){ abilityMatch = null; }
+
+                    if (abilityMatch) {
+                        const golpe = {
+                            nome: abilityMatch['ABILITY'] || abilityMatch['ability'] || primaryName,
+                            acao: 'passive',
+                            efeito: abilityMatch['DESCRIÇÃO'] || abilityMatch['DESCRICAO'] || abilityMatch['descricao'] || abilityMatch['EFFECT'] || '',
+                            tipo: abilityMatch['TYPE'] || '',
+                            categoria: 'Ability',
+                            origem: (pokemon['EV'] && pokemon['EV'].toString().trim()) ? pokemon['EV'].toString().trim() : (pokemon['POKEMON'] || '').toString().trim(),
+                            origem_pokemon: (pokemon['POKEMON'] || '').toString().trim(),
+                            local: coluna
+                        };
+                        golpesValidos++;
+                        const key = golpe.nome.toLowerCase() + '_' + golpe.origem.toLowerCase();
+                        if (!golpesMap.has(key)) golpesMap.set(key, golpe);
+                    } else {
+                        console.warn(`[Smeargle] Ataque não encontrado em atacks/abilities: "${rawNomeAtaque}" (origem ${pokemon['POKEMON']} / EV=${pokemon['EV']})`);
+                    }
                 }
             }
         }
@@ -979,7 +1053,7 @@ function buscarPokemonsCompativeis() {
                         <img src="${window.obterImagemPokemon ? window.obterImagemPokemon(
                         pokemon['EV'] ? pokemon['EV'].replace(/ /g, '-') : pokemon['POKEMON'],
                         pokemon['POKEMON']) : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='}" 
-                        alt="${pokemon['POKEMON']}" onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='">
+                        alt="${pokemon['POKEMON']}" onerror="tryNextImage(this)">
                     </div>
                 <div class="compatible-name">${pokemon['EV'] || pokemon['POKEMON']}</div>
                 <div class="compatible-move"><i class="fas fa-star"></i> M${index + 1}: ${golpe.nome}</div>

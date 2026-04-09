@@ -49,6 +49,14 @@ async function loadPage(pageName) {
         } else {
             console.warn(`⚠️ Nenhum inicializador encontrado para ${pageName}`);
         }
+        // Se retornou para Pokédex e houve atualizações em background, forçar render
+        try {
+            if (pageName === 'pokedex' && window._pokemonsUpdatedWhileAway && typeof renderizarPokemons === 'function' && window.todosPokemons && window.todosPokemons.length > 0) {
+                console.log('🔄 Pokédex abriu — aplicando atualizações carregadas em background');
+                renderizarPokemons(window.todosPokemons);
+                window._pokemonsUpdatedWhileAway = false;
+            }
+        } catch (e) { console.warn('⚠️ Erro ao aplicar atualizações background na Pokédex:', e); }
             // Inicializar tabs se for stagechanges
             if (pageName === 'stagechanges') {
                 // Carregar dinamicamente o script das abas se necessário

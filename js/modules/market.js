@@ -484,7 +484,7 @@ function renderizarGridPokemon(grid) {
                 ${evBadge}
                 <div class="market-grid-item-img">
                     <img src="${imgSrc}" alt="${nomePrincipal}"
-                        onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='">
+                        onerror="tryNextImage(this)">
                 </div>
                 <div class="market-grid-item-name">${nomePrincipal}</div>
                 <div class="market-grid-item-sub">${ev ? nomePokemon + ' · ' : ''}${tipo1}</div>

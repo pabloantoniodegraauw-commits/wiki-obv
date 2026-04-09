@@ -12,18 +12,155 @@ document.addEventListener('DOMContentLoaded', function(){
         try{ txt = await navigator.clipboard.readText(); }catch(e){ /* ignore */ }
         if(!txt) txt = prompt('Cole o texto da Pokedex aqui:');
         if(!txt) return;
-        const parsed = window.parsePokedexText ? window.parsePokedexText(txt) : null;
+        // garantir que o parser esteja carregado (builder.js pode ser carregado depois do script core)
+        if(typeof window.parsePokedexText !== 'function'){
+            console.log('Parser não encontrado — carregando builder.js dinamicamente...');
+            await new Promise((resolve, reject)=>{
+                const s = document.createElement('script');
+                s.src = 'js/modules/builder.js';
+                s.onload = ()=>{ console.log('builder.js carregado dinamicamente'); resolve(); };
+                s.onerror = ()=>{ reject(new Error('Falha ao carregar builder.js')); };
+                document.head.appendChild(s);
+            }).catch(err=>{ console.warn('Não foi possível carregar parser:', err); alert('Parser não disponível e falha ao carregar Builder. Recarregue a página.'); return; });
+        }
+        let parsed = window.parsePokedexText ? window.parsePokedexText(txt) : null;
+        // fallback minimal parser quando builder.js não carregar
+        if(!parsed){
+            try{
+                const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+                let pokeName = '';
+                for(const l of lines.slice(0,8)){
+                    const m = /^Nome\s*[:\-]\s*(.+)/i.exec(l) || /^(?:#?\d+\s+)?([A-Za-zÀ-ÿ0-9'\-\s]+)$/.exec(l);
+                    if(m && m[1] && m[1].length>2){ pokeName = m[1].trim(); break; }
+                }
+                const moves = [];
+                for(const l of lines){
+                    if(/^Nome:|^Tipo:|^EV:|^Forma:|^Clã|^TM|^MT|^Pok[eé]mon|^#|^Página/i.test(l)) continue;
+                    if(l.length<3 || l.length>80) continue;
+                    if(/[=<>:\/\*]{2,}/.test(l)) continue;
+                    if(l.split(' ').length>8) continue;
+                    if(/pp\b|ataque\b|dano\b|efeito\b|categoria\b/i.test(l)) continue;
+                    const candidate = l.replace(/\([^\)]*\)/g,'').trim();
+                    if(candidate && !moves.find(mv=>mv.nome.toLowerCase()===candidate.toLowerCase())) moves.push({ nome: candidate });
+                }
+                parsed = { moves: moves.slice(0,10), tms: [], meta: { nome: pokeName, tipos: [], stats: {} } };
+            }catch(e){ parsed = null; }
+        }
         if(!parsed){ alert('Parser não disponível. Abra a aba Builder primeiro ou recarregue a página.'); return; }
         const name = parsed.meta && parsed.meta.nome ? parsed.meta.nome : (parsed.moves && parsed.moves[0] && parsed.moves[0].origem) || '';
         try{
             mostrarToastSucesso('Enviando...');
-            await window.savePokedexMovesToSheet(name, parsed.moves || [], parsed.meta && parsed.meta.stats ? parsed.meta.stats : {});
+            const statsToSend = Object.assign({}, parsed.meta && parsed.meta.stats ? parsed.meta.stats : {}, { tipos: parsed.meta && parsed.meta.tipos ? parsed.meta.tipos : [] });
+            await window.savePokedexMovesToSheet(name, parsed.moves || [], statsToSend);
             mostrarToastSucesso('Enviado ✓');
         }catch(e){ console.error('pasteParse error', e); alert('Erro ao salvar: ' + (e && e.message ? e.message : e)); }
     });
 });
+
+// Fallback para ENVIAR MOVE7 quando builder.js falhar: parser simples + envio direto
+document.addEventListener('DOMContentLoaded', function(){
+    const btnMove7 = document.getElementById('btnEnviarMove7');
+    if(!btnMove7) return;
+    btnMove7.addEventListener('click', async function(){
+        // se o parser completo estiver disponível, delegar a ele
+        if(typeof window.parsePokedexText === 'function') return btnMove7.dispatchEvent(new Event('builder:invoke'));
+        try{
+            let txt = '';
+            try{ txt = await navigator.clipboard.readText(); }catch(e){}
+            if(!txt) txt = prompt('Cole o texto da Pokedex aqui:');
+            if(!txt) return alert('Nenhum texto fornecido');
+
+            // parser minimal: extrai linhas plausíveis de golpes e tenta capturar nome do pokemon
+            const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+            // tentar achar Nome: ou primeira linha não-metadado
+            let pokeName = '';
+            for(const l of lines.slice(0,8)){
+                const m = /^Nome\s*[:\-]\s*(.+)/i.exec(l) || /^(?:#?\d+\s+)?([A-Za-zÀ-ÿ0-9'\-\s]+)$/.exec(l);
+                if(m && m[1] && m[1].length>2){ pokeName = m[1].trim(); break; }
+            }
+            // heurística: linhas que contenham apenas letras e espaços e comprimento razoável -> possíveis golpes
+            const moves = [];
+            for(const l of lines){
+                if(/^Nome:|^Tipo:|^EV:|^Forma:|^Clã|^TM|^MT|^Pok[eé]mon|^#|^Página/i.test(l)) continue;
+                if(l.length<3 || l.length>80) continue;
+                // excluir linhas com muitos números ou símbolos
+                if(/[=<>:\/\*]{2,}/.test(l)) continue;
+                // evitar lines que são descrições (muito longas)
+                if(l.split(' ').length>8) continue;
+                // filtrar palavras-chave comuns
+                if(/pp\b|ataque\b|dano\b|efeito\b|categoria\b/i.test(l)) continue;
+                // se a linha contiver parênteses com qualificador, remover
+                const candidate = l.replace(/\([^\)]*\)/g,'').trim();
+                if(candidate && !moves.find(mv=>mv.nome.toLowerCase()===candidate.toLowerCase())) moves.push({ nome: candidate });
+            }
+
+            if(!moves.length) return alert('Nenhum golpe detectado pelo parser de fallback');
+
+            // construir payload compatível: M1..M10
+            const payload = moves.slice(0,10).map((m,idx)=>({ slot:`M${idx+1}`, nome: m.nome, tipo:'', categoria:'' }));
+
+            // enviar diretamente ao Apps Script (parâmetros form-url-encoded)
+            try{
+                const params = new URLSearchParams();
+                params.append('action','savePokedexMoves');
+                params.append('pokemon', pokeName || '');
+                params.append('moves', JSON.stringify(payload));
+                params.append('stats', JSON.stringify({}));
+                // usar APPS_SCRIPT_URL definido neste arquivo
+                await fetch(APPS_SCRIPT_URL, { method: 'POST', body: params }).then(()=>{}).catch(()=>{});
+                mostrarToastSucesso('Requisição enviada (fallback)');
+            }catch(e){ console.error('fallback enviar move7 err', e); alert('Falha ao enviar (fallback). Veja console.'); }
+
+        }catch(err){ console.error('ENVIAR MOVE7 fallback error', err); alert('Erro interno ao processar ENVIAR MOVE7'); }
+    });
+});
+
+// Delegated handler: captura cliques em ENVIAR MOVE7 mesmo que o botão seja inserido depois
+document.addEventListener('click', async function(ev){
+    const el = ev.target && ev.target.closest ? ev.target.closest('#btnEnviarMove7') : (ev.target && ev.target.id==='btnEnviarMove7' ? ev.target : null);
+    if(!el) return;
+    // se parser completo disponível, não interceptar — deixar o handler do builder tratar (ele faz o envio automático)
+    try{
+        if(typeof window.parsePokedexText === 'function'){
+            // usar parser completo: parse -> renderizar -> enviar (se função de save exposta)
+            let txt = '';
+            try{ txt = await navigator.clipboard.readText(); }catch(e){}
+            if(!txt) txt = prompt('Cole o texto da Pokedex aqui:');
+            if(!txt) { alert('Nenhum texto fornecido'); return; }
+            try{
+                const parsed = window.parsePokedexText(txt);
+                if(!parsed || !parsed.moves || parsed.moves.length===0){ mostrarToastSucesso && mostrarToastSucesso('Nenhum golpe detectado'); return; }
+                window._builder_parsed = parsed;
+                if(typeof window.renderParsedMoves === 'function') try{ window.renderParsedMoves(parsed); }catch(e){}
+                try{ if(window.refreshParsedMovesAttacks) window.refreshParsedMovesAttacks(); }catch(e){}
+                try{ if(window.refreshTmTypes) window.refreshTmTypes(); }catch(e){}
+                // enviar automaticamente se função estiver disponível (cobre caso initBuilderUI não tenha sido chamado)
+                if(typeof window.savePokedexMovesToSheet === 'function'){
+                    try{ mostrarToastSucesso && mostrarToastSucesso('Enviando...'); }catch(e){}
+                    await window.savePokedexMovesToSheet(parsed.meta && parsed.meta.nome ? parsed.meta.nome : '', parsed.moves || [], parsed.meta && parsed.meta.stats ? parsed.meta.stats : {});
+                    try{ mostrarToastSucesso && mostrarToastSucesso('Enviado ✓'); }catch(e){}
+                }
+            }catch(err){ console.error('Delegated ENVIAR MOVE7 parse+save error', err); alert('Erro ao processar texto. Veja console.'); }
+            return;
+        }
+
+        // fallback: minimal parser + enviar direto
+        const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+        let pokeName = '';
+        for(const l of lines.slice(0,8)){ const m = /^Nome\s*[:\-]\s*(.+)/i.exec(l) || /^(?:#?\d+\s+)?([A-Za-zÀ-ÿ0-9'\-\s]+)$/.exec(l); if(m && m[1] && m[1].length>2){ pokeName=m[1].trim(); break; } }
+        const moves = [];
+        for(const l of lines){ if(/^Nome:|^Tipo:|^EV:|^Forma:|^Clã|^TM|^MT|^Pok[eé]mon|^#|^Página/i.test(l)) continue; if(l.length<3||l.length>80) continue; if(/[=<>:\/\*]{2,}/.test(l)) continue; if(l.split(' ').length>8) continue; if(/pp\b|ataque\b|dano\b|efeito\b|categoria\b/i.test(l)) continue; const candidate = l.replace(/\([^\)]*\)/g,'').trim(); if(candidate && !moves.find(mv=>mv.nome.toLowerCase()===candidate.toLowerCase())) moves.push({nome:candidate}); }
+        if(!moves.length){ alert('Nenhum golpe detectado pelo parser de fallback'); return; }
+        const payload = moves.slice(0,10).map((m,idx)=>({ slot:`M${idx+1}`, nome:m.nome, tipo:'', categoria:'' }));
+        try{
+            const params = new URLSearchParams(); params.append('action','savePokedexMoves'); params.append('pokemon', pokeName||''); params.append('moves', JSON.stringify(payload)); params.append('stats', JSON.stringify({})); await fetch(APPS_SCRIPT_URL, { method: 'POST', body: params }); mostrarToastSucesso && mostrarToastSucesso('Requisição enviada (fallback)');
+        }catch(e){ console.error('fallback enviar move7 err', e); alert('Falha ao enviar (fallback). Veja console.'); }
+    }catch(err){ console.error('Delegated ENVIAR MOVE7 error', err); alert('Erro interno ao processar ENVIAR MOVE7'); }
+});
 // 🔧 URL DO GOOGLE APPS SCRIPT - Configurado!
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
+        // tornar disponível globalmente para módulos que usam window.SHEETS_BASE_URL / window.APPS_SCRIPT_URL
+        try{ window.APPS_SCRIPT_URL = APPS_SCRIPT_URL; }catch(e){}
         
         // 🤖 OCR COM TESSERACT.JS - Totalmente gratuito e local!
         // Roda direto no navegador, sem APIs externas ou chaves
@@ -207,10 +344,21 @@ document.addEventListener('DOMContentLoaded', function(){
         };
         
         async function carregarDados() {
+            // Proteção contra múltiplas inicializações simultâneas
+            if (window._phase1LoaderToken) {
+                console.log('⏭️ carregarDados já está em execução. Ignorando nova chamada.');
+                return;
+            }
+
+            window._phase1LoaderToken = Symbol('phase1');
             try {
-                // Mostrar loading
+                // Mostrar loading se o container existir
                 const container = document.getElementById('pokemonContainer');
-                container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando Pokémons...</p></div>';
+                if (container) {
+                    container.innerHTML = '<div style="text-align:center;padding:50px;color:#ffd700;"><i class="fas fa-spinner fa-spin" style="font-size:48px;"></i><p style="margin-top:20px;">Carregando Pokémons...</p></div>';
+                } else {
+                    console.log('ℹ️ Pokédex DOM ausente — carregando dados em memória');
+                }
 
                 console.log('⏳ Iniciando carregamento (fase 1: primeiros ' + POKEMON_PAGE_SIZE + ')...');
                 const inicio = Date.now();
@@ -227,9 +375,9 @@ document.addEventListener('DOMContentLoaded', function(){
                     throw new Error('Erro ao processar resposta do servidor');
                 }
 
-                todosPokemons = resultado.data;
-                todosPokemonsCompleto = [...resultado.data];
-                const totalServidor = resultado.total || resultado.data.length;
+                todosPokemons = resultado.data || [];
+                todosPokemonsCompleto = [...todosPokemons];
+                const totalServidor = resultado.total || (resultado.data ? resultado.data.length : 0);
                 temMaisPaginas = resultado.hasMore === true;
                 dadosCompletosCarregados = !temMaisPaginas;
 
@@ -239,16 +387,26 @@ document.addEventListener('DOMContentLoaded', function(){
                 const tempoFase1 = Date.now() - inicio;
                 console.log(`📥 Fase 1: ${todosPokemons.length}/${totalServidor} pokémon em ${tempoFase1}ms`);
 
-                document.getElementById('pokemonCount').textContent = todosPokemons.length + (temMaisPaginas ? '+' : '');
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
-                
+                const countEl = document.getElementById('pokemonCount');
+                if (countEl) countEl.textContent = todosPokemons.length + (temMaisPaginas ? '+' : '');
+                const lastEl = document.getElementById('lastUpdate');
+                if (lastEl) lastEl.textContent = new Date().toLocaleTimeString('pt-BR').slice(0, 5);
+
                 // Carregar TMs, Atacks e Abilities em background para cross-reference na Pokédex e modal admin
                 carregarDadosTMs();
                 carregarDadosAtacks();
                 carregarDadosAbilities();
-                
-                renderizarPokemons(todosPokemons);
+
                 window.todosPokemons = todosPokemons;
+
+                // Renderizar somente se o container existir
+                const pokemonContainer = document.getElementById('pokemonContainer');
+                if (pokemonContainer) {
+                    renderizarPokemons(todosPokemons);
+                } else {
+                    console.log(`📥 Dados de fase 1 carregados em memória: ${todosPokemons.length} pokémons`);
+                    window._pokemonsUpdatedWhileAway = true;
+                }
 
                 // FASE 2: Carregar restante em background (se houver)
                 if (temMaisPaginas) {
@@ -256,18 +414,25 @@ document.addEventListener('DOMContentLoaded', function(){
                 }
             } catch (erro) {
                 const container = document.getElementById('pokemonContainer');
-                if (!container) return; // Sair se o elemento não existir
-
                 console.error('❌ Erro no carregamento dos dados:', erro);
-                container.innerHTML = `
-                    <div class="error">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Erro</h3>
-                        <p>${erro.message}</p>
-                        <button onclick="location.reload()" style="margin-top:20px;padding:10px 25px;background:#ffd700;color:#1a2980;border:none;border-radius:25px;font-weight:bold;cursor:pointer">
-                            <i class="fas fa-redo"></i> Tentar novamente
-                        </button>
-                    </div>
-                `;
+                if (container) {
+                    container.innerHTML = `
+                        <div class="error">
+                            <h3><i class="fas fa-exclamation-triangle"></i> Erro</h3>
+                            <p>${erro.message}</p>
+                            <button onclick="location.reload()" style="margin-top:20px;padding:10px 25px;background:#ffd700;color:#1a2980;border:none;border-radius:25px;font-weight:bold;cursor:pointer">
+                                <i class="fas fa-redo"></i> Tentar novamente
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    // Se não houver container, apenas logar e marcar flag para renderizar ao voltar
+                    console.warn('⚠️ Erro carregando dados em background (fase 1):', erro);
+                    window._pokemonsUpdatedWhileAway = true;
+                }
+            } finally {
+                // Limpar token para permitir futuras inicializações se necessário
+                if (window._phase1LoaderToken) delete window._phase1LoaderToken;
             }
         }
         
@@ -302,7 +467,20 @@ document.addEventListener('DOMContentLoaded', function(){
         /**
          * Carregar páginas restantes em background
          */
-        async function _carregarRestanteBackground(pagina) {
+        async function _carregarRestanteBackground(pagina, _bgToken) {
+            // Proteção: evitar iniciar múltiplos loaders em paralelo
+            if (!_bgToken) {
+                if (window._bgLoaderToken) {
+                    console.log('⏭️ Background loader já está em execução — ignorando nova inicialização');
+                    return;
+                }
+                _bgToken = Symbol('bgloader');
+                window._bgLoaderToken = _bgToken;
+                window._bgRetries = window._bgRetries || {};
+            }
+
+            const maxRetries = 5;
+
             try {
                 console.log(`⏳ Fase 2: carregando página ${pagina} (background)...`);
                 const resp = await fetch(`${URL_DADOS}&page=${pagina}&limit=${POKEMON_PAGE_SIZE}`);
@@ -319,28 +497,65 @@ document.addEventListener('DOMContentLoaded', function(){
                     const hasMore = res.hasMore === true;
                     temMaisPaginas = hasMore;
                     dadosCompletosCarregados = !hasMore;
-                    document.getElementById('pokemonCount').textContent = todosPokemons.length + (hasMore ? '+' : '');
+                    // Atualizar contador somente se o elemento existir (pode ter trocado de aba)
+                    const countEl = document.getElementById('pokemonCount');
+                    if (countEl) countEl.textContent = todosPokemons.length + (hasMore ? '+' : '');
 
-                    // Atualizar a lista exibida
+                    // Atualizar a lista exibida apenas se os elementos necessários existirem
                     const searchInput = document.getElementById('searchInput');
+                    const pokemonContainer = document.getElementById('pokemonContainer');
                     const termoBusca = searchInput ? searchInput.value.trim() : '';
-                    if (termoBusca) {
-                        if (typeof filtrarPokemons === 'function') filtrarPokemons();
+
+                    if (pokemonContainer) {
+                        if (termoBusca) {
+                            if (typeof filtrarPokemons === 'function') filtrarPokemons();
+                        } else {
+                            renderizarPokemons(todosPokemons);
+                        }
                     } else {
-                        renderizarPokemons(todosPokemons);
+                        // Se o container não existir, apenas logar que os dados foram atualizados em memória
+                        console.log(`📥 Dados de página ${pagina} carregados em background (container ausente). Total em memória: ${todosPokemons.length}`);
+                        // Marcar que houve atualização enquanto a Pokédex estava fora do DOM
+                        window._pokemonsUpdatedWhileAway = true;
                     }
 
                     console.log(`📥 Fase 2 página ${pagina}: +${res.data.length} pokémon (total: ${todosPokemons.length})`);
 
                     if (hasMore) {
-                        _carregarRestanteBackground(pagina + 1);
+                        // Reiniciar contador de tentativas para esta página (sucesso)
+                        if (window._bgRetries && window._bgRetries[pagina]) delete window._bgRetries[pagina];
+                        await _carregarRestanteBackground(pagina + 1, _bgToken);
                     } else {
                         console.log('✅ Carregamento completo:', todosPokemons.length, 'pokémon');
+                        if (window._bgLoaderToken === _bgToken) delete window._bgLoaderToken;
                     }
                 }
             } catch (e) {
                 console.error('❌ Erro no carregamento background (página ' + pagina + '):', e);
-                setTimeout(() => _carregarRestanteBackground(pagina), 3000);
+
+                window._bgRetries = window._bgRetries || {};
+                window._bgRetries[pagina] = (window._bgRetries[pagina] || 0) + 1;
+                const attempts = window._bgRetries[pagina];
+
+                if (attempts <= maxRetries) {
+                    const delay = Math.min(3000 * Math.pow(2, attempts - 1), 60000); // backoff exponencial até 60s
+                    console.log(`🔁 Tentando novamente página ${pagina} em ${delay}ms (tentativa ${attempts}/${maxRetries})`);
+                    setTimeout(() => {
+                        // Só tentar se este loader ainda for o ativo
+                        if (window._bgLoaderToken === _bgToken) _carregarRestanteBackground(pagina, _bgToken);
+                    }, delay);
+                } else {
+                    // Se excedeu tentativas, aguardar um tempo longo antes de tentar novamente para evitar spam infinito
+                    const longDelay = 60000; // 1 minuto
+                    console.warn(`⚠️ Máximo de tentativas atingido para página ${pagina}. Aguardando ${longDelay}ms antes de nova tentativa.`);
+                    setTimeout(() => {
+                        if (window._bgLoaderToken === _bgToken) {
+                            // resetar contador e tentar de novo
+                            window._bgRetries[pagina] = 0;
+                            _carregarRestanteBackground(pagina, _bgToken);
+                        }
+                    }, longDelay);
+                }
             }
         }
         
@@ -560,7 +775,7 @@ document.addEventListener('DOMContentLoaded', function(){
             card.innerHTML = `
                 ${evolucao ? `<span class="pokemon-evolution-badge">EV</span>` : ''}
                 <div class="img-container">
-                    <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="this.onerror=null;this.src='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='">
+                    <img class="pokemon-img" src="${imagemUrl}" alt="${nomePrincipal}" onerror="tryNextImage(this)">
                 </div>
                 ${numero ? `<div class="pokemon-number">#${numero}</div>` : ''}
                 <h3 class="pokemon-name">
@@ -778,8 +993,8 @@ document.addEventListener('DOMContentLoaded', function(){
             }
 
             // Buscar imagem local na pasta IMAGENS/imagens-pokemon/sprite-pokemon/
-            // Formato: POKEMON.png (sem EV) ou POKEMON-EV.png (com EV)
-            // Exemplos: Charizard.png, Charizard-Mega-Charizard-Y.png, Charizard-Shiny-Charizard.png
+            // Formato esperado: POKEMON.png (sem EV) ou POKEMON-EV.png (com EV)
+            // Vamos construir uma lista de candidatos e priorizar imagens "Mega" já existentes.
             let nomeArquivo;
             if (nomeBase && nomeBase !== '' && nomeBase !== nomePrincipal) {
                 // Tem EV: formato é POKEMON-EV (espaços viram hífens)
@@ -789,7 +1004,86 @@ document.addEventListener('DOMContentLoaded', function(){
                 nomeArquivo = nomePrincipal;
             }
             nomeArquivo = nomeArquivo.trim();
-            return `IMAGENS/imagens-pokemon/sprite-pokemon/${nomeArquivo}.png`;
+
+            // Gerar variações e candidatos
+            const candidates = [];
+            // 1) candidato óbvio baseado no padrão atual
+            candidates.push(`IMAGENS/imagens-pokemon/sprite-pokemon/${nomeArquivo}.png`);
+
+            // 2) se é uma forma (nomeBase presente), tentar usar imagem da forma Mega/forma base via mapeamentoImagens
+            try {
+                const baseCap = (nomeBase || '').toString().trim();
+                const baseWords = baseCap.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+                const baseCapitalized = baseWords.join(' ');
+                // detectar se nomePrincipal contém 'mega' (Mega Shiny etc.) ou começa com 'Mega'
+                const isMegaForm = /\bmega\b/i.test(nomePrincipal || '');
+                if (isMegaForm && baseCapitalized) {
+                    const mappingKey = `Mega ${baseCapitalized}`;
+                    if (typeof mapeamentoImagens !== 'undefined' && mapeamentoImagens[mappingKey]) {
+                        const mapped = mapeamentoImagens[mappingKey];
+                        if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
+                        else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                    }
+                    // também tentar key sem capitalização estrita
+                    const mappingKeyLower = `mega ${baseCapitalized}`;
+                    if (typeof mapeamentoImagens !== 'undefined' && mapeamentoImagens[mappingKeyLower]) {
+                        const mapped = mapeamentoImagens[mappingKeyLower];
+                        if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
+                        else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                    }
+                    // comum fallback: slug 'base-mega' (priorizar entre sprites)
+                    const slugMega = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-mega`;
+                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMega}.png`);
+                    // Se for Shiny também, priorizar variantes sprite 'shiny' para Mega Shiny
+                    const isShiny = /\bshiny\b/i.test(nomePrincipal || '');
+                    if (isShiny) {
+                        // variações comuns de naming para shiny mega
+                        const slugMegaShiny1 = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-mega-shiny`;
+                        const slugMegaShiny2 = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-shiny-mega`;
+                        const capMegaShiny1 = `${baseCapitalized}-Mega-${baseCapitalized}-Shiny`;
+                        const capShiny = `${baseCapitalized}-Shiny-${baseCapitalized}`;
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny1}.png`);
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny2}.png`);
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${capMegaShiny1}.png`);
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${capShiny}.png`);
+                    }
+                }
+            } catch(e){}
+
+            // 3) tentar mapeamento direto pelo nomePrincipal ou nomeBase
+            try {
+                if (typeof mapeamentoImagens !== 'undefined') {
+                    if (mapeamentoImagens[nomePrincipal]) {
+                        const mapped = mapeamentoImagens[nomePrincipal];
+                        if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
+                        else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                    }
+                    if (mapeamentoImagens[nomeBase]) {
+                        const mapped = mapeamentoImagens[nomeBase];
+                        if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
+                        else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                    }
+                }
+            } catch(e){}
+
+            // 4) sticker fallback (nome base)
+            candidates.push(`IMAGENS/imagens-pokemon/stickers-pokemon/${(nomeBase||nomePrincipal).trim()}.png`);
+
+            // registrar candidatos em storage global e retornar o primeiro com fragment id
+            try {
+                const id = 'imgc' + (++window.__imgCandidateIndex);
+                // deduplicate candidates preserving order
+                const seen = new Set();
+                const unique = [];
+                for (const c of candidates) {
+                    if (!c) continue;
+                    if (!seen.has(c)) { seen.add(c); unique.push(c); }
+                }
+                window.__imgCandidates[id] = unique;
+                return (unique[0] || candidates[0]) + '#' + id;
+            } catch (e) {
+                return candidates[0];
+            }
         }
         
         function alternarTipoImagem() {
@@ -4512,3 +4806,53 @@ document.addEventListener('DOMContentLoaded', function(){
                 if (pokLocal) pokLocal['SUGESTAO_ATACKS'] = '';
             }
         };
+
+        // Storage for image candidate lists used to try multiple fallbacks
+        window.__imgCandidates = window.__imgCandidates || {};
+        window.__imgCandidateIndex = window.__imgCandidateIndex || 0;
+
+        function tryNextImage(img) {
+            try {
+                const transparent = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+                let src = img.getAttribute('src') || '';
+                const frag = src.split('#')[1] || '';
+                let id = frag && window.__imgCandidates[frag] ? frag : null;
+                const cleanSrc = src.split('#')[0];
+                let list = [];
+                // if id found, use it
+                if (id) list = window.__imgCandidates[id] || [];
+                else {
+                    // try to find a matching candidate list by searching for an entry that matches the current src
+                    for (const k in window.__imgCandidates) {
+                        const arr = window.__imgCandidates[k] || [];
+                        // exact match
+                        if (arr.indexOf(cleanSrc) !== -1) { id = k; list = arr; break; }
+                        // try endsWith match (handles absolute vs relative differences)
+                        const found = arr.findIndex(a => a && cleanSrc && (cleanSrc.endsWith(a) || a.endsWith(cleanSrc)));
+                        if (found !== -1) { id = k; list = arr; break; }
+                    }
+                }
+
+                if (!id || !list || !list.length) {
+                    console.warn('tryNextImage: no candidates found for', src);
+                    img.onerror = null; img.src = transparent; return;
+                }
+
+                // find current index robustly
+                let idx = list.indexOf(cleanSrc);
+                if (idx === -1) {
+                    idx = list.findIndex(a => a && cleanSrc && (cleanSrc.endsWith(a) || a.endsWith(cleanSrc)));
+                    if (idx === -1) idx = 0;
+                }
+                const next = list[idx+1];
+                console.log('tryNextImage', { id, idx, cleanSrc, next, list });
+                if (next) {
+                    img.src = next + '#' + id;
+                } else {
+                    img.onerror = null;
+                    img.src = transparent;
+                }
+            } catch (e) {
+                try { img.onerror = null; img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='; } catch(_){}
+            }
+        }
