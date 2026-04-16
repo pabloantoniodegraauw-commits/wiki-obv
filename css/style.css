@@ -1805,6 +1805,26 @@ footer {
     box-shadow: 0 5px 15px rgba(255, 100, 100, 0.3);
 }
 
+.btn-copy-moves {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 215, 0, 0.12);
+    border: 2px solid rgba(255, 215, 0, 0.45);
+    color: #ffd700;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95em;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+}
+.btn-copy-moves:hover{ transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,215,0,0.2); }
+
 /* Estilos dinâmicos por tipo */
 .smeargle-card.type-fire {
     background: linear-gradient(145deg, rgba(240, 128, 48, 0.3), rgba(221, 102, 16, 0.5));

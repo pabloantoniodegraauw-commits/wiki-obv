@@ -460,6 +460,11 @@ function renderizarGolpesSmeargle(golpes) {
                 <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;">
                     <i class="fas fa-hashtag"></i> Slot: <b>${slotOrigem}</b>
                 </div>
+                <div class="move-actions" style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
+                    <button class="btn-copy-move" onclick="event.stopPropagation(); copiarGolpeParaClipboard(this)" title="Copiar ataque" style="background:#2b6cb0;color:#fff;border:none;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:0.9em">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
                 ${estaSelecionado ? '<div class="move-selected-badge"><i class="fas fa-check-circle"></i></div>' : ''}
             </div>
         `;
@@ -531,6 +536,64 @@ window.selecionarGolpe = function(element) {
     // Feedback visual
     element.style.animation = 'none';
     setTimeout(() => { element.style.animation = 'pulseSelect 0.4s ease'; }, 10);
+};
+
+// Copiar golpe para clipboard (botão Copiar)
+window.copiarGolpeParaClipboard = function(btn){
+    try{
+        const card = btn && btn.closest ? btn.closest('.move-card') : null;
+        const moveStr = card && card.dataset ? card.dataset.move : null;
+        const move = moveStr ? JSON.parse(moveStr) : null;
+        if(!move) { if(window.showToast) window.showToast('Erro ao copiar golpe','error'); else alert('Erro ao copiar golpe'); return; }
+        const texto = (move.nome || '') + (move.origem ? (' — ' + move.origem) : '');
+        if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(texto).then(()=>{ if(window.showToast) window.showToast('Golpe copiado','success'); else alert('Golpe copiado'); }).catch(()=>{
+                // fallback
+                const ta = document.createElement('textarea'); ta.value = texto; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); if(window.showToast) window.showToast('Golpe copiado','success'); else alert('Golpe copiado'); }catch(e){ if(window.showToast) window.showToast('Falha ao copiar','error'); else alert('Falha ao copiar'); } finally{ ta.remove(); }
+            });
+        } else {
+            const ta = document.createElement('textarea'); ta.value = texto; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); if(window.showToast) window.showToast('Golpe copiado','success'); else alert('Golpe copiado'); }catch(e){ if(window.showToast) window.showToast('Falha ao copiar','error'); else alert('Falha ao copiar'); } finally{ ta.remove(); }
+        }
+    }catch(e){ console.error('copiarGolpeParaClipboard error', e); if(window.showToast) window.showToast('Erro ao copiar golpe','error'); else alert('Erro ao copiar golpe'); }
+};
+
+// Copiar conteúdo inteiro do slot M7
+window.copiarTodosMovesSmeargle = function(){
+    try{
+        if(!smeargleSelectedMoves || !Array.isArray(smeargleSelectedMoves)){
+            if(window.showToast) window.showToast('Nenhum movimento selecionado','error'); else alert('Nenhum movimento selecionado');
+            return;
+        }
+        // Formatar conforme solicitado:
+        // Smeargle
+        //
+        // tipo: Ghost
+        //
+        // m1 - Phantom Force - Gengar /
+        const tipoDom = (typeof tipoDominante === 'function') ? tipoDominante(smeargleSelectedMoves.filter(Boolean)) : 'Normal';
+        const header = ['Smeargle', '', `tipo: ${tipoDom}`, ''];
+        const moveLines = [];
+        for(let i=0;i<9;i++){
+            const mv = smeargleSelectedMoves[i];
+            const nome = mv && mv.nome ? mv.nome : '(vazio)';
+            let origem = '';
+            if(mv && mv.origem){
+                try{ origem = (typeof extractSpeciesName === 'function') ? extractSpeciesName(mv.origem) : (mv.origem||''); }
+                catch(e){ origem = mv.origem || ''; }
+            }
+            const suffix = (i < 8) ? ' /' : '';
+            const origemPart = origem ? ` - ${origem}` : '';
+            moveLines.push(`m${i+1} - ${nome}${origemPart}${suffix}`);
+        }
+        const texto = header.concat(moveLines).join('\n');
+        if(navigator.clipboard && navigator.clipboard.writeText){
+            navigator.clipboard.writeText(texto).then(()=>{ if(window.showToast) window.showToast('M1-M9 copiados','success'); else alert('M1-M9 copiados'); }).catch(()=>{
+                const ta=document.createElement('textarea'); ta.value=texto; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); if(window.showToast) window.showToast('M1-M9 copiados','success'); else alert('M1-M9 copiados'); }catch(e){ if(window.showToast) window.showToast('Falha ao copiar','error'); else alert('Falha ao copiar'); } finally{ ta.remove(); }
+            });
+        } else {
+            const ta=document.createElement('textarea'); ta.value=texto; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); if(window.showToast) window.showToast('M1-M9 copiados','success'); else alert('M1-M9 copiados'); }catch(e){ if(window.showToast) window.showToast('Falha ao copiar','error'); else alert('Falha ao copiar'); } finally{ ta.remove(); }
+        }
+    }catch(e){ console.error('copiarTodosMovesSmeargle error', e); if(window.showToast) window.showToast('Erro ao copiar','error'); else alert('Erro ao copiar'); }
 };
 
 // Validar se um move pode ser adicionado em uma posição específica
@@ -633,46 +696,53 @@ function atualizarCardSmeargle() {
     try{
         const imgEl = document.querySelector('.smeargle-img');
         if(imgEl){
-            // Preferência de imagem: se houver um Pokémon selecionado no primeiro slot, usar sua origem (EV/POKEMON)
-            const first = smeargleSelectedMoves.find(Boolean);
-            let nomeParaImagem = null;
-            if(first && first.origem){ nomeParaImagem = first.origem; }
-            // fallback: usar nome padrão do builder (se existir)
-            if(!nomeParaImagem && window.builderMeta && window.builderMeta.name) nomeParaImagem = window.builderMeta.name;
-            if(!nomeParaImagem && window.builderSelectedPokemonName) nomeParaImagem = window.builderSelectedPokemonName;
-            if(nomeParaImagem && typeof obterImagemPokemon === 'function'){
-                // tentar separar forma/qualificador (Shiny, Mega, Alolan, Galarian, etc.)
-                function splitNomeParaImagem(raw){
-                    if(!raw) return {nomePrincipal:'', nomeBase:''};
-                    let s = raw.replace(/\(.*\)/g,'').trim();
-                    s = s.replace(/\s+/g,' ');
-                    const quals = ['shiny','mega','alolan','galarian','hisui','crowned','female','male','shadow'];
-                    const parts = s.split(/\s+/).filter(Boolean);
-                    // detectar qualifier no início
-                    let qualifier = null;
-                    let species = s;
-                    if(parts.length>1 && quals.includes(parts[0].toLowerCase())){
-                        qualifier = parts[0];
-                        species = parts.slice(1).join(' ');
-                    } else if(parts.length>1 && quals.includes(parts[parts.length-1].toLowerCase())){
-                        qualifier = parts[parts.length-1];
-                        species = parts.slice(0, parts.length-1).join(' ');
+            // Se estivermos na página 'smeargle', mostrar a imagem fixa do Smeargle
+            // detectar a página atual: alguns scripts usam `currentPage` (lexical) e outros `window.currentPage`
+            if ((typeof window.currentPage !== 'undefined' && window.currentPage === 'smeargle') || (typeof currentPage !== 'undefined' && currentPage === 'smeargle')){
+                try{
+                    if(typeof obterImagemPokemon === 'function'){
+                        const src = obterImagemPokemon('Smeargle', '');
+                        imgEl.src = src;
+                    } else {
+                        imgEl.src = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
                     }
-                    // capitalizar corretamente
-                    const cap = str => str.split(' ').map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-                    const nomePrincipal = cap(species);
-                    const nomeBase = qualifier ? (nomePrincipal + '-' + (qualifier.charAt(0).toUpperCase()+qualifier.slice(1))) : '';
-                    return {nomePrincipal, nomeBase};
-                }
-                const parts = splitNomeParaImagem(nomeParaImagem);
-                const src = obterImagemPokemon(parts.nomePrincipal, parts.nomeBase);
-                imgEl.src = src;
-                imgEl.alt = nomeParaImagem;
-                imgEl.onerror = function(){ this.onerror=null; this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'; };
+                    imgEl.alt = 'Smeargle';
+                    imgEl.onerror = function(){ this.onerror=null; this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'; };
+                }catch(e){ imgEl.src = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'; imgEl.alt = 'Smeargle'; }
             } else {
-                // manter placeholder pokebola
-                imgEl.src = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
-                imgEl.alt = 'Pokémon';
+                // Em outras páginas (ex: builder) restaurar comportamento anterior: usar Pokémon da origem do primeiro slot ou fallbacks
+                const first = smeargleSelectedMoves.find(Boolean);
+                let nomeParaImagem = null;
+                if(first && first.origem){ nomeParaImagem = first.origem; }
+                if(!nomeParaImagem && window.builderMeta && window.builderMeta.name) nomeParaImagem = window.builderMeta.name;
+                if(!nomeParaImagem && window.builderSelectedPokemonName) nomeParaImagem = window.builderSelectedPokemonName;
+                if(nomeParaImagem && typeof obterImagemPokemon === 'function'){
+                    function splitNomeParaImagem(raw){
+                        if(!raw) return {nomePrincipal:'', nomeBase:''};
+                        let s = raw.replace(/\(.*\)/g,'').trim();
+                        s = s.replace(/\s+/g,' ');
+                        const quals = ['shiny','mega','alolan','galarian','hisui','crowned','female','male','shadow'];
+                        const parts = s.split(/\s+/).filter(Boolean);
+                        let qualifier = null;
+                        let species = s;
+                        if(parts.length>1 && quals.includes(parts[0].toLowerCase())){ qualifier = parts[0]; species = parts.slice(1).join(' '); }
+                        else if(parts.length>1 && quals.includes(parts[parts.length-1].toLowerCase())){ qualifier = parts[parts.length-1]; species = parts.slice(0, parts.length-1).join(' '); }
+                        const cap = str => str.split(' ').map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+                        const nomePrincipal = cap(species);
+                        const nomeBase = qualifier ? (nomePrincipal + '-' + (qualifier.charAt(0).toUpperCase()+qualifier.slice(1))) : '';
+                        return {nomePrincipal, nomeBase};
+                    }
+                    try{
+                        const parts = splitNomeParaImagem(nomeParaImagem);
+                        const src = obterImagemPokemon(parts.nomePrincipal, parts.nomeBase);
+                        imgEl.src = src;
+                        imgEl.alt = nomeParaImagem;
+                        imgEl.onerror = function(){ this.onerror=null; this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'; };
+                    }catch(e){ imgEl.src = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'; imgEl.alt = nomeParaImagem; }
+                } else {
+                    imgEl.src = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
+                    imgEl.alt = nomeParaImagem || 'Pokémon';
+                }
             }
         }
     }catch(e){ console.warn('Erro atualizando imagem Smeargle', e); }
@@ -680,38 +750,44 @@ function atualizarCardSmeargle() {
         try{
             const nameEl = document.querySelector('.smeargle-name');
             if(nameEl){
-                let displayName = '';
-                const first = smeargleSelectedMoves.find(Boolean);
-                function hasQualifier(raw){
-                    if(!raw) return false;
-                    try{
-                        const s = raw.toString().toLowerCase();
-                        if(/\(.*\)/.test(raw)) return true;
-                        const quals = ['shiny','mega','alolan','galarian','hisui','crowned','shadow','female','male','alpha','beta'];
-                        const parts = s.split(/\s+|-/).filter(Boolean);
-                        if(parts.length>1){
-                            if(quals.includes(parts[0]) || quals.includes(parts[parts.length-1])) return true;
-                            for(const q of quals){ if(s.includes(q)) return true; }
-                        }
-                    }catch(e){ }
-                    return false;
-                }
-                function capitalize(raw){ if(!raw) return ''; return raw.toString().replace(/\(|\)/g,'').split(/\s+/).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ').trim(); }
+                // Manter nome fixo quando estivermos na página smeargle
+                if ((typeof window.currentPage !== 'undefined' && window.currentPage === 'smeargle') || (typeof currentPage !== 'undefined' && currentPage === 'smeargle')){
+                    nameEl.textContent = 'Smeargle';
+                } else {
+                    // comportamento antigo para outras páginas (ex: builder)
+                    let displayName = '';
+                    const first = smeargleSelectedMoves.find(Boolean);
+                    function hasQualifier(raw){
+                        if(!raw) return false;
+                        try{
+                            const s = raw.toString().toLowerCase();
+                            if(/\(.*\)/.test(raw)) return true;
+                            const quals = ['shiny','mega','alolan','galarian','hisui','crowned','shadow','female','male','alpha','beta'];
+                            const parts = s.split(/\s+|-/).filter(Boolean);
+                            if(parts.length>1){
+                                if(quals.includes(parts[0]) || quals.includes(parts[parts.length-1])) return true;
+                                for(const q of quals){ if(s.includes(q)) return true; }
+                            }
+                        }catch(e){ }
+                        return false;
+                    }
+                    function capitalize(raw){ if(!raw) return ''; return raw.toString().replace(/\(|\)/g,'').split(/\s+/).map(w=> w.charAt(0).toUpperCase()+w.slice(1)).join(' ').trim(); }
 
-                if(first && first.origem){
-                    if(hasQualifier(first.origem)) displayName = capitalize(first.origem);
-                    else displayName = extractSpeciesName(first.origem);
+                    if(first && first.origem){
+                        if(hasQualifier(first.origem)) displayName = capitalize(first.origem);
+                        else displayName = extractSpeciesName(first.origem);
+                    }
+                    if(!displayName && window.builderMeta && window.builderMeta.name){
+                        if(hasQualifier(window.builderMeta.name)) displayName = capitalize(window.builderMeta.name);
+                        else displayName = extractSpeciesName(window.builderMeta.name);
+                    }
+                    if(!displayName && window.builderSelectedPokemonName){
+                        if(hasQualifier(window.builderSelectedPokemonName)) displayName = capitalize(window.builderSelectedPokemonName);
+                        else displayName = extractSpeciesName(window.builderSelectedPokemonName);
+                    }
+                    if(!displayName) displayName = 'Build';
+                    nameEl.textContent = displayName;
                 }
-                if(!displayName && window.builderMeta && window.builderMeta.name){
-                    if(hasQualifier(window.builderMeta.name)) displayName = capitalize(window.builderMeta.name);
-                    else displayName = extractSpeciesName(window.builderMeta.name);
-                }
-                if(!displayName && window.builderSelectedPokemonName){
-                    if(hasQualifier(window.builderSelectedPokemonName)) displayName = capitalize(window.builderSelectedPokemonName);
-                    else displayName = extractSpeciesName(window.builderSelectedPokemonName);
-                }
-                if(!displayName) displayName = 'Build';
-                nameEl.textContent = displayName;
             }
         }catch(e){ console.warn('Erro atualizando nome Smeargle', e); }
     
@@ -1075,6 +1151,19 @@ function configurarEventosSmeargle() {
     
     // Limpar tudo
     document.getElementById('btnClearMoves').addEventListener('click', limparGolpes);
+    // Adicionar botão "Copiar M1-M9" abaixo do botão limpar (se existir)
+    try{
+        const clearBtn = document.getElementById('btnClearMoves');
+        if(clearBtn && clearBtn.parentNode){
+            const copyAll = document.createElement('button');
+            copyAll.id = 'btnCopyAllMoves';
+            copyAll.textContent = 'Copiar M1-M9';
+            copyAll.title = 'Copiar todos os golpes (M1..M9)';
+            copyAll.className = 'btn-clear-moves btn-copy-moves';
+            clearBtn.parentNode.insertBefore(copyAll, clearBtn.nextSibling);
+            copyAll.addEventListener('click', copiarTodosMovesSmeargle);
+        }
+    }catch(e){/* ignore */}
 }
 
 // Aplicar filtros
