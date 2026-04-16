@@ -2,6 +2,102 @@
 (function(){
   function safe(q){return document.getElementById(q)}
 
+  // Garantir função global de filtro como fallback caso o script inline não tenha sido carregado
+  try{
+    if(!window.filterCombinedMoves || typeof window.filterCombinedMoves !== 'function'){
+      window.filterCombinedMoves = function(){
+        try{
+          var inp = document.getElementById('moveSearchInput');
+          var q = (inp && inp.value) ? inp.value.toString() : '';
+          try{ q = q.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){ q = q.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim(); }
+          var grid = document.getElementById('combinedMovesGrid');
+          if(!grid) return;
+          var items = Array.from(grid.children || []);
+          if(!q){ items.forEach(function(it){ it.style.display = ''; }); return; }
+
+          var typesList = ['normal','fogo','fire','agua','água','water','electric','eletrico','elétrico','grass','grama','ice','gelo','fighting','lutador','poison','veneno','ground','terra','flying','voador','psychic','psiquico','bug','inseto','rock','pedra','ghost','fantasma','dragon','dragão','dark','noturno','steel','metalico','metálico','fairy','fada'];
+          var typesSet = new Set(typesList.map(function(t){ try{return t.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){return t.toString().toLowerCase();}}));
+          var tokens = q.split(/\s+/).filter(Boolean);
+          var typeTokens = tokens.filter(function(t){ return typesSet.has(t); });
+
+          function itemFields(it){
+            var name = (it.dataset && it.dataset.moveName) ? it.dataset.moveName : (it.querySelector && it.querySelector('.move-name') && it.querySelector('.move-name').textContent) || it.textContent || '';
+            var typeRaw = (it.dataset && it.dataset.moveType) ? it.dataset.moveType : (it.querySelector && it.querySelector('.move-tipo') && it.querySelector('.move-tipo').textContent) || '';
+            if(!typeRaw){ try{ var cls=(it.className||''); var m=cls.match(/\btype-([a-z0-9\-]+)\b/i); if(m && m[1]) typeRaw = m[1]; }catch(e){} }
+            var type = '';
+            try{ type = (typeRaw||'').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ type = (typeRaw||'').toString().toLowerCase().replace(/[^a-z0-9\s]/g,''); }
+            var effect = (it.dataset && it.dataset.moveEffect) ? it.dataset.moveEffect : (it.dataset && it.dataset.moveEfeito) ? it.dataset.moveEfeito : (it.querySelector && it.querySelector('.move-efeito') && it.querySelector('.move-efeito').textContent) || '';
+            var cat = (it.dataset && it.dataset.moveCategory) ? it.dataset.moveCategory : (it.querySelector && it.querySelector('.move-categoria') && it.querySelector('.move-categoria').textContent) || '';
+            try{ name = name.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ name = name.toLowerCase().replace(/[^a-z0-9\s]/g,''); }
+            try{ effect = effect.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ effect = effect.toLowerCase().replace(/[^a-z0-9\s]/g,''); }
+            try{ cat = cat.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ cat = cat.toLowerCase().replace(/[^a-z0-9\s]/g,''); }
+            return {name,type,effect,cat};
+          }
+
+          var isTypeSearch = (typeTokens.length > 0 && typeTokens.length === tokens.length);
+          var isNameSearch = false; var isEffectSearch = false;
+          for(var i=0;i<items.length;i++){
+            var f = itemFields(items[i]);
+            for(var t of tokens){ if(f.name.indexOf(t)!==-1){ isNameSearch = true; break; } }
+            if(isNameSearch) break;
+          }
+          if(!isNameSearch){
+            for(var i2=0;i2<items.length;i2++){
+              var f2 = itemFields(items[i2]);
+              for(var t2 of tokens){ if(f2.effect.indexOf(t2)!==-1){ isEffectSearch = true; break; } }
+              if(isEffectSearch) break;
+            }
+          }
+
+          items.forEach(function(it){
+            var f = itemFields(it);
+            var matched = false;
+            if(isTypeSearch){
+              var typeToCheck = f.type || '';
+              if(!typeToCheck){
+                try{
+                  var inferred = '';
+                  if(typeof findAttackDetails === 'function'){
+                    var full = findAttackDetails(f.name || ''); if(full) inferred = (full.TYPE||full.type||full.TIPAGEM||full.tipagem||full.tipo||'').toString();
+                  }
+                  if(!inferred && typeof buildTmLookup === 'function'){
+                    try{
+                      var lu = buildTmLookup();
+                      if(lu && lu.byName){
+                        var rawName = (f.name||'').toString();
+                        var keyMain = (typeof _key === 'function') ? _key(rawName) : rawName.toLowerCase().trim();
+                        var keyNoTm = keyMain.replace(/^tm\s*\d+/,'').replace(/^tm\s*-\s*/,'').replace(/^tm/,'').replace(/[^a-z0-9]/g,'');
+                        var keyStripNum = (typeof _key === 'function') ? _key(rawName.replace(/^\s*tm\s*\d+\s*[-:\s]?/i,'')) : rawName.replace(/^\s*tm\s*\d+\s*[-:\s]?/i,'').toLowerCase().trim();
+                        var keyCandidates = [keyMain, keyNoTm, keyStripNum];
+                        var foundObj = null;
+                        for(var kk of keyCandidates){ if(kk && lu.byName.has(kk)){ foundObj = lu.byName.get(kk); break; } }
+                        if(foundObj) inferred = (foundObj.tipagem||foundObj.TIPAGEM||foundObj.type||foundObj.tipo||'').toString();
+                        if(!inferred && Array.isArray(lu.raw)){
+                          var rn = (typeof _key === 'function') ? _key(rawName) : rawName.toLowerCase().trim();
+                          var rf = lu.raw.find(function(a){ try{ var aName = (a.nome||a['NOME DO TM']||a.NOME||a.name||'')+''; var an = (typeof _key === 'function') ? _key(aName) : aName.toLowerCase().trim(); if(an===rn || an.includes(rn) || rn.includes(an)) return true; return false;}catch(e){return false;} });
+                          if(rf) inferred = (rf.tipagem||rf.TIPAGEM||rf['TIPAGEM DO TM']||rf.type||rf.tipo||'').toString();
+                        }
+                      }
+                    }catch(e){}
+                  }
+                  if(inferred) typeToCheck = inferred.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'');
+                }catch(e){}
+              }
+              for(var tt of typeTokens){ var parts = (typeToCheck||'').split(/[-\s]+/).filter(Boolean); if(parts.indexOf(tt)!==-1 || (typeToCheck||'')===tt){ matched = true; break; } }
+            } else if(isNameSearch){
+              for(var tt2 of tokens){ if(f.name.indexOf(tt2)!==-1){ matched = true; break; } }
+            } else if(isEffectSearch){
+              for(var tt3 of tokens){ if(f.effect.indexOf(tt3)!==-1){ matched = true; break; } }
+            } else {
+              for(var tt4 of tokens){ if((f.name+ ' ' + f.type + ' ' + f.effect + ' ' + f.cat).indexOf(tt4)!==-1){ matched = true; break; } }
+            }
+            it.style.display = matched ? '' : 'none';
+          });
+        }catch(e){ console.warn('filterCombinedMoves fallback error', e); }
+      };
+    }
+  }catch(e){}
+
   function parsePokedexText(text){
     if(!text) return {moves:[], tms:[]};
     // simple existing robust parser: look for Move blocks and TM lines
@@ -256,13 +352,131 @@
     const byName = new Map();
     (source||[]).forEach(obj=>{
       const num = (obj.numero||obj.NUMERO||obj.Number||obj['Número']||obj['NUMERO DO TM']||'').toString();
-      const n = (obj.nome||obj['NOME DO TM']||obj.NOME||obj['NOME']||obj.name||'').toString().toLowerCase().trim();
+      const nRaw = (obj.nome||obj['NOME DO TM']||obj.NOME||obj['NOME']||obj.name||'').toString();
+      const n = (typeof _key === 'function') ? _key(nRaw) : nRaw.toLowerCase().trim();
       if(num) byNumber.set(num, obj);
       if(n) byName.set(n, obj);
     });
     const lookup = {sourceName: candidates[0]&&candidates[0].name || null, byNumber, byName, raw: source};
     window.__tmLookup = lookup; return lookup;
   }
+
+  // helper: normalize string for fuzzy matching (simple)
+  function _key(s){ try{ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g,''); }catch(e){ return (s||'').toString().toLowerCase().replace(/[^a-z0-9]/g,''); } }
+
+  // Busca detalhes de ataque na tabela `smeargleAtacksData` ou em window.todosTMs/lookup
+  function findAttackDetails(nameOrObj){
+    try{
+      if(!nameOrObj) return null;
+      let name = (typeof nameOrObj === 'string') ? nameOrObj : (nameOrObj.nome || nameOrObj.ATACK || nameOrObj['ATACK'] || nameOrObj.name || '');
+      const key = _key(name);
+      // tentar múltiplas fontes possíveis: smeargleAtacksData, window.smeargleAtacksData, window.todosAtacks, window.todos
+      const altNames = ['smeargleAtacksData','smeargleAtacks','todosAtacks','todosAtacksData','todos','todos_atacks','todos_atacks'];
+      let table = [];
+      for(const n of altNames){ try{ const v = window[n]; if(Array.isArray(v) && v.length){ table = v; break; } }catch(e){} }
+      if(!table.length && typeof smeargleAtacksData !== 'undefined' && Array.isArray(smeargleAtacksData)) table = smeargleAtacksData;
+      if(Array.isArray(table) && table.length){
+        let found = table.find(a=> _key((a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a.nome||a.NAME||'')+'') === key );
+        if(!found){ found = table.find(a=>{ const atn = (a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a.nome||'')+''; const k = _key(atn); return k && key && (k.includes(key) || key.includes(k)); }); }
+        if(found) return found;
+      }
+      // fallback: try todosTMs by name
+      try{
+        const todos = window.todosTMs || [];
+        if(Array.isArray(todos) && todos.length){
+          let f = todos.find(x=> _key((x.nome||x['NOME DO TM']||x.NOME||'')+'') === key );
+          if(!f) f = todos.find(x=> _key((x.nome||x['NOME DO TM']||'')+'').includes(key) || key.includes(_key((x.nome||x['NOME DO TM']||'')+'')) );
+          if(f) return f;
+        }
+      }catch(e){}
+      // última tentativa: procurar em qualquer global que pareça conter ataques (inspecionar chaves do primeiro objeto)
+      try{
+        for(const k in window){
+          try{
+            const v = window[k];
+            if(Array.isArray(v) && v.length && typeof v[0] === 'object'){
+              const keys = Object.keys(v[0]).join(' ').toUpperCase();
+              if(/ATACK|ATACK_NAME|POWER|PP|EFEITO|TIPAGEM|NOME/.test(keys)){
+                let f = v.find(x=> _key((x['ATACK']||x.nome||x['NOME DO TM']||x.name||'')+'') === key);
+                if(!f) f = v.find(x=> _key((x['ATACK']||x.nome||x['NOME DO TM']||x.name||'')+'').includes(key) || key.includes(_key((x['ATACK']||x.nome||x['NOME DO TM']||x.name||'')+'')) );
+                if(f) return f;
+              }
+            }
+          }catch(e){}
+        }
+      }catch(e){}
+      return null;
+    }catch(e){ return null; }
+  }
+
+  // Tenta enriquecer um tile DOM com dados da tabela de ATACKS/TMs usando várias variantes do nome
+  function tryEnrichTileFromAttacks(tile, nameOrObj){
+    try{
+      if(!tile) return;
+      var raw = '';
+      if(typeof nameOrObj === 'string') raw = nameOrObj;
+      else if(nameOrObj && typeof nameOrObj === 'object') raw = (nameOrObj.nome||nameOrObj.name||'')+'';
+      if(!raw) return;
+      var candidates = [];
+      candidates.push(raw);
+      candidates.push(raw.replace(/^\s*TM\s*\d+\s*[-:\s]?/i,''));
+      if(raw.indexOf('-')!==-1) candidates.push(raw.split('-').slice(1).join('-').trim());
+      // dedupe
+      candidates = candidates.filter(function(v,i){ return v && candidates.indexOf(v)===i; });
+
+      function applyFound(found){
+        try{
+          const atAc = found['AÇÃO']||found.ACAO||found.acao||found.action||'';
+          const atEf = found['EFEITO']||found.EFEITO||found.efeito||found.effect||'';
+          const pp = found['PP']||found.pp||'';
+          const power = found['POWER']||found.power||found.DANO||'';
+          const acc = found['ACCURACY']||found.accuracy||'';
+          const gen = found['GEN']||found.GEN||'';
+          const tipo = found['TYPE']||found.type||found.TIPO||found['TIPAGEM']||found.tipagem||'';
+          const cat = found['CATEGORIA']||found.CATEGORIA||found.categoria||'';
+          const acEl2 = tile.querySelector('.move-acao'); if(acEl2 && !acEl2.textContent){ acEl2.textContent = atAc; acEl2.style.display = atAc ? 'block' : 'none'; }
+          const efEl2 = tile.querySelector('.move-efeito'); if(efEl2 && !efEl2.textContent){ efEl2.textContent = atEf; efEl2.style.display = atEf ? 'block' : 'none'; }
+          const statsEl2 = tile.querySelector('.move-stats'); if(statsEl2){ const parts2=[]; if(pp) parts2.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts2.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(acc) parts2.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts2.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl2.innerHTML = parts2.join(' &nbsp; '); statsEl2.style.display = parts2.length ? 'block' : 'none'; }
+          if(tipo){ const tipoEl = tile.querySelector('.move-tipo'); if(tipoEl) tipoEl.textContent = tipo; try{ tile.dataset.moveType = tipo.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){} }
+          if(cat){ const catEl = tile.querySelector('.move-categoria'); if(catEl) catEl.textContent = cat; }
+          try{ if(tipo){ const tipoClass = tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,''); tile.className = tile.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass; } }catch(e){}
+        }catch(e){/*ignore*/}
+      }
+
+      // tentar match imediato
+      for(var n of candidates){ try{ var f = (typeof findAttackDetails==='function')? findAttackDetails(n) : null; if(f){ applyFound(f); return; } }catch(e){}
+      }
+
+      // aguardar dados de ATACKS e tentar novamente
+      try{ if(typeof ensureAttacksLoaded === 'function'){
+        ensureAttacksLoaded(4000).then(function(){ try{ for(var n2 of candidates){ var f2 = (typeof findAttackDetails==='function')? findAttackDetails(n2) : null; if(f2){ applyFound(f2); break; } } }catch(e){} });
+      }}catch(e){}
+    }catch(e){}
+  }
+
+  // Ajusta a altura do painel combinado para igualar ao tamanho do card do Pokémon
+  function adjustCombinedPanelHeight(){
+    try{
+      var card = document.getElementById('smeargleCard');
+      var inner = document.getElementById('combinedInnerPanel');
+      if(!card || !inner) return;
+      var cardH = Math.max(120, card.offsetHeight || 200);
+      inner.style.boxSizing = 'border-box';
+      inner.style.height = cardH + 'px';
+      inner.style.minHeight = cardH + 'px';
+      inner.style.overflow = 'hidden';
+
+      var header = inner.querySelector('h4');
+      var headerH = header ? header.offsetHeight : 28;
+      var paddingApprox = 28;
+      var movesGrid = inner.querySelector('#combinedMovesGrid');
+      var movesH = Math.max(80, cardH - headerH - paddingApprox);
+      if(movesGrid){ movesGrid.style.maxHeight = movesH + 'px'; movesGrid.style.overflowY = 'auto'; }
+    }catch(e){ console.warn('adjustCombinedPanelHeight err', e); }
+  }
+
+  // chamar no resize e quando a janela for exibida
+  try{ window.addEventListener('resize', function(){ try{ setTimeout(adjustCombinedPanelHeight, 40); }catch(e){} }); }catch(e){}
 
   function renderParsedMoves(parsed){
     // hide old parsed list if present
@@ -331,46 +545,40 @@
             ${slotBadge}
           </div>
         `;
-        // preenche Ação / Efeito / Stats a partir do objeto mv (preferência) ou da tabela de ataques
+        // data attributes to help search/filter
+        try{
+          card.dataset.moveName = mv.nome || mv.name || '';
+          card.dataset.moveType = mv.tipo || mv.type || '';
+          card.dataset.moveEffect = mv.efeito || mv.effect || mv.EFEITO || '';
+          card.dataset.moveCategory = mv.categoria || mv.categoria || '';
+        }catch(e){}
+        // preenche Ação / Efeito / Stats a partir do objeto mv (preferência) ou buscando detalhes na tabela ATACKS/TMs
         try{
           const acEl = card.querySelector('.move-acao');
           const efEl = card.querySelector('.move-efeito');
           const statsEl = card.querySelector('.move-stats');
           // prefer mv properties (podem ter sido preenchidas por applyAttacksToParsed)
-          if(acEl){ acEl.textContent = mv.acao || mv.acao || ''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
-          if(efEl){ efEl.textContent = mv.efeito || mv.efeito || ''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
+          if(acEl){ acEl.textContent = mv.acao || mv.ACAO || mv.action || ''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
+          if(efEl){ efEl.textContent = mv.efeito || mv.EFEITO || mv.effect || ''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
           if(statsEl){
             const parts = [];
-            if(mv.pp) parts.push(`<span class="move-stat">PP: <b>${mv.pp}</b></span>`);
-            if(mv.power) parts.push(`<span class="move-stat">Pow: <b>${mv.power}</b></span>`);
-            if(mv.accuracy) parts.push(`<span class="move-stat">Acc: <b>${mv.accuracy}</b></span>`);
-            if(mv.gen) parts.push(`<span class="move-stat">Gen: <b>${mv.gen}</b></span>`);
+            const ppVal = mv.pp || mv.PP || '';
+            const powerVal = mv.power || mv.POWER || mv.Power || '';
+            const accVal = mv.accuracy || mv.ACCURACY || '';
+            const genVal = mv.gen || mv.GEN || '';
+            if(ppVal) parts.push(`<span class="move-stat">PP: <b>${ppVal}</b></span>`);
+            if(powerVal) parts.push(`<span class="move-stat">Pow: <b>${powerVal}</b></span>`);
+            if(accVal) parts.push(`<span class="move-stat">Acc: <b>${accVal}</b></span>`);
+            if(genVal) parts.push(`<span class="move-stat">Gen: <b>${genVal}</b></span>`);
             if(parts.length){ statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = 'block'; }
           }
-          // se ainda faltar, tentar buscar na tabela de ataques
-          if((!acEl || !acEl.textContent) || (!efEl || !efEl.textContent) || (!statsEl || !statsEl.textContent)){
-            const lookup = (typeof smeargleAtacksData !== 'undefined') ? smeargleAtacksData : (window.smeargleAtacksData || []);
-            if(Array.isArray(lookup) && lookup.length){
-              const nm = (mv.nome||'').toString().toLowerCase().trim();
-              const found = lookup.find(a=>{ const atn = ((a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a['ATACK_BR']||'')+'').toString().toLowerCase().trim(); return atn===nm || atn.includes(nm) || nm.includes(atn); });
-              if(found){
-                if(acEl && !acEl.textContent) { acEl.textContent = (found['AÇÃO']||found.ACAO||found.acao||found.action||'')+''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
-                if(efEl && !efEl.textContent) { efEl.textContent = (found['EFEITO']||found.EFEITO||found.efeito||found.effect||'')+''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
-                if(statsEl && !(statsEl && statsEl.textContent)){
-                  const pp = (found['PP']||found.pp||'')+'';
-                  const power = (found['POWER']||found.power||found.DANO||'')+'';
-                  const accuracy = (found['ACCURACY']||found.accuracy||found.ACCURACAO||'')+'';
-                  const gen = (found['GEN']||found.GEN||'')+'';
-                  const parts2 = [];
-                  if(pp) parts2.push(`<span class="move-stat">PP: <b>${pp}</b></span>`);
-                  if(power) parts2.push(`<span class="move-stat">Pow: <b>${power}</b></span>`);
-                  if(accuracy) parts2.push(`<span class="move-stat">Acc: <b>${accuracy}</b></span>`);
-                  if(gen) parts2.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`);
-                  statsEl.innerHTML = parts2.join(' &nbsp; ');
-                  statsEl.style.display = parts2.length ? 'block' : 'none';
-                }
-              }
-            }
+
+          // se ainda faltar informação, tentar buscar na tabela de ataques/TMs
+          const needAction = !(acEl && acEl.textContent);
+          const needEffect = !(efEl && efEl.textContent);
+          const needStats = !(statsEl && statsEl.textContent);
+          if(needAction || needEffect || needStats){
+            tryEnrichTileFromAttacks(card, mv);
           }
         }catch(e){}
         card.addEventListener('click', function(ev){ if(ev.target && ev.target.classList && ev.target.classList.contains('btn-add-parsed')) return; openCombinedAssignInline(Object.assign({}, mv), mv.assignedSlot?mv.assignedSlot-1:0); });
@@ -382,7 +590,39 @@
     renderParsedTms(parsed.tms||[]);
     // also populate inline assign (moves list + tms grid) if present
     try{ renderInlineAssign(parsed); }catch(e){}
+    // garantir alinhamento da altura do painel combinado com o card do Pokémon
+    try{ if(typeof adjustCombinedPanelHeight === 'function'){ setTimeout(adjustCombinedPanelHeight, 60); } }catch(e){}
+    // aplicar filtro de busca automaticamente após render (se houver termo na caixa)
+    try{ setTimeout(function(){ if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 120); }catch(e){}
   }
+
+  // Re-renderizar os parsed moves quando os dados de ATACKS/TMs estiverem disponíveis
+  function refreshParsedMovesAttacks(){
+    try{
+      if(window._builder_parsed){ renderParsedMoves(window._builder_parsed); }
+    }catch(e){ console.warn('refreshParsedMovesAttacks err', e); }
+  }
+  try{ window.refreshParsedMovesAttacks = refreshParsedMovesAttacks; }catch(e){}
+
+  // Se os dados de ATACKS vierem depois do carregamento deste script, observar e reenfileirar re-render
+  (function waitForAttackTable(){
+    try{
+      if(window.smeargleAtacksData && Array.isArray(window.smeargleAtacksData) && window._builder_parsed){
+        try{ refreshParsedMovesAttacks(); }catch(e){}
+        return;
+      }
+      var checks = 0;
+      var iv = setInterval(function(){
+        checks++;
+        if(window.smeargleAtacksData && Array.isArray(window.smeargleAtacksData) && window._builder_parsed){
+          try{ refreshParsedMovesAttacks(); }catch(e){}
+          clearInterval(iv);
+          return;
+        }
+        if(checks > 25) clearInterval(iv);
+      }, 200);
+    }catch(e){}
+  })();
 
     function renderInlineAssign(parsed){
       const movesContainer = safe('assignMovesListInline');
@@ -436,6 +676,7 @@
             // try to detect type using todosTMs or smeargleAtacksData; fallback to normal
             const tipoClass = (tipo && tipo.toString().trim()) ? tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'') : 'normal';
             tile.className += ' type-' + tipoClass;
+            try{ var tipoNorm = (tipo && tipo.toString().trim()) ? tipo.toString().trim() : 'Normal'; var tipoKey = tipoNorm.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); tile.dataset.moveType = tipoKey; }catch(e){}
           })();
             const slotOrig = tm.numero ? tm.numero : '';
             const maxSel = document.getElementById('selectMaxBaseMoves') ? parseInt(document.getElementById('selectMaxBaseMoves').value,10) : 9;
@@ -507,6 +748,8 @@
     const grid = document.createElement('div'); grid.className='tm-grid';
     tms.forEach((tm,i)=>{
       const tile = document.createElement('div'); tile.className='tm-tile move-card builder-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
+      try{ tile.dataset.moveName = tm.nome || tm.name || ''; tile.dataset.moveType = (tm.tipagem||tm.tipo||tm.type||''); tile.dataset.moveEffect = tm.efeito||tm.effect||tm.EFEITO||''; tile.dataset.moveCategory = tm.categoria||''; }catch(e){}
+      try{ tile.dataset.moveName = tm.nome || tm.name || ''; tile.dataset.moveType = (tm.tipagem||tm.tipo||tm.type||''); tile.dataset.moveEffect = tm.efeito||tm.effect||tm.EFEITO||''; tile.dataset.moveCategory = tm.categoria||''; }catch(e){}
       // preencher atributos diretos vindos do parsed tm (caso applyAttacksToParsed tenha populado)
       try{
         if(tm && typeof tm === 'object'){
@@ -536,6 +779,7 @@
         // try to detect type using todosTMs or smeargleAtacksData; fallback to normal
         const tipoClass2 = (tipo && tipo.toString().trim()) ? tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'') : 'normal';
         tile.className += ' type-' + tipoClass2;
+        try{ var tipoNorm2 = (tipo && tipo.toString().trim()) ? tipo.toString().trim() : (displayTipo2||'TM'); var tipoKey2 = tipoNorm2.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); tile.dataset.moveType = tipoKey2; }catch(e){}
       })();
       const slotOrig2 = tm.numero ? tm.numero : '';
       const maxSel2 = document.getElementById('selectMaxBaseMoves') ? parseInt(document.getElementById('selectMaxBaseMoves').value,10) : 9;
@@ -588,6 +832,7 @@
       grid.appendChild(tile);
     });
     c.appendChild(grid);
+    try{ setTimeout(function(){ if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 90); }catch(e){}
   }
 
   // Render TM grid into a given container for assigning to a specific moveObj
@@ -668,15 +913,17 @@
           <button data-idx-tm="${i}" class="btn-add-tm" aria-label="Adicionar TM ${tm.nome || ''}" tabindex="0">Adicionar</button>
         </div>
       `;
-      // preencher AÇÃO / EFEITO / STATS a partir de tm, se já disponíveis
-      try{
-        const acEl = tile.querySelector('.move-acao');
-        const efEl = tile.querySelector('.move-efeito');
-        const statsEl = tile.querySelector('.move-stats');
-        if(acEl){ acEl.textContent = tm.acao || tm.ACAO || tm['AÇÃO'] || ''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
-        if(efEl){ efEl.textContent = tm.efeito || tm.EFEITO || tm['EFEITO'] || ''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
-        if(statsEl){ const parts = []; const pp = tm.pp || tm.PP || ''; const power = tm.power || tm.POWER || tm.DANO || ''; const acc = tm.accuracy || tm.ACCURACY || tm.ACCURACAO || ''; const gen = tm.gen || tm.GEN || ''; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(acc) parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
-      }catch(e){}
+            // preencher AÇÃO / EFEITO / STATS a partir de tm, se já disponíveis
+            try{
+              const acEl = tile.querySelector('.move-acao');
+              const efEl = tile.querySelector('.move-efeito');
+              const statsEl = tile.querySelector('.move-stats');
+              if(acEl){ acEl.textContent = tm.acao || tm.ACAO || tm['AÇÃO'] || ''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
+              if(efEl){ efEl.textContent = tm.efeito || tm.EFEITO || tm['EFEITO'] || ''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
+              if(statsEl){ const parts = []; const pp = tm.pp || tm.PP || ''; const power = tm.power || tm.POWER || tm.DANO || ''; const acc = tm.accuracy || tm.ACCURACY || tm.ACCURACAO || ''; const gen = tm.gen || tm.GEN || ''; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(acc) parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
+            }catch(e){}
+        // tentar enriquecer tile usando variantes do nome e aguardando tabela de ATACKS caso necessário
+        try{ tryEnrichTileFromAttacks(tile, tm); }catch(e){}
       tile.tabIndex=0; tile.setAttribute('role','button');
       tile.addEventListener('click', ()=>{
         const name = tile.dataset.tmName;
@@ -687,6 +934,7 @@
       grid.appendChild(tile);
     });
     container.appendChild(grid);
+    try{ setTimeout(function(){ if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 80); }catch(e){}
   }
 
   function updateTmCounter(){ const el = safe('tmCountVal'); if(!el) return; const n = (window.builderMeta && Array.isArray(window.builderMeta.tms))?window.builderMeta.tms.length:0; el.textContent = n; }
@@ -721,14 +969,14 @@
             if(lookup){
               if(tmNumero && lookup.byNumber && lookup.byNumber.has(String(tmNumero))){ found = lookup.byNumber.get(String(tmNumero)); }
               if(!found){
-                const nm = normalizeName(displayName);
-                // try exact name
+                const nm = (typeof _key === 'function') ? _key(displayName) : (displayName||'').toString().toLowerCase().trim();
+                // try exact name using normalized key
                 if(lookup.byName && lookup.byName.has(nm)) found = lookup.byName.get(nm);
                 // try fuzzy includes
                 if(!found && lookup.raw && Array.isArray(lookup.raw)){
                   const rawFound = lookup.raw.find(x=>{
                     try{
-                      const nval = normalizeName((x.nome||x['NOME DO TM']||x.NOME||'')+'');
+                      const nval = (typeof _key === 'function') ? _key((x.nome||x['NOME DO TM']||x.NOME||'')+ '') : ((x.nome||x['NOME DO TM']||x.NOME||'')+ '').toString().toLowerCase();
                       const numval = String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'');
                       if(tmNumero && numval && numval === String(tmNumero)) return true;
                       if(nval && nm && (nval === nm || nval.includes(nm) || nm.includes(nval))) return true;
@@ -755,6 +1003,7 @@
             const tipoClass = (tip && tip.toString().trim()) ? tip.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,'') : 'normal';
             // remover classes type-* existentes
             tile.className = tile.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass;
+            try{ var tk = (tip && tip.toString().trim()) ? tip.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim() : 'tm'; tile.dataset.moveType = tk; }catch(e){}
 
             // preencher ação / efeito
             try{
@@ -823,7 +1072,7 @@
                   try{
                     const tip2 = (foundAtk['TYPE']||foundAtk.type||foundAtk.TIPO||foundAtk['TIPAGEM']||'')+'';
                     if(tip2 && tile.querySelector('.move-tipo')) tile.querySelector('.move-tipo').textContent = tip2;
-                    if(tip2){ const tipoClass2 = tip2.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,''); tile.className = tile.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass2; }
+                    if(tip2){ const tipoClass2 = tip2.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,''); tile.className = tile.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass2; try{ tile.dataset.moveType = tip2.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){} }
                   }catch(e){}
                 }
               }
@@ -857,7 +1106,7 @@
               const efEl = card.querySelector('.move-efeito'); if(efEl){ efEl.textContent = (found['EFEITO']||found.EFEITO||found.efeito||found.effect||'')+''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
               const statsEl = card.querySelector('.move-stats'); if(statsEl){ const pp = (found['PP']||found.pp||'')+''; const power = (found['POWER']||found.power||found.DANO||'')+''; const accuracy = (found['ACCURACY']||found.accuracy||found.ACCURACAO||'')+''; const gen = (found['GEN']||found.GEN||'')+''; const parts = []; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(accuracy) parts.push(`<span class="move-stat">Acc: <b>${accuracy}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
               // tipo
-              try{ const tip2 = (found['TYPE']||found.type||found.TIPO||found['TIPAGEM']||'')+''; if(tip2 && card.querySelector('.move-tipo')) card.querySelector('.move-tipo').textContent = tip2; if(tip2){ const tipoClass2 = tip2.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,''); card.className = card.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass2; } }catch(e){}
+                try{ const tip2 = (found['TYPE']||found.type||found.TIPO||found['TIPAGEM']||'')+''; if(tip2 && card.querySelector('.move-tipo')) card.querySelector('.move-tipo').textContent = tip2; if(tip2){ const tipoClass2 = tip2.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,''); card.className = card.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass2; try{ card.dataset.moveType = tip2.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){} } }catch(e){}
             }
           }catch(e){}
         });
@@ -1012,9 +1261,10 @@
         if(parsed && idx !== null && parsed[idx]) tmObj = parsed[idx];
         // fallback: usar buildTmLookup (mais robusto) ou procurar em window.todosTMs
         if(!tmObj){
-          try{
+            try{
             const lookup = (typeof buildTmLookup === 'function') ? buildTmLookup() : (window.__tmLookup || null);
-            const nm = (tmName||'').toString().toLowerCase().trim();
+            const nmRaw = (tmName||'').toString();
+            const nm = (typeof _key === 'function') ? _key(nmRaw) : nmRaw.toLowerCase().trim();
             const badgeNumMatch = tile && tile.querySelector('.slot-badge') ? ((tile.querySelector('.slot-badge').textContent||'').match(/\d+/)||[])[0] : '';
             if(lookup){
               // tentar por número (normalizando)
@@ -1022,16 +1272,15 @@
                 const byNum = lookup.byNumber.get(String(badgeNumMatch));
                 if(byNum) tmObj = byNum;
               }
-              // tentar por nome
+              // tentar por nome usando chave normalizada
               if(!tmObj && lookup.byName){
-                const byName = lookup.byName.get(nm);
-                if(byName) tmObj = byName;
+                if(lookup.byName.has(nm)) tmObj = lookup.byName.get(nm);
               }
               // se ainda não achou, varrer raw com correspondência flexível
               if(!tmObj && Array.isArray(lookup.raw)){
                 const rawFound = lookup.raw.find(x=>{
                   try{
-                    const nval = ((x.nome||x['NOME DO TM']||x.NOME||'')+ '').toString().toLowerCase();
+                    const nval = (typeof _key === 'function') ? _key((x.nome||x['NOME DO TM']||x.NOME||'')+ '') : ((x.nome||x['NOME DO TM']||x.NOME||'')+ '').toString().toLowerCase();
                     const numval = String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'');
                     if(badgeNumMatch && numval && numval === String(badgeNumMatch)) return true;
                     if(nval && nm && (nval === nm || nval.includes(nm) || nm.includes(nval))) return true;
@@ -1152,6 +1401,15 @@
     const movesList = safe('movesList'); if(movesList){ movesList.addEventListener('click', function(ev){ const item = ev.target.closest ? ev.target.closest('.selected-move-item') : null; if(!item) return; const slot = parseInt(item.dataset-slot,10); if(!slot) return; const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1]); openCombinedAssignInline(moveObj, slot-1); }); }
     // also update counter display
     updateTmCounter();
+    // ensure search input listeners are attached when builder UI initializes (SPA navigation)
+    try{
+      var inp = document.getElementById('moveSearchInput');
+      var clearBtn = document.getElementById('clearMoveSearch');
+      if(inp){ inp.removeEventListener && inp.removeEventListener('input', window._builder_search_handler); window._builder_search_handler = function(){ try{ if(window.filterCombinedMoves) window.filterCombinedMoves(); }catch(e){} }; inp.addEventListener('input', window._builder_search_handler); inp.addEventListener('keyup', window._builder_search_handler); }
+      // If input already has value, immediately run filter to reflect current state
+      try{ if(inp && inp.value && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }catch(e){}
+      if(clearBtn){ clearBtn.removeEventListener && clearBtn.removeEventListener('click', window._builder_clear_handler); window._builder_clear_handler = function(){ try{ var i=document.getElementById('moveSearchInput'); if(i){ i.value=''; if(window.filterCombinedMoves) window.filterCombinedMoves(); i.focus(); } }catch(e){} }; clearBtn.addEventListener('click', window._builder_clear_handler); }
+    }catch(e){ /* ignore */ }
   }
 
   // try to init now if document ready

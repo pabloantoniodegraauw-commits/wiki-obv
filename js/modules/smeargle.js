@@ -205,7 +205,9 @@ async function carregarDadosSmeargle() {
         } else {
             throw new Error('Formato de resposta de ataques não reconhecido');
         }
-                smeargleAtacksData = atacksData;
+                    smeargleAtacksData = atacksData;
+                    try{ window.smeargleAtacksData = smeargleAtacksData; }catch(e){}
+                    try{ if(typeof atualizarCardSmeargle === 'function'){ setTimeout(atualizarCardSmeargle, 120); } }catch(e){}
 
                 // 2.5 Tentar carregar abilities (fallback) — algumas habilidades aparecem como "Flame Body" etc.
                 try {
@@ -692,6 +694,144 @@ function atualizarCardSmeargle() {
     
     // Atualizar badge
     typeBadge.innerHTML = `<span class="type-badge type-${tipoDom.toLowerCase()}">${tipoDom}</span>`;
+    // Injetar bloco no estilo Pokédex: tipos, fraquezas e status (minimizado e idempotente)
+    try{
+        // localizar container existente ou criar novo bloco após o badge
+        var existingTypes = card.querySelector('.pokemon-types');
+        // função auxiliar para extrair campos de um objeto Pokémon com várias chaves possíveis
+        function pick(p, keys, fallback){ try{ for(var k of keys){ if(p && (p[k]!==undefined) && p[k]!==null) return p[k]; } }catch(e){} return fallback; }
+        // tentar obter tipo1/tipo2 e stats a partir do Pokémon de origem (primeiro slot) procurado em smearglePokemonData
+        var tipo1 = '';
+        var tipo2 = '';
+        var hp = '0', ataque = '0', defesa = '0', ataqueEsp = '0', defesaEsp = '0', velocidade = '0';
+        try{
+            var first = smeargleSelectedMoves.find(Boolean);
+            var candidateName = null;
+            if(first && first.origem) candidateName = first.origem;
+            if(!candidateName && window.builderMeta && window.builderMeta.name) candidateName = window.builderMeta.name;
+            if(!candidateName && window.builderSelectedPokemonName) candidateName = window.builderSelectedPokemonName;
+            var found = null;
+            if(candidateName && Array.isArray(smearglePokemonData) && smearglePokemonData.length){
+                var norm = normalizeName(candidateName || '');
+                found = smearglePokemonData.find(function(p){
+                    try{
+                        var pok = pick(p, ['POKEMON','Pokemon','pokemon','Name','NAME','EV'], '');
+                        var ev = pick(p, ['EV','Ev','ev'], '');
+                        var combined = (pok + ' ' + ev).toString();
+                        if(!combined) return false;
+                        combined = normalizeName(combined);
+                        if(!norm) return false;
+                        if(combined === norm) return true;
+                        if(combined.includes(norm) || norm.includes(combined)) return true;
+                        // fallback: verificar campos individuais
+                        var pokNorm = normalizeName(pok||''); if(pokNorm && (pokNorm===norm || pokNorm.includes(norm) || norm.includes(pokNorm))) return true;
+                        var evNorm = normalizeName(ev||''); if(evNorm && (evNorm===norm || evNorm.includes(norm) || norm.includes(evNorm))) return true;
+                        return false;
+                    }catch(e){return false}
+                });
+            }
+            if(found){
+                tipo1 = pick(found, ['Type 1','TYPE 1','Type1','TIPO1','TIPO 1','Tipo','TYPE','type'], tipoDom);
+                tipo2 = pick(found, ['Type 2','TYPE 2','Type2','TIPO2','TIPO 2','Tipo 2','type2'], '');
+                hp = pick(found, ['HP','Hp','hp'], hp);
+                ataque = pick(found, ['Attack','ATK','ATQUE','Attack'], ataque);
+                defesa = pick(found, ['Defense','DEF','Defense'], defesa);
+                ataqueEsp = pick(found, ['Sp.Attack','SpAttack','Sp. Attack','Sp_Attack','Spatk','Sp.Atk','SpAttack'], ataqueEsp);
+                defesaEsp = pick(found, ['Sp.Defense','SpDefense','Sp. Defense','Sp_Defense','SpDef','Sp.Def'], defesaEsp);
+                velocidade = pick(found, ['Speed','SPD','Velocidade','speed'], velocidade);
+            }
+        }catch(e){ /* ignore */ }
+
+        // fallback para pelo menos ter um tipo dominante
+        if(!tipo1) tipo1 = tipoDom || 'Normal';
+
+        // montar o bloco HTML (idempotente)
+        var pokedexBlock = card.querySelector('.builder-pokedex-block');
+        var fraquezasHTML = (typeof gerarFraquezasHTML === 'function') ? gerarFraquezasHTML(tipo1, tipo2) : '';
+        var typesHTML = `<div class="pokemon-types"><span class="type-badge type-${(tipo1||'').toString().toLowerCase()}"><span class="type-icon">${(typeof getTypeIcon==='function'?getTypeIcon(tipo1):'')}</span>${tipo1}</span>` + (tipo2?`<span class="type-badge type-${(tipo2||'').toString().toLowerCase()}"><span class="type-icon">${(typeof getTypeIcon==='function'?getTypeIcon(tipo2):'')}</span>${tipo2}</span>`:'') + `</div>`;
+        var statsHTML = `
+            <div class="pokemon-stats stats-hidden">
+                <div class="stat"><div class="stat-value">${hp}</div><div class="stat-label">HP</div></div>
+                <div class="stat"><div class="stat-value">${ataque}</div><div class="stat-label">Ataque</div></div>
+                <div class="stat"><div class="stat-value">${defesa}</div><div class="stat-label">Defesa</div></div>
+                <div class="stat"><div class="stat-value">${ataqueEsp}</div><div class="stat-label">Sp.Atk</div></div>
+                <div class="stat"><div class="stat-value">${defesaEsp}</div><div class="stat-label">Sp.Def</div></div>
+                <div class="stat"><div class="stat-value">${velocidade}</div><div class="stat-label">Velocidade</div></div>
+            </div>`;
+
+        if(!pokedexBlock){
+            pokedexBlock = document.createElement('div'); pokedexBlock.className = 'builder-pokedex-block';
+            pokedexBlock.innerHTML = typesHTML + `
+                <button class="btn-toggle-weaknesses" onclick="this.nextElementSibling.classList.toggle('weaknesses-hidden');this.classList.toggle('stats-open')">
+                    <i class="fas fa-shield-alt"></i> Fraquezas
+                    <i class="fas fa-chevron-down toggle-arrow"></i>
+                </button>
+                <div class="pokemon-weaknesses weaknesses-hidden">` + fraquezasHTML + `</div>
+                <button class="btn-toggle-stats" onclick="this.nextElementSibling.classList.toggle('stats-hidden');this.classList.toggle('stats-open')">
+                    <i class="fas fa-chart-bar"></i> Status
+                    <i class="fas fa-chevron-down toggle-arrow"></i>
+                </button>
+                ` + statsHTML;
+            // inserir antes da lista de golpes selecionados para manter layout similar ao Pokédex
+            var insertBeforeEl = card.querySelector('.smeargle-moves-selected') || card.querySelector('#smeargleMovesSelected');
+            if(insertBeforeEl) insertBeforeEl.parentNode.insertBefore(pokedexBlock, insertBeforeEl);
+            else card.appendChild(pokedexBlock);
+        } else {
+            // atualizar conteúdo existente (types / fraquezas / stats)
+            try{ var typesNode = pokedexBlock.querySelector('.pokemon-types'); if(typesNode) typesNode.outerHTML = typesHTML; }catch(e){}
+            try{ var wnode = pokedexBlock.querySelector('.pokemon-weaknesses'); if(wnode) wnode.innerHTML = fraquezasHTML; }catch(e){}
+            try{ var statsNode = pokedexBlock.querySelector('.pokemon-stats'); if(statsNode) statsNode.outerHTML = statsHTML; }catch(e){}
+        }
+    }catch(e){ console.warn('Erro injetando bloco Pokédex no card Smeargle', e); }
+
+    // Tornar os botões mais robustos e preencher stats a partir de parsed/fallbacks
+    try{
+        var pokedexBlock = card.querySelector('.builder-pokedex-block');
+        if(pokedexBlock){
+            // garantir botões interativos mesmo se houver overlays
+            var wBtn = pokedexBlock.querySelector('.btn-toggle-weaknesses');
+            var sBtn = pokedexBlock.querySelector('.btn-toggle-stats');
+            [wBtn, sBtn].forEach(function(b){ if(b){ b.style.pointerEvents = 'auto'; b.style.zIndex = 3; b.style.position = b.style.position || 'relative'; } });
+            // substituir onclick inline por listeners que previnem propagation
+            if(wBtn){ wBtn.removeAttribute && wBtn.removeAttribute('onclick'); wBtn.addEventListener('click', function(ev){ try{ ev.preventDefault(); ev.stopPropagation(); var target = this.nextElementSibling; if(target){ target.classList.toggle('weaknesses-hidden'); this.classList.toggle('stats-open'); } }catch(e){} }); }
+            if(sBtn){ sBtn.removeAttribute && sBtn.removeAttribute('onclick'); sBtn.addEventListener('click', function(ev){ try{ ev.preventDefault(); ev.stopPropagation(); var target = this.nextElementSibling; if(target){ target.classList.toggle('stats-hidden'); this.classList.toggle('stats-open'); } }catch(e){} }); }
+
+            // preencher stats se estiverem vazios/zeros usando parsed meta como fallback
+            try{
+                var statsNode = pokedexBlock.querySelector('.pokemon-stats');
+                if(statsNode){
+                    var vals = Array.from(statsNode.querySelectorAll('.stat .stat-value')).map(function(el){ return (el && el.textContent)?el.textContent.trim():'0'; });
+                    var allZero = vals.every(function(v){ return v === '0' || v === '' || v === '0' ; });
+                    if(allZero){
+                        // tentar usar parsed meta (resultado do parsePokedexText)
+                        var pm = (window._builder_parsed && window._builder_parsed.meta && window._builder_parsed.meta.stats) ? window._builder_parsed.meta.stats : null;
+                        if(pm){
+                            function pickStat(obj, keys, def){ try{ for(var i=0;i<keys.length;i++){ var k=keys[i]; if(obj[k]!==undefined && obj[k]!==null && obj[k]!=='' ) return obj[k]; } }catch(e){} return def; }
+                            var nhp = pickStat(pm, ['HP','hp','Hp','Hp.','hpValue'], vals[0]||'0');
+                            var natk = pickStat(pm, ['Attack','ATK','atk','attack'], vals[1]||'0');
+                            var ndef = pickStat(pm, ['Defense','DEF','defense','def'], vals[2]||'0');
+                            var nspa = pickStat(pm, ['Sp.Attack','SpAttack','SpAtk','spatk'], vals[3]||'0');
+                            var nspd = pickStat(pm, ['Sp.Defense','SpDefense','spdef','spdf'], vals[4]||'0');
+                            var nvel = pickStat(pm, ['Speed','speed','SPD'], vals[5]||'0');
+                            var targets = statsNode.querySelectorAll('.stat .stat-value');
+                            if(targets && targets.length>=6){ try{ targets[0].textContent = nhp; targets[1].textContent = natk; targets[2].textContent = ndef; targets[3].textContent = nspa; targets[4].textContent = nspd; targets[5].textContent = nvel; }catch(e){} }
+                        }
+                        // se ainda zeros, tentar extrair de smearglePokemonData (já feito antes), caso contrário deixar como está
+                    }
+                }
+            }catch(e){ console.warn('Erro preenchendo stats fallback', e); }
+
+            // Se não houver dados para stats, esconder botão de Status para evitar cliques inúteis
+            try{
+                var statsVals = pokedexBlock.querySelectorAll('.pokemon-stats .stat .stat-value');
+                if(statsVals && statsVals.length){
+                    var anyNonZero = Array.from(statsVals).some(function(el){ var t = (el.textContent||'').toString().trim(); return t !== '0' && t !== '' && t !== '0'; });
+                    if(!anyNonZero && sBtn) sBtn.style.display = 'none';
+                    else if(sBtn) sBtn.style.display = '';
+                }
+            }catch(e){}
+        }
+    }catch(e){ console.warn('Erro ao robustecer botões Pokédex', e); }
     // Atualizar imagem do Smeargle/card principal
     try{
         const imgEl = document.querySelector('.smeargle-img');
@@ -790,6 +930,37 @@ function atualizarCardSmeargle() {
                 }
             }
         }catch(e){ console.warn('Erro atualizando nome Smeargle', e); }
+
+    // Calcular e exibir power total dos golpes selecionados
+    try{
+        const powerEl = document.getElementById('smearglePowerTotal');
+        if(powerEl){
+            const total = smeargleSelectedMoves.filter(Boolean).reduce((acc,m)=>{
+                try{
+                    const p = obterPowerGolpe(m);
+                    return acc + (Number.isFinite(p) ? p : 0);
+                }catch(e){ return acc; }
+            }, 0);
+            powerEl.innerHTML = 'POWER TOTAL: <span class="power-value">' + total + '</span>';
+        }
+    }catch(e){ /* ignore */ }
+    // Calcular e exibir efeitos combinados
+    try{
+        const effectsEl = document.getElementById('smeargleEffects');
+        if(effectsEl){
+            const efeitos = [];
+            smeargleSelectedMoves.filter(Boolean).forEach(m=>{
+                const ef = obterEfeitoGolpe(m);
+                if(ef){ if(!efeitos.includes(ef)) efeitos.push(ef); }
+            });
+            if(efeitos.length){
+                // mostrar cada efeito em linha separada
+                effectsEl.innerHTML = '<strong>EFEITOS:</strong><br>' + efeitos.map(e=>`<div class="effect-line">${e}</div>`).join('');
+            } else {
+                effectsEl.innerHTML = 'EFEITOS: —';
+            }
+        }
+    }catch(e){ /* ignore */ }
     
     // Atualizar lista de golpes
     if (countSelected === 0) {
@@ -813,12 +984,17 @@ function atualizarCardSmeargle() {
                 }
                 const tipoResolvido = (typeof obterTipoGolpe === 'function') ? (obterTipoGolpe(golpe) || golpe.tipo || 'Normal') : (golpe.tipo || 'Normal');
                 const tipoCategoriaLine = `${tipoResolvido || ''}${tmText ? (' • ' + tmText) : (golpe.categoria ? (' • ' + golpe.categoria) : '')}`;
+                // calcular power e efeito para exibir no item
+                let _powerVal = obterPowerGolpe(golpe);
+                let _powerText = '';
+                try{ if(_powerVal && Number.isFinite(_powerVal)) _powerText = String(_powerVal); else if(golpe.POWER||golpe.power) _powerText = (golpe.POWER||golpe.power); }catch(e){}
                 items.push(`
                     <div class="selected-move-item" data-slot="${index+1}">
                         <span class="move-number">${index + 1}</span>
                         <span class="move-info">
                             <strong>${golpe.nome}</strong>
                             <small>${tipoCategoriaLine}</small>
+                            ${_powerText ? `<small style="display:block;margin-top:4px">Power: <b>${_powerText}</b></small>` : ''}
                             <span class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-left:6px;display:inline-block;margin-top:6px;">
                                 <i class='fas fa-hashtag'></i> Slot: <b>${slotOrigem}</b>
                             </span>
@@ -960,7 +1136,8 @@ function obterTipoGolpe(golpe){
                     }
                     if(found){ const tip = found['TIPAGEM DO TM'] || found.TIPAGEM || found.tipagem || found.tipo || found.type || ''; if(tip) tipos.push(String(tip).trim()); }
                 } else if(tm.nome && lookup && lookup.byName){
-                    const found = lookup.byName.get((tm.nome||'').toString().toLowerCase().trim());
+                    const nmKey = (typeof _key === 'function') ? _key((tm.nome||'').toString()) : (tm.nome||'').toString().toLowerCase().trim();
+                    const found = lookup.byName.get(nmKey);
                     if(found){ const tip = found['TIPAGEM DO TM'] || found.TIPAGEM || found.tipagem || found.tipo || found.type || ''; if(tip) tipos.push(String(tip).trim()); }
                 }
             });
@@ -987,6 +1164,108 @@ function obterTipoGolpe(golpe){
     }catch(e){}
 
     return 'Normal';
+}
+
+// Retorna o valor numérico de POWER para um golpe (procura em campos do próprio objeto,
+// busca na tabela de ataques `smeargleAtacksData` por nome, e tenta lookup por número de TM)
+function obterPowerGolpe(golpe){
+    try{
+        if(!golpe) return 0;
+        // 1) checar propriedades diretas
+        const candidates = [golpe.power, golpe.POWER, golpe.Power, golpe['POWER'], golpe['Power']];
+        for(const c of candidates){ if(typeof c !== 'undefined' && c !== null){ const s = String(c).trim(); const m = s.match(/-?\d+/); if(m) return parseInt(m[0],10); } }
+
+        // 2) se tem número de TM, tentar buscar no lookup por numero
+        try{
+            const lookup = (typeof buildTmLookup === 'function') ? buildTmLookup() : (window.__tmLookup || null);
+            if(golpe.numero && lookup){
+                const numClean = String(golpe.numero).replace(/\D/g,'');
+                let found = null;
+                if(lookup.byNumber && lookup.byNumber.has(String(numClean))) found = lookup.byNumber.get(String(numClean));
+                if(!found && Array.isArray(lookup.raw)) found = lookup.raw.find(x=> String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'') === String(numClean));
+                if(found){ const pow = found.POWER || found.power || found.Power || found['POWER'] || found['Power']; if(pow) { const mm = String(pow).match(/-?\d+/); if(mm) return parseInt(mm[0],10); } }
+            }
+        }catch(e){}
+
+        // 3) tentar buscar por nome na tabela smeargleAtacksData exposta em window ou em qualquer global que pareça conter ataques
+        try{
+            const key = simplifyForCompare(golpe.nome || '');
+            // fontes preferenciais
+            const candidates = [window.smeargleAtacksData, smeargleAtacksData, window.todosAtacks, window.todos, window.todosTMs];
+            for(const tbl of candidates){
+                if(Array.isArray(tbl) && tbl.length){
+                    let found = tbl.find(a => simplifyForCompare((a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a.nome||a.NAME||'') + '') === key);
+                    if(!found){ found = tbl.find(a => { const atn = (a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a.nome||'')+''; const s = simplifyForCompare(atn); return s && key && (s.includes(key) || key.includes(s)); }); }
+                    if(found){ const pow = found.POWER || found.power || found.Power || found['POWER'] || found['Power']; if(pow){ const mm = String(pow).match(/-?\d+/); if(mm) return parseInt(mm[0],10); } }
+                }
+            }
+            // fallback: vasculhar window em busca de arrays que pareçam tabelas de ataques
+            for(const k in window){
+                try{
+                    const v = window[k];
+                    if(Array.isArray(v) && v.length && typeof v[0] === 'object'){
+                        const keys = Object.keys(v[0]).join(' ').toUpperCase();
+                        if(/ATACK|POWER|PP|EFEITO|TIPAGEM|NOME/.test(keys)){
+                            let f = v.find(x=> simplifyForCompare((x['ATACK']||x.nome||x['NOME DO TM']||x.name||'')+'') === key);
+                            if(!f) f = v.find(x=> { const atn=(x['ATACK']||x.nome||x['NOME DO TM']||x.name||'')+''; const s=simplifyForCompare(atn); return s && key && (s.includes(key) || key.includes(s)); });
+                            if(f){ const pow = f.POWER||f.power||f.Power||f['POWER']||f['Power']; if(pow){ const mm = String(pow).match(/-?\d+/); if(mm) return parseInt(mm[0],10); } }
+                        }
+                    }
+                }catch(e){}
+            }
+        }catch(e){}
+
+        return 0;
+    }catch(e){ return 0; }
+}
+
+// Obter texto de EFEITO para um golpe (procura no próprio objeto, em smeargleAtacksData e em lookup de TMs)
+function obterEfeitoGolpe(golpe){
+    try{
+        if(!golpe) return '';
+        const candidates = [golpe.efeito, golpe.EFEITO, golpe.effect, golpe.EFFECT, golpe.Efeito, golpe['EFEITO']];
+        for(const c of candidates){ if(typeof c !== 'undefined' && c !== null){ const s = String(c).trim(); if(s) return s; } }
+
+        // tentar lookup por numero de TM
+        try{
+            const lookup = (typeof buildTmLookup === 'function') ? buildTmLookup() : (window.__tmLookup || null);
+            if(golpe.numero && lookup){
+                const numClean = String(golpe.numero).replace(/\D/g,'');
+                let found = null;
+                if(lookup.byNumber && lookup.byNumber.has(String(numClean))) found = lookup.byNumber.get(String(numClean));
+                if(!found && Array.isArray(lookup.raw)) found = lookup.raw.find(x=> String(x.numero||x.NUMERO||x['Número']||'').replace(/\D/g,'') === String(numClean));
+                if(found){ const ef = found.EFEITO || found.efeito || found.effect || found.Effect || found['EFFECT']; if(ef) return String(ef).trim(); }
+            }
+        }catch(e){}
+
+        // buscar por nome na tabela smeargleAtacksData exposta ou em qualquer global de ataques
+        try{
+            const key = simplifyForCompare(golpe.nome || '');
+            const candidates = [window.smeargleAtacksData, smeargleAtacksData, window.todosAtacks, window.todos, window.todosTMs];
+            for(const tbl of candidates){
+                if(Array.isArray(tbl) && tbl.length){
+                    let found = tbl.find(a => simplifyForCompare((a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a.nome||a.NAME||'') + '') === key);
+                    if(!found){ found = tbl.find(a => { const atn = (a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a.nome||'')+''; const s = simplifyForCompare(atn); return s && key && (s.includes(key) || key.includes(s)); }); }
+                    if(found){ const ef = found.EFEITO || found.efeito || found.effect || found.Effect || found['EFFECT']; if(ef) return String(ef).trim(); }
+                }
+            }
+            for(const k in window){
+                try{
+                    const v = window[k];
+                    if(Array.isArray(v) && v.length && typeof v[0] === 'object'){
+                        const keys = Object.keys(v[0]).join(' ').toUpperCase();
+                        if(/ATACK|POWER|PP|EFEITO|TIPAGEM|NOME/.test(keys)){
+                            let f = v.find(x=> simplifyForCompare((x['ATACK']||x.nome||x['NOME DO TM']||x.name||'')+'') === key);
+                            if(!f) f = v.find(x=> { const atn=(x['ATACK']||x.nome||x['NOME DO TM']||x.name||'')+''; const s=simplifyForCompare(atn); return s && key && (s.includes(key) || key.includes(s)); });
+                            if(f){ const ef = f.EFEITO||f.efeito||f.effect||f.Effect||f['EFFECT']; if(ef) return String(ef).trim(); }
+                        }
+                    }
+                }catch(e){}
+            }
+        }catch(e){}
+
+        return '';
+    }catch(e){ return ''; }
 }
 
 // Remover golpe

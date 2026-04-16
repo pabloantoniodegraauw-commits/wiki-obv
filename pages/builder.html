@@ -16,7 +16,13 @@
         <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="Pokémon" class="smeargle-img">
       </div>
         <h3 class="smeargle-name">Build</h3>
-        <div class="smeargle-type-badge" id="smeargleTypeBadge"><span class="type-badge type-normal">Tipo</span></div>
+        <div class="power-box" style="margin-top:8px;">
+          <div id="smearglePowerTotal" style="font-size:0.95em;color:#000;opacity:1;">POWER TOTAL: <span class="power-value">0</span></div>
+        </div>
+        <div class="effects-box" style="margin-top:8px;">
+          <div id="smeargleEffects" style="font-size:0.9em;color:#000;opacity:0.95;">EFEITOS: —</div>
+        </div>
+          <div class="smeargle-type-badge" id="smeargleTypeBadge"><span class="type-badge type-normal">Tipo</span></div>
 
         <div class="smeargle-moves-selected" id="smeargleMovesSelected">
             <div class="moves-selected-title">
@@ -49,13 +55,14 @@
             <h3>Golpes detectados</h3>
             <!-- Combined single window: moves grid (style Smeargle) + TMs on right -->
             <div id="combinedPanel" style="display:flex;flex-direction:column;gap:12px;align-items:stretch;">
-              <div style="width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;max-height:40vh;overflow:auto">
+              <div id="combinedInnerPanel" style="width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;box-sizing:border-box;flex:0 0 auto;height:auto;overflow:hidden">
                 <h4 style="margin-top:0;margin-bottom:8px">Golpes detectados</h4>
+                <div class="search-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                  <input id="moveSearchInput" type="search" placeholder="Pesquisar golpes, tipo, efeito..." style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:rgba(255,255,255,0.95);color:#000">
+                  <div id="searchCount" style="min-width:140px;text-align:right;font-size:0.95em;color:#fff;opacity:0.95">0 resultados</div>
+                  <button id="clearMoveSearch" class="btn-action" title="Limpar">Limpar</button>
+                </div>
                 <div id="combinedMovesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
-              </div>
-              <div style="width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;max-height:40vh;overflow:auto">
-                <h4 style="margin-top:0;margin-bottom:8px">TMs e MTs</h4>
-                <div id="combinedTmsGrid" style="display:grid;grid-template-columns:1fr;gap:12px"></div>
               </div>
             </div>
           </div>
@@ -205,5 +212,206 @@
     .tm-icon{width:46px;height:46px;border-radius:8px;background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.08));display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0}
     .selected-move-highlight{outline:3px solid rgba(65,184,131,0.18)}
     .slot-badge{background:rgba(255,255,255,0.05);padding:6px 8px;border-radius:999px;font-weight:800;color:#ffd966}
+    /* Power and Effects boxes on Smeargle card */
+    /* unified neutral background for both boxes */
+    .power-box,.effects-box{background:linear-gradient(180deg,#fffdf4,#fff9e6);padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 6px 18px rgba(0,0,0,0.04);color:#000}
+    .power-box #smearglePowerTotal{display:flex;align-items:center;gap:10px;color:#000}
+    .power-box .power-value{background:linear-gradient(135deg,#ffd966,#ffb84d);color:#000;padding:8px 12px;border-radius:10px;font-weight:900;font-size:1.1em;border:1px solid rgba(0,0,0,0.06);box-shadow:0 6px 18px rgba(255,170,50,0.06)}
+    .effects-box .effect-line{font-size:0.9em;margin:6px 0;padding-left:8px;border-left:3px solid rgba(0,0,0,0.06);color:#000}
+    /* search input */
+    #moveSearchInput{font-size:0.95em}
+    .search-row .btn-action{padding:8px 10px;border-radius:8px}
+    /* search results */
+    #searchCount{color:#ffd966;font-weight:700}
+    .search-hl{background:rgba(255,220,100,0.95);color:#111;padding:0 2px;border-radius:3px}
   </style>
+  <script>
+    // Ajusta a altura máxima do painel de golpes para não ultrapassar o tamanho do card do Pokémon
+    (function(){
+      function adjustCombinedPanelHeight(){
+        try{
+          var card = document.getElementById('smeargleCard');
+          var inner = document.getElementById('combinedInnerPanel');
+          var panel = document.getElementById('combinedPanel');
+          if(!card || !inner || !panel) return;
+          // usar offsetHeight do card para definir altura exata do painel interno
+          var cardH = Math.max(120, card.offsetHeight || 200);
+          inner.style.boxSizing = 'border-box';
+          inner.style.height = cardH + 'px';
+          inner.style.minHeight = cardH + 'px';
+          inner.style.overflow = 'hidden';
+          panel.style.alignItems = 'flex-start';
+
+          // limitar o grid de moves (conteúdo) para permitir scroll interno
+          var movesGrid = inner.querySelector('#combinedMovesGrid');
+          var header = inner.querySelector('h4');
+          var headerH = header ? header.offsetHeight : 28;
+          // considerar paddings internos e gaps (~28px)
+          var paddingApprox = 28;
+          var movesH = Math.max(80, cardH - headerH - paddingApprox);
+          if(movesGrid){
+            movesGrid.style.maxHeight = movesH + 'px';
+            movesGrid.style.overflowY = 'auto';
+          }
+        }catch(e){ /* ignore */ }
+      }
+      window.addEventListener('resize', adjustCombinedPanelHeight);
+      document.addEventListener('DOMContentLoaded', function(){
+        setTimeout(adjustCombinedPanelHeight, 60);
+        // observar mudanças no tamanho do card (ex: lista de golpes) e reajustar
+        try{
+          var ro = new ResizeObserver(adjustCombinedPanelHeight);
+          var card = document.getElementById('smeargleCard');
+          if(card) ro.observe(card);
+        }catch(e){ /* ResizeObserver pode não estar disponível, fallback já cobre resize */ }
+      });
+    })();
+      // Search/filter for combined moves grid (debounced)
+      (function(){
+        var debounceTimer = null;
+        function getGrid(){ return document.getElementById('combinedMovesGrid'); }
+        function getInput(){ return document.getElementById('moveSearchInput'); }
+        function normalize(s){ try{ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ return (s||'').toString().toLowerCase(); } }
+        function escapeRegExp(s){ return (s||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+        function updateSearchCount(count,total){ var el=document.getElementById('searchCount'); if(!el) return; if(count===0) el.textContent='Nenhum resultado'; else el.textContent = count + ' de ' + total + ' resultados'; }
+        function highlightMatch(it,tokens){ try{ var nameEl = it.querySelector('.move-name'); if(!nameEl) return; var original = it.dataset.moveName || nameEl.textContent || ''; var html = original; tokens.forEach(function(t){ if(!t) return; var re = new RegExp('('+escapeRegExp(t)+')','ig'); html = html.replace(re, '<mark class="search-hl">$1</mark>'); }); nameEl.innerHTML = html; }catch(e){}
+        }
+        function clearHighlight(it){ try{ var nameEl = it.querySelector('.move-name'); if(!nameEl) return; var original = it.dataset.moveName || nameEl.textContent || ''; nameEl.textContent = original; }catch(e){}
+        }
+
+        function filterMoves(){
+          try{
+            var input = getInput(); if(!input){ console.warn('filterMoves: moveSearchInput não encontrado'); return; }
+            var q = normalize(input.value).trim();
+            var grid = getGrid(); if(!grid){ console.warn('filterMoves: combinedMovesGrid não encontrado'); return; }
+            var items = Array.from(grid.children || []);
+            console.debug('filterMoves:', q, 'items:', items.length);
+            if(!q){ items.forEach(function(it){ it.style.display = ''; }); return; }
+
+            // known type tokens (pt/en) for auto-detection
+            var typesList = ['normal','fogo','fire','agua','água','water','electric','eletrico','elétrico','grass','grama','ice','gelo','fighting','lutador','poison','veneno','ground','terra','flying','voador','psychic','psiquico','psychic','bug','inseto','rock','pedra','ghost','fantasma','dragon','dragão','dark','noturno','steel','metalico','metálico','fairy','fada'];
+            var typesSet = new Set(typesList.map(function(t){ try{return t.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){return t.toString().toLowerCase();}}));
+
+            var tokens = q.split(/\s+/).filter(Boolean);
+            var typeTokens = tokens.filter(function(t){ return typesSet.has(t); });
+
+            // helper to check presence in item fields
+            function itemFields(it){
+              var name = normalize(it.dataset.moveName || (it.querySelector && it.querySelector('.move-name') && it.querySelector('.move-name').textContent) || it.textContent || '');
+              var typeRaw = (it.dataset.moveType || (it.querySelector && it.querySelector('.move-tipo') && it.querySelector('.move-tipo').textContent) || '');
+              // if type not present, try extract from class like 'type-dark'
+              if(!typeRaw){
+                try{
+                  var cls = (it.className||'');
+                  var m = cls.match(/\btype-([a-z0-9\-]+)\b/i);
+                  if(m && m[1]) typeRaw = m[1];
+                }catch(e){}
+              }
+              var type = normalize(typeRaw||'');
+              var effect = normalize(it.dataset.moveEffect || it.dataset.moveEfeito || (it.querySelector && it.querySelector('.move-efeito') && it.querySelector('.move-efeito').textContent) || '');
+              var cat = normalize(it.dataset.moveCategory || (it.querySelector && (it.querySelector('.move-categoria') && it.querySelector('.move-categoria').textContent) || ''));
+              return {name,type,effect,cat};
+            }
+
+            // Decide search mode: type-only if all tokens are types
+            var isTypeSearch = (typeTokens.length > 0 && typeTokens.length === tokens.length);
+            // If not type-only, detect if tokens match any name in items -> name search
+            var isNameSearch = false; var isEffectSearch = false;
+            for(var i=0;i<items.length;i++){
+              var f = itemFields(items[i]);
+              try{
+                var nameMatchesAll = tokens.length>0 && tokens.every(function(tt){ return f.name.indexOf(tt)!==-1; });
+                if(nameMatchesAll){ isNameSearch = true; break; }
+              }catch(e){}
+            }
+            if(!isNameSearch){ // detect effect (require all tokens present in effect)
+              for(var i2=0;i2<items.length;i2++){
+                var f2 = itemFields(items[i2]);
+                try{
+                  var effectMatchesAll = tokens.length>0 && tokens.every(function(tt2){ return f2.effect.indexOf(tt2)!==-1; });
+                  if(effectMatchesAll){ isEffectSearch = true; break; }
+                }catch(e){}
+              }
+            }
+
+            var matchedCount = 0;
+            // tokens for highlighting
+            var tokens = q.split(/\s+/).filter(Boolean);
+            items.forEach(function(it){
+              var f = itemFields(it);
+              var matched = false;
+              if(isTypeSearch){
+                // strict type match: compare normalized words (split by - or space)
+                var typeToCheck = f.type || '';
+                // if no type, try to infer from attack/TM tables via findAttackDetails or buildTmLookup
+                if(!typeToCheck){
+                  try{
+                    var inferred = '';
+                    if(typeof findAttackDetails === 'function'){
+                      var full = findAttackDetails(f.name || f.moveName || '');
+                      if(full) inferred = (full.TYPE||full.type||full.TIPAGEM||full.tipagem||full.tipo||'').toString();
+                    }
+                    if(!inferred && typeof buildTmLookup === 'function'){
+                      try{
+                        var lu = buildTmLookup();
+                        if(lu && lu.byName){
+                          var rawName = (f.name||'').toString();
+                          var keyMain = (typeof _key === 'function') ? _key(rawName) : rawName.toLowerCase().trim();
+                          // also try variants: strip leading TM numbers (e.g. 'TM11 - Sunny Day' -> 'Sunny Day')
+                          var keyNoTm = keyMain.replace(/^tm\s*\d+/,'').replace(/^tm\s*-\s*/,'').replace(/^tm/,'').replace(/[^a-z0-9]/g,'');
+                          var keyStripNum = (typeof _key === 'function') ? _key(rawName.replace(/^\s*tm\s*\d+\s*[-:\s]?/i,'')) : rawName.replace(/^\s*tm\s*\d+\s*[-:\s]?/i,'').toLowerCase().trim();
+                          var keyCandidates = [keyMain, keyNoTm, keyStripNum];
+                          var foundObj = null;
+                          for(var kk of keyCandidates){ if(kk && lu.byName.has(kk)){ foundObj = lu.byName.get(kk); break; } }
+                          if(foundObj) inferred = (foundObj.tipagem||foundObj.TIPAGEM||foundObj.type||foundObj.tipo||'').toString();
+                          // fallback: scan raw records with normalized compare (handles cases with different formatting)
+                          if(!inferred && Array.isArray(lu.raw)){
+                            var rn = (typeof _key === 'function') ? _key(rawName) : rawName.toLowerCase().trim();
+                            var rf = lu.raw.find(function(a){ try{ var aName = (a.nome||a['NOME DO TM']||a.NOME||a.name||'')+''; var an = (typeof _key === 'function') ? _key(aName) : aName.toLowerCase().trim(); if(an===rn || an.includes(rn) || rn.includes(an)) return true; return false;}catch(e){return false;} });
+                            if(rf) inferred = (rf.tipagem||rf.TIPAGEM||rf['TIPAGEM DO TM']||rf.type||rf.tipo||'').toString();
+                          }
+                        }
+                      }catch(e){}
+                    }
+                    if(inferred) typeToCheck = inferred.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'');
+                  }catch(e){ }
+                }
+                for(var tt of typeTokens){
+                  var parts = (typeToCheck||'').split(/[-\s]+/).filter(Boolean);
+                  if(parts.indexOf(tt) !== -1 || (typeToCheck||'')===tt) { matched = true; break; }
+                }
+              } else if(isNameSearch){
+                try{ matched = tokens.length>0 && tokens.every(function(tt2){ return f.name.indexOf(tt2)!==-1; }); }catch(e){}
+              } else if(isEffectSearch){
+                try{ matched = tokens.length>0 && tokens.every(function(tt3){ return f.effect.indexOf(tt3)!==-1; }); }catch(e){}
+              } else {
+                // fallback: match any token across all fields
+                for(var tt4 of tokens){ if((f.name+ ' ' + f.type + ' ' + f.effect + ' ' + f.cat).indexOf(tt4)!==-1){ matched = true; break; } }
+              }
+              it.style.display = matched ? '' : 'none';
+              if(matched){ matchedCount++; highlightMatch(it,tokens); } else { clearHighlight(it); }
+            });
+            console.debug('filterMoves: matched', matchedCount, 'mode:', isTypeSearch? 'type': (isNameSearch? 'name': (isEffectSearch? 'effect':'fallback')));
+            updateSearchCount(matchedCount, items.length);
+          }catch(e){ console.error('filterMoves err', e); }
+        }
+        function onInput(){ clearTimeout(debounceTimer); debounceTimer = setTimeout(filterMoves, 160); }
+        // try attach listeners immediately (script might run after DOMContentLoaded)
+        (function attach(){
+          var input = document.getElementById('moveSearchInput');
+          var clearBtn = document.getElementById('clearMoveSearch');
+          if(input){ input.addEventListener('input', onInput); input.addEventListener('keyup', onInput); console.debug('moveSearchInput: listeners attached'); }
+          if(clearBtn){ clearBtn.addEventListener('click', function(){ var i=document.getElementById('moveSearchInput'); if(i){ i.value = ''; filterMoves(); i.focus(); } }); }
+        })();
+        // fallback if DOM not ready when this script runs
+        document.addEventListener('DOMContentLoaded', function(){
+          var input = document.getElementById('moveSearchInput');
+          var clearBtn = document.getElementById('clearMoveSearch');
+          if(input && !input.oninput){ input.addEventListener('input', onInput); }
+          if(clearBtn) clearBtn.addEventListener('click', function(){ var i = document.getElementById('moveSearchInput'); if(i){ i.value = ''; filterMoves(); i.focus(); } });
+        });
+        // expose for other modules to call after re-render
+        window.filterCombinedMoves = filterMoves;
+      })();
+  </script>
 </div>
