@@ -404,8 +404,7 @@ function renderizarGolpesSmeargle(golpes) {
         console.warn('[Smeargle] renderizarGolpesSmeargle: elemento #movesGrid não encontrado. Pulando render.');
         return;
     }
-
-    if (golpes.length === 0) {
+    if (!Array.isArray(golpes) || golpes.length === 0) {
         grid.innerHTML = `
             <div class="no-results">
                 <i class="fas fa-search"></i>
@@ -414,26 +413,27 @@ function renderizarGolpesSmeargle(golpes) {
         `;
         return;
     }
-    
+
     const nomesSelecionados = smeargleSelectedMoves.filter(Boolean).map(m => m.nome.toLowerCase());
 
     grid.innerHTML = golpes.map(golpe => {
-        const estaSelecionado = nomesSelecionados.includes(golpe.nome.toLowerCase());
+        const estaSelecionado = nomesSelecionados.includes((golpe.nome||'').toLowerCase());
         const classeExtra = estaSelecionado ? ' move-card-selected' : '';
-        // Exibir slot de origem (ex: M7)
         const slotOrigem = golpe.local ? golpe.local.toUpperCase() : '';
         const tipoResolvido = (typeof obterTipoGolpe === 'function') ? (obterTipoGolpe(golpe) || 'Normal') : (golpe.tipo || 'Normal');
         const tipoClassSafe = (tipoResolvido||'Normal').toString().toLowerCase().replace(/\s+/g,'-');
         const iconClass = TIPO_ICONS[tipoResolvido] || TIPO_ICONS[(tipoResolvido.charAt(0).toUpperCase()+tipoResolvido.slice(1).toLowerCase())] || 'fa-circle';
-        const pp = golpe.PP || golpe.pp || golpe['PP'] || golpe.POWER || golpe.power || golpe.POWER_POINTS || '';
-        const power = golpe.POWER || golpe.power || golpe.Power || golpe['Power'] || golpe['POWER'] || '';
-        const accuracy = golpe.ACCURACY || golpe.accuracy || golpe.ACC || golpe.Acc || '';
-        const gen = golpe.GEN || golpe.gen || golpe.Gen || '';
-        const efeito = golpe.EFEITO || golpe.efeito || golpe['EFFECT'] || golpe.Effect || golpe.effect || '';
+        const pp = (typeof obterPPGolpe === 'function' ? obterPPGolpe(golpe) : (golpe.PP || golpe.pp || golpe['PP'] || '')) || (golpe.PP || golpe.pp || golpe['PP'] || '');
+        const powerVal = (typeof obterPowerGolpe === 'function') ? obterPowerGolpe(golpe) : (golpe.POWER || golpe.power || '');
+        const powerText = (powerVal !== undefined && powerVal !== null && powerVal !== '') ? String(powerVal) : (golpe.POWER || golpe.power || '');
+        const accuracy = (typeof obterAccuracyGolpe === 'function' ? obterAccuracyGolpe(golpe) : (golpe.ACCURACY || golpe.accuracy || golpe.ACC || golpe.Acc || '')) || (golpe.ACCURACY || golpe.accuracy || golpe.ACC || golpe.Acc || '');
+        const gen = (typeof obterGenGolpe === 'function' ? obterGenGolpe(golpe) : (golpe.GEN || golpe.gen || golpe.Gen || '')) || (golpe.GEN || golpe.gen || golpe.Gen || '');
+        const efeito = (typeof obterEfeitoGolpe === 'function') ? obterEfeitoGolpe(golpe) : (golpe.EFEITO || golpe.efeito || '');
         const acao = golpe.ACAO || golpe.AÇÃO || golpe.acao || golpe['AÇÃO'] || golpe.Action || golpe.action || '';
         const categoria = golpe.CATEGORIA || golpe.categoria || golpe.Category || golpe.category || '';
+
         return `
-            <div class="move-card type-${tipoClassSafe}${classeExtra}" 
+            <div class="move-card builder-card type-${tipoClassSafe}${classeExtra}" 
                  data-move='${JSON.stringify(golpe)}'
                  onclick="selecionarGolpe(this)">
                 <div class="move-tipo-icon">
@@ -442,24 +442,20 @@ function renderizarGolpesSmeargle(golpes) {
                 <div class="move-name">${golpe.nome}</div>
                 <div class="move-details">
                     <span class="move-tipo">${tipoResolvido}</span>
-                    <span class="move-categoria">${golpe.categoria}</span>
+                    <span class="move-categoria">${categoria}</span>
                 </div>
-                <div class="move-acao">
-                    <i class="fas fa-running"></i> ${golpe.acao}
-                </div>
-                <div class="move-efeito">
-                    <i class="fas fa-magic"></i> ${efeito}
-                </div>
-                <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.9">
-                    ${pp ? `<span>PP: <b>${pp}</b></span>` : ''}
-                    ${power ? `<span style="margin-left:8px">Power: <b>${power}</b></span>` : ''}
-                    ${accuracy ? `<span style="margin-left:8px">Acc: <b>${accuracy}</b></span>` : ''}
-                    ${gen ? `<span style="margin-left:8px">Gen: <b>${gen}</b></span>` : ''}
+                <div class="move-acao" style="display:${acao ? 'block' : 'none'}">${acao}</div>
+                <div class="move-efeito" style="display:${efeito ? 'block' : 'none'}">${efeito}</div>
+                <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.95;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    ${pp ? `<span class="move-stat">PP: <b>${pp}</b></span>` : ''}
+                    ${powerText ? `<span class="move-stat" style="font-weight:900;color:#ffd966;background:rgba(0,0,0,0.08);padding:2px 6px;border-radius:6px;">Pow: <b>${powerText}</b></span>` : ''}
+                    ${accuracy ? `<span class="move-stat">Acc: <b>${accuracy}</b></span>` : ''}
+                    ${gen ? `<span class="move-stat">Gen: <b>${gen}</b></span>` : ''}
                 </div>
                 <div class="move-origem">
-                    <i class="fas fa-paw"></i> ${golpe.origem}
+                    <i class="fas fa-paw"></i> ${golpe.origem || ''}
                 </div>
-                <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:2px;">
+                <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:6px;">
                     <i class="fas fa-hashtag"></i> Slot: <b>${slotOrigem}</b>
                 </div>
                 <div class="move-actions" style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
@@ -692,8 +688,24 @@ function atualizarCardSmeargle() {
     const iconForDom = TIPO_ICONS[tipoDom] || TIPO_ICONS[(tipoDom.charAt(0).toUpperCase()+tipoDom.slice(1).toLowerCase())] || 'fa-circle';
     typeIcon.innerHTML = `<i class="fas ${iconForDom}"></i>`;
     
-    // Atualizar badge
-    typeBadge.innerHTML = `<span class="type-badge type-${tipoDom.toLowerCase()}">${tipoDom}</span>`;
+    // Atualizar badge (defensivo: criar se não existir)
+    try{
+        if(typeBadge){
+            typeBadge.innerHTML = `<span class="type-badge type-${tipoDom.toLowerCase()}">${tipoDom}</span>`;
+        } else {
+            var badgeEl = card.querySelector('.smeargle-type-badge');
+            if(!badgeEl){
+                badgeEl = document.createElement('div');
+                badgeEl.className = 'smeargle-type-badge';
+                var insertBeforeEl = card.querySelector('.smeargle-moves-selected') || null;
+                if(insertBeforeEl) insertBeforeEl.parentNode.insertBefore(badgeEl, insertBeforeEl);
+                else card.appendChild(badgeEl);
+            }
+            // ensure id for future queries
+            badgeEl.id = 'smeargleTypeBadge';
+            badgeEl.innerHTML = `<span class="type-badge type-${tipoDom.toLowerCase()}">${tipoDom}</span>`;
+        }
+    }catch(e){ console.warn('Erro atualizando typeBadge', e); }
     // Injetar bloco no estilo Pokédex: tipos, fraquezas e status (minimizado e idempotente)
     try{
         // localizar container existente ou criar novo bloco após o badge
@@ -741,6 +753,19 @@ function atualizarCardSmeargle() {
                 velocidade = pick(found, ['Speed','SPD','Velocidade','speed'], velocidade);
             }
         }catch(e){ /* ignore */ }
+
+        // Se estamos na página 'smeargle' e não encontramos via origem, tentar carregar dados do próprio Smeargle na pokedex
+        try{
+            var isSmearglePage = (typeof window.currentPage !== 'undefined' && window.currentPage === 'smeargle') || (typeof currentPage !== 'undefined' && currentPage === 'smeargle') || (window.location && /smeargle/i.test(window.location.pathname));
+            if(isSmearglePage && (!found)){
+                if(Array.isArray(smearglePokemonData) && smearglePokemonData.length){
+                    var sFound = smearglePokemonData.find(function(p){
+                        try{ var name = (p['POKEMON']||p['Pokemon']||p['pokemon']||'')+''; return name && normalizeName(name).includes('smeargle'); }catch(e){return false}
+                    });
+                    if(sFound){ found = sFound; tipo1 = pick(found, ['Type 1','TYPE 1','Type1','TIPO1','Tipo','TYPE','type'], tipoDom); tipo2 = pick(found, ['Type 2','TYPE 2','Type2','TIPO2','Tipo 2','type2'], ''); hp = pick(found, ['HP','Hp','hp'], hp); ataque = pick(found, ['Attack','ATK','attack'], ataque); defesa = pick(found, ['Defense','DEF','defense'], defesa); ataqueEsp = pick(found, ['Sp.Attack','SpAttack','spatk'], ataqueEsp); defesaEsp = pick(found, ['Sp.Defense','SpDefense','spdef'], defesaEsp); velocidade = pick(found, ['Speed','SPD','speed'], velocidade); }
+                }
+            }
+        }catch(e){}
 
         // fallback para pelo menos ter um tipo dominante
         if(!tipo1) tipo1 = tipoDom || 'Normal';
@@ -933,7 +958,25 @@ function atualizarCardSmeargle() {
 
     // Calcular e exibir power total dos golpes selecionados
     try{
-        const powerEl = document.getElementById('smearglePowerTotal');
+        // Garantir elementos de Power e Effects existam no card (injetar se necessário)
+        try{
+            var powerEl = document.getElementById('smearglePowerTotal');
+            var effectsEl = document.getElementById('smeargleEffects');
+            var insertBeforeEl = card.querySelector('.smeargle-moves-selected') || card.querySelector('#smeargleMovesSelected');
+            if(!powerEl){
+                var pb = document.createElement('div'); pb.className = 'power-box'; pb.innerHTML = '<div id="smearglePowerTotal">POWER TOTAL: <span class="power-value">0</span></div>';
+                if(insertBeforeEl) insertBeforeEl.parentNode.insertBefore(pb, insertBeforeEl);
+                else card.appendChild(pb);
+                powerEl = document.getElementById('smearglePowerTotal');
+            }
+            if(!effectsEl){
+                var eb = document.createElement('div'); eb.className = 'effects-box'; eb.innerHTML = '<div id="smeargleEffects">EFEITOS: —</div>';
+                if(insertBeforeEl) insertBeforeEl.parentNode.insertBefore(eb, insertBeforeEl);
+                else card.appendChild(eb);
+                effectsEl = document.getElementById('smeargleEffects');
+            }
+        }catch(e){ /* ignore element injection errors */ }
+        powerEl = document.getElementById('smearglePowerTotal');
         if(powerEl){
             const total = smeargleSelectedMoves.filter(Boolean).reduce((acc,m)=>{
                 try{
@@ -1266,6 +1309,61 @@ function obterEfeitoGolpe(golpe){
 
         return '';
     }catch(e){ return ''; }
+}
+
+// Helpers para obter PP / ACC / GEN a partir do objeto golpe ou tabelas de ataques
+function obterPPGolpe(golpe){
+    try{
+        if(!golpe) return '';
+        const direct = golpe.PP || golpe.pp || golpe['PP'] || golpe.POWER_POINTS || golpe['POWER_POINTS'];
+        if(direct !== undefined && direct !== null && String(direct).trim() !== '') return String(direct).trim();
+        const key = simplifyForCompare(golpe.nome || '');
+        const candidates = [window.smeargleAtacksData, smeargleAtacksData, window.todosAtacks, window.todos, window.todosTMs];
+        for(const tbl of candidates){
+            if(Array.isArray(tbl) && tbl.length){
+                let found = tbl.find(a => simplifyForCompare(((a['ATACK']||a.nome||a['NOME']||a.NAME||'')+'').toString()) === key);
+                if(!found) found = tbl.find(a => { const atn = ((a['ATACK']||a.nome||a['NOME']||'')+'').toString(); const s = simplifyForCompare(atn); return s && key && (s.includes(key) || key.includes(s)); });
+                if(found){ const v = found.PP || found.pp || found['PP'] || found.POWER_POINTS || found['POWER_POINTS']; if(v !== undefined && v !== null) return String(v); }
+            }
+        }
+    }catch(e){}
+    return '';
+}
+
+function obterAccuracyGolpe(golpe){
+    try{
+        if(!golpe) return '';
+        const direct = golpe.ACCURACY || golpe.accuracy || golpe.ACC || golpe.Acc || golpe['ACCURACY'];
+        if(direct !== undefined && direct !== null && String(direct).trim() !== '') return String(direct).trim();
+        const key = simplifyForCompare(golpe.nome || '');
+        const candidates = [window.smeargleAtacksData, smeargleAtacksData, window.todosAtacks, window.todos, window.todosTMs];
+        for(const tbl of candidates){
+            if(Array.isArray(tbl) && tbl.length){
+                let found = tbl.find(a => simplifyForCompare(((a['ATACK']||a.nome||a['NOME']||a.NAME||'')+'').toString()) === key);
+                if(!found) found = tbl.find(a => { const atn = ((a['ATACK']||a.nome||a['NOME']||'')+'').toString(); const s = simplifyForCompare(atn); return s && key && (s.includes(key) || key.includes(s)); });
+                if(found){ const v = found.ACCURACY || found.acc || found.ACC || found.Acc || found['ACCURACY']; if(v !== undefined && v !== null) return String(v); }
+            }
+        }
+    }catch(e){}
+    return '';
+}
+
+function obterGenGolpe(golpe){
+    try{
+        if(!golpe) return '';
+        const direct = golpe.GEN || golpe.gen || golpe.Gen || golpe['GEN'];
+        if(direct !== undefined && direct !== null && String(direct).trim() !== '') return String(direct).trim();
+        const key = simplifyForCompare(golpe.nome || '');
+        const candidates = [window.smeargleAtacksData, smeargleAtacksData, window.todosAtacks, window.todos, window.todosTMs];
+        for(const tbl of candidates){
+            if(Array.isArray(tbl) && tbl.length){
+                let found = tbl.find(a => simplifyForCompare(((a['ATACK']||a.nome||a['NOME']||a.NAME||'')+'').toString()) === key);
+                if(!found) found = tbl.find(a => { const atn = ((a['ATACK']||a.nome||a['NOME']||'')+'').toString(); const s = simplifyForCompare(atn); return s && key && (s.includes(key) || key.includes(s)); });
+                if(found){ const v = found.GEN || found.gen || found.Gen || found['GEN']; if(v !== undefined && v !== null) return String(v); }
+            }
+        }
+    }catch(e){}
+    return '';
 }
 
 // Remover golpe
