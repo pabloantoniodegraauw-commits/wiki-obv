@@ -2234,6 +2234,30 @@ document.addEventListener('click', async function(ev){
             }
         }
 
+// Delegação segura global para botões de toggle (Pokedex / geral)
+(function ensureGlobalToggleDelegation(){
+    try{
+        if(window.__global_toggle_delegation_added) return;
+        window.__global_toggle_delegation_added = true;
+        document.addEventListener('click', function(ev){
+            try{
+                if(ev.button && ev.button !== 0) return;
+                var btn = ev.target && ev.target.closest ? ev.target.closest('.btn-toggle-stats, .btn-toggle-weaknesses') : null;
+                if(!btn) return;
+                try{ ev.preventDefault(); ev.stopPropagation(); }catch(e){}
+                if(btn.dataset && btn.dataset.__delegationHandled === '1') return;
+                var isStats = btn.classList.contains('btn-toggle-stats');
+                var isWeak = btn.classList.contains('btn-toggle-weaknesses');
+                var next = btn.nextElementSibling;
+                if(isStats){ if(next) next.classList.toggle('stats-hidden'); btn.classList.toggle('stats-open'); }
+                else if(isWeak){ if(next) next.classList.toggle('weaknesses-hidden'); btn.classList.toggle('stats-open'); }
+                try{ if(btn.dataset) btn.dataset.__delegationHandled = '1'; }catch(e){}
+                setTimeout(function(){ try{ if(btn.dataset) delete btn.dataset.__delegationHandled; }catch(e){} }, 80);
+            }catch(e){}
+        }, true);
+    }catch(e){}
+})();
+
         function fazerLogout() {
             google.accounts.id.disableAutoSelect();
             usuarioLogado = null;

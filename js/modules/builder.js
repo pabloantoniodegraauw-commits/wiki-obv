@@ -436,7 +436,7 @@
           const cat = found['CATEGORIA']||found.CATEGORIA||found.categoria||'';
           const acEl2 = tile.querySelector('.move-acao'); if(acEl2 && !acEl2.textContent){ acEl2.textContent = atAc; acEl2.style.display = atAc ? 'block' : 'none'; }
           const efEl2 = tile.querySelector('.move-efeito'); if(efEl2 && !efEl2.textContent){ efEl2.textContent = atEf; efEl2.style.display = atEf ? 'block' : 'none'; }
-          const statsEl2 = tile.querySelector('.move-stats'); if(statsEl2){ const parts2=[]; if(pp) parts2.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts2.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(acc) parts2.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts2.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl2.innerHTML = parts2.join(' &nbsp; '); statsEl2.style.display = parts2.length ? 'block' : 'none'; }
+          const statsEl2 = tile.querySelector('.move-stats'); if(statsEl2){ const parts2=[]; if(pp) parts2.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts2.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`); if(acc) parts2.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts2.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl2.innerHTML = parts2.join(' &nbsp; '); statsEl2.style.display = parts2.length ? 'block' : 'none'; }
           if(tipo){ const tipoEl = tile.querySelector('.move-tipo'); if(tipoEl) tipoEl.textContent = tipo; try{ tile.dataset.moveType = tipo.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){} }
           if(cat){ const catEl = tile.querySelector('.move-categoria'); if(catEl) catEl.textContent = cat; }
           try{ if(tipo){ const tipoClass = tipo.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,''); tile.className = tile.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass; } }catch(e){}
@@ -458,18 +458,21 @@
   function adjustCombinedPanelHeight(){
     try{
       var card = document.getElementById('smeargleCard');
-      var inner = document.getElementById('combinedInnerPanel');
-      if(!card || !inner) return;
+      // Support multiple panel variants: combinedInnerPanel (builder) or smeargle-moves-panel / movesGrid (smeargle page)
+      var inner = document.getElementById('combinedInnerPanel') || document.querySelector('.smeargle-moves-panel') || document.getElementById('movesGrid');
+      if(!card || !inner){ return; }
       var cardH = Math.max(120, card.offsetHeight || 200);
+      
       inner.style.boxSizing = 'border-box';
       inner.style.height = cardH + 'px';
       inner.style.minHeight = cardH + 'px';
       inner.style.overflow = 'hidden';
 
-      var header = inner.querySelector('h4');
+      var header = inner.querySelector('h4') || inner.querySelector('.moves-panel-header') || null;
       var headerH = header ? header.offsetHeight : 28;
       var paddingApprox = 28;
-      var movesGrid = inner.querySelector('#combinedMovesGrid');
+      // find moves grid inside inner or fallback to global ids
+      var movesGrid = inner.querySelector('#combinedMovesGrid') || inner.querySelector('#movesGrid') || document.getElementById('movesGrid');
       var movesH = Math.max(80, cardH - headerH - paddingApprox);
       if(movesGrid){ movesGrid.style.maxHeight = movesH + 'px'; movesGrid.style.overflowY = 'auto'; }
     }catch(e){ console.warn('adjustCombinedPanelHeight err', e); }
@@ -477,6 +480,40 @@
 
   // chamar no resize e quando a janela for exibida
   try{ window.addEventListener('resize', function(){ try{ setTimeout(adjustCombinedPanelHeight, 40); }catch(e){} }); }catch(e){}
+
+  // Observar mudanças no card para expandir/contrair o painel de ataques em sincronia
+  (function observeCombinedPanel(){
+    try{
+      const card = document.getElementById('smeargleCard');
+      const movesGrid = document.getElementById('combinedMovesGrid') || document.getElementById('movesGrid') || document.querySelector('.moves-grid');
+      function safeAdjust(){ try{ setTimeout(adjustCombinedPanelHeight, 20); }catch(e){} }
+      if(window.ResizeObserver && card){
+        try{
+        const ro = new ResizeObserver(function(){ safeAdjust(); });
+        ro.observe(card);
+        if(movesGrid) ro.observe(movesGrid);
+        window.__combinedPanelRO = ro;
+        
+        }catch(e){ /* ignore */ }
+      } else if(card){
+        try{
+        const mo = new MutationObserver(function(m){ safeAdjust(); });
+        mo.observe(card, {attributes:true,childList:true,subtree:true});
+        if(movesGrid) mo.observe(movesGrid, {childList:true,subtree:true});
+        window.__combinedPanelMO = mo;
+        
+        }catch(e){ /* ignore */ }
+      }
+
+      // document-level observer to catch class changes or attribute toggles that may not change layout
+      try{
+        const docMo = new MutationObserver(function(muts){ safeAdjust(); });
+        docMo.observe(document.body, { attributes:true, childList:false, subtree:true });
+        window.__combinedPanelDocMO = docMo;
+        
+      }catch(e){}
+    }catch(e){}
+  })();
 
   function renderParsedMoves(parsed){
     // hide old parsed list if present
@@ -512,9 +549,8 @@
       if (typeof smeargleSelectedMoves !== 'undefined') smeargleSelectedMoves = assignedArr;
       else window.smeargleSelectedMoves = assignedArr;
     } catch(e){ window.smeargleSelectedMoves = assignedArr; }
-    if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
-    if(typeof reordenarGridMovesOrdenado === 'function') reordenarGridMovesOrdenado();
-    if(typeof buscarPokemonsCompativeis === 'function') buscarPokemonsCompativeis();
+    try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(e){}
+    try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({reorder:true,buscar:true}); else { if(typeof reordenarGridMovesOrdenado === 'function') reordenarGridMovesOrdenado(); if(typeof buscarPokemonsCompativeis === 'function') buscarPokemonsCompativeis(); } }catch(e){}
 
     // render combined moves grid (Smeargle-like)
     const combined = safe('combinedMovesGrid'); if(combined) {
@@ -536,7 +572,7 @@
           <div class="move-efeito" style="display:none"></div>
           <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.9"></div>
           <div class="move-origem">${origemName}</div>
-          <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:6px;">
+            <div class="move-slot-origem" style="font-size:0.95em;margin-top:6px;">
             <i class="fas fa-hashtag"></i> Slot: <b>M${mv.assignedSlot||''}</b>
           </div>
           <div class="move-actions" style="margin-top:8px;display:flex;gap:8px;align-items:center">
@@ -567,7 +603,7 @@
             const accVal = mv.accuracy || mv.ACCURACY || '';
             const genVal = mv.gen || mv.GEN || '';
             if(ppVal) parts.push(`<span class="move-stat">PP: <b>${ppVal}</b></span>`);
-            if(powerVal) parts.push(`<span class="move-stat">Pow: <b>${powerVal}</b></span>`);
+            if(powerVal) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${powerVal}</b></span>`);
             if(accVal) parts.push(`<span class="move-stat">Acc: <b>${accVal}</b></span>`);
             if(genVal) parts.push(`<span class="move-stat">Gen: <b>${genVal}</b></span>`);
             if(parts.length){ statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = 'block'; }
@@ -709,7 +745,7 @@
               <div class="move-efeito" style="display:none"></div>
               <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.9"></div>
               <div class="move-origem">${tm.pokemon||''}</div>
-              <div class="move-slot-origem">
+              <div class="move-slot-origem" style="font-size:0.95em;margin-top:6px;">
                 <i class="fas fa-hashtag"></i> Slot: <b>${slotOrig}</b>
               </div>
               <div class="move-actions">
@@ -724,7 +760,7 @@
               const statsEl = tile.querySelector('.move-stats');
               if(acEl){ acEl.textContent = tm.acao || tm.ACAO || tm['AÇÃO'] || ''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
               if(efEl){ efEl.textContent = tm.efeito || tm.EFEITO || tm['EFEITO'] || ''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
-              if(statsEl){ const parts = []; const pp = tm.pp || tm.PP || ''; const power = tm.power || tm.POWER || tm.DANO || ''; const acc = tm.accuracy || tm.ACCURACY || tm.ACCURACAO || ''; const gen = tm.gen || tm.GEN || ''; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(acc) parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
+              if(statsEl){ const parts = []; const pp = tm.pp || tm.PP || ''; const power = tm.power || tm.POWER || tm.DANO || ''; const acc = tm.accuracy || tm.ACCURACY || tm.ACCURACAO || ''; const gen = tm.gen || tm.GEN || ''; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`); if(acc) parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
             }catch(e){}
         tile.addEventListener('click', ()=>{
           // toggle global selection in builderMeta
@@ -920,7 +956,7 @@
               const statsEl = tile.querySelector('.move-stats');
               if(acEl){ acEl.textContent = tm.acao || tm.ACAO || tm['AÇÃO'] || ''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
               if(efEl){ efEl.textContent = tm.efeito || tm.EFEITO || tm['EFEITO'] || ''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
-              if(statsEl){ const parts = []; const pp = tm.pp || tm.PP || ''; const power = tm.power || tm.POWER || tm.DANO || ''; const acc = tm.accuracy || tm.ACCURACY || tm.ACCURACAO || ''; const gen = tm.gen || tm.GEN || ''; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(acc) parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
+              if(statsEl){ const parts = []; const pp = tm.pp || tm.PP || ''; const power = tm.power || tm.POWER || tm.DANO || ''; const acc = tm.accuracy || tm.ACCURACY || tm.ACCURACAO || ''; const gen = tm.gen || tm.GEN || ''; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`); if(acc) parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
             }catch(e){}
         // tentar enriquecer tile usando variantes do nome e aguardando tabela de ATACKS caso necessário
         try{ tryEnrichTileFromAttacks(tile, tm); }catch(e){}
@@ -1023,7 +1059,7 @@
               if(statsEl){
                 const parts = [];
                 if(pp && pp.toString().trim()) parts.push(`<span class="move-stat">PP: <b>${pp.toString().trim()}</b></span>`);
-                if(power && power.toString().trim()) parts.push(`<span class="move-stat">Pow: <b>${power.toString().trim()}</b></span>`);
+                if(power && power.toString().trim()) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power.toString().trim()}</b></span>`);
                 if(accuracy && accuracy.toString().trim()) parts.push(`<span class="move-stat">Acc: <b>${accuracy.toString().trim()}</b></span>`);
                 if(gen && gen.toString().trim()) parts.push(`<span class="move-stat">Gen: <b>${gen.toString().trim()}</b></span>`);
                 statsEl.innerHTML = parts.join(' &nbsp; ');
@@ -1061,7 +1097,7 @@
                     if(statsEl){
                       const parts = [];
                       if(pp && pp.toString().trim()) parts.push(`<span class="move-stat">PP: <b>${pp.toString().trim()}</b></span>`);
-                      if(power && power.toString().trim()) parts.push(`<span class="move-stat">Pow: <b>${power.toString().trim()}</b></span>`);
+                      if(power && power.toString().trim()) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power.toString().trim()}</b></span>`);
                       if(accuracy && accuracy.toString().trim()) parts.push(`<span class="move-stat">Acc: <b>${accuracy.toString().trim()}</b></span>`);
                       if(gen && gen.toString().trim()) parts.push(`<span class="move-stat">Gen: <b>${gen.toString().trim()}</b></span>`);
                       statsEl.innerHTML = parts.join(' &nbsp; ');
@@ -1104,7 +1140,7 @@
             if(found){
               const acEl = card.querySelector('.move-acao'); if(acEl){ acEl.textContent = (found['AÇÃO']||found.ACAO||found.acao||found.action||'')+''; acEl.style.display = acEl.textContent ? 'block' : 'none'; }
               const efEl = card.querySelector('.move-efeito'); if(efEl){ efEl.textContent = (found['EFEITO']||found.EFEITO||found.efeito||found.effect||'')+''; efEl.style.display = efEl.textContent ? 'block' : 'none'; }
-              const statsEl = card.querySelector('.move-stats'); if(statsEl){ const pp = (found['PP']||found.pp||'')+''; const power = (found['POWER']||found.power||found.DANO||'')+''; const accuracy = (found['ACCURACY']||found.accuracy||found.ACCURACAO||'')+''; const gen = (found['GEN']||found.GEN||'')+''; const parts = []; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat">Pow: <b>${power}</b></span>`); if(accuracy) parts.push(`<span class="move-stat">Acc: <b>${accuracy}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
+              const statsEl = card.querySelector('.move-stats'); if(statsEl){ const pp = (found['PP']||found.pp||'')+''; const power = (found['POWER']||found.power||found.DANO||'')+''; const accuracy = (found['ACCURACY']||found.accuracy||found.ACCURACAO||'')+''; const gen = (found['GEN']||found.GEN||'')+''; const parts = []; if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`); if(accuracy) parts.push(`<span class="move-stat">Acc: <b>${accuracy}</b></span>`); if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = parts.length ? 'block' : 'none'; }
               // tipo
                 try{ const tip2 = (found['TYPE']||found.type||found.TIPO||found['TIPAGEM']||'')+''; if(tip2 && card.querySelector('.move-tipo')) card.querySelector('.move-tipo').textContent = tip2; if(tip2){ const tipoClass2 = tip2.toString().toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[^\w\-]/g,''); card.className = card.className.split(/\s+/).filter(c=>!c.startsWith('type-')).join(' ') + ' type-' + tipoClass2; try{ card.dataset.moveType = tip2.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){} } }catch(e){}
             }
@@ -1227,7 +1263,11 @@
         const origemName = (window._builder_parsed && window._builder_parsed.meta && window._builder_parsed.meta.nome) ? window._builder_parsed.meta.nome : 'Pokedex';
         window.smeargleSelectedMoves[slot-1] = { nome: mv.nome, tipo: mv.tipo||'', categoria: mv.categoria||'', origem: origemName, local: `M${slot}` };
       }
-      if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
+      try{
+        // sinalizar adição recente para evitar que a atualização de card sobrescreva status
+        try{ window.__smeargle_recently_added_move = true; setTimeout(function(){ try{ window.__smeargle_recently_added_move = false; }catch(e){} }, 350); }catch(e){}
+        if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
+      }catch(e){}
             // open combined inline assign view for this move/slot
             try{ const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1]); openCombinedAssignInline(moveObj, slot-1); }catch(e){console.warn('erro abrindo inline combinado',e);}      
       return; }
@@ -1324,7 +1364,7 @@
       if(window.DEBUG_TM_ADD){ console.log('add-tm:', {slot, tmName, origemName, tipoForEntry, prevEntry: (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1])}); }
 
       // update UI quickly
-      if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
+      try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(e){}
 
       // defer heavier UI (inline modal/grid rendering) to allow paint and avoid jank
     }catch(e){ console.warn('add-tm handler error', e); }
@@ -1551,12 +1591,109 @@
           }
         }
       }catch(e){ console.warn('Erro ao salvar atribuições do modal combinado', e); }
-      if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
+      try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(e){}
       onClose();
     }
     // ensure we don't add duplicate listeners
     closeBtn && (closeBtn.onclick = onClose);
     saveBtn && (saveBtn.onclick = onSave);
   }
+
+  // Inject CSS transitions and contrast rules for smoother expansion and better readability
+  (function ensureBuilderStyles(){
+    try{
+      if(document.getElementById('__builder_injected_styles')) return;
+      const css = `
+        #combinedInnerPanel { transition: height 220ms ease; }
+        #combinedMovesGrid { transition: max-height 220ms ease; }
+        .move-card, .builder-card { color: #111; }
+        .text-white, .move-card.text-white { color: #fff !important; }
+        .move-slot-origem { color: inherit !important; }
+        .move-stat-power .power-value { background: #ffd54d; padding: 2px 6px; border-radius: 6px; color: #111; font-weight:700; }
+        .move-stat-power { display: inline-block; margin-left:6px; }
+        /* Fade-in details */
+        .move-efeito, .move-stats { opacity: 0; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease; }
+        .move-card.details-visible .move-efeito, .move-card.details-visible .move-stats { opacity: 1; transform: none; }
+      `;
+      const s = document.createElement('style'); s.id = '__builder_injected_styles'; s.appendChild(document.createTextNode(css)); document.head.appendChild(s);
+    }catch(e){/* ignore */}
+  })();
+
+  // Delegação segura para botões de toggle (garante resposta após re-renders)
+  (function ensureToggleDelegation(){
+    try{
+      if(window.__builder_toggle_delegation_added) return;
+      window.__builder_toggle_delegation_added = true;
+      // Captura cliques em botões com classe .btn-toggle-stats ou .btn-toggle-weaknesses
+      // Use capture=true para interceptar antes de handlers inline/bubble e prevenir double-toggle
+      document.addEventListener('click', function(ev){
+        try{
+          if(ev.button && ev.button !== 0) return; // ignore non-left clicks
+          var btn = ev.target && ev.target.closest ? ev.target.closest('.btn-toggle-stats, .btn-toggle-weaknesses') : null;
+          if(!btn) return;
+          // interceptar e impedir handlers posteriores para evitar double-toggle
+          try{ ev.preventDefault(); ev.stopPropagation(); }catch(e){}
+          // evitar re-entrância imediata
+          if(btn.dataset && btn.dataset.__delegationHandled === '1') return;
+
+          var isStats = btn.classList.contains('btn-toggle-stats');
+          var isWeak = btn.classList.contains('btn-toggle-weaknesses');
+          var next = btn.nextElementSibling;
+          if(isStats){ if(next) next.classList.toggle('stats-hidden'); btn.classList.toggle('stats-open'); }
+          else if(isWeak){ if(next) next.classList.toggle('weaknesses-hidden'); btn.classList.toggle('stats-open'); }
+
+          try{ if(btn.dataset) btn.dataset.__delegationHandled = '1'; }catch(e){}
+          setTimeout(function(){ try{ if(btn.dataset) delete btn.dataset.__delegationHandled; }catch(e){} }, 80);
+        }catch(e){}
+      }, true);
+    }catch(e){}
+  })();
+
+  // Observe move cards and fill details when they become visible (lazy fill to avoid jank)
+  (function observeMoveCards(){
+    try{
+      const container = document.getElementById('combinedMovesGrid');
+      if(!container) return;
+
+      function shouldSkipFill(card){
+        try{
+          const stats = card.querySelector('.move-stats');
+          if(!stats) return false;
+          const pv = stats.querySelector('.power-value');
+          if(pv && pv.textContent && pv.textContent.trim() !== '') return true;
+          if(stats.textContent && /Pow:\s*\d+/i.test(stats.textContent)) return true;
+        }catch(e){}
+        return false;
+      }
+
+      const io = new IntersectionObserver(function(entries){
+        entries.forEach(entry=>{
+          try{
+            const el = entry.target;
+            if(!entry.isIntersecting) return;
+            if(shouldSkipFill(el)) { try{ el.classList.add('details-visible'); }catch(e){}; io.unobserve(el); return; }
+            try{ if(typeof tryEnrichTileFromAttacks === 'function'){ const name = el.dataset.moveName || (el.querySelector('.move-name') && el.querySelector('.move-name').textContent) || ''; tryEnrichTileFromAttacks(el, name); } }catch(e){}
+            try{ if(typeof refreshParsedMovesAttacks === 'function') refreshParsedMovesAttacks(); }catch(e){}
+            try{ el.classList.add('details-visible'); }catch(e){}
+            try{ setTimeout(function(){ if(typeof adjustCombinedPanelHeight === 'function') adjustCombinedPanelHeight(); }, 60); }catch(e){}
+            io.unobserve(el);
+          }catch(e){}
+        });
+      }, { root: document.getElementById('combinedInnerPanel') || null, threshold: 0.25 });
+
+      function observeChildren(){
+        try{
+          const cards = Array.from(container.querySelectorAll('.move-card'));
+          cards.forEach(c=>{ try{ io.observe(c); }catch(e){} });
+        }catch(e){}
+      }
+
+      observeChildren();
+
+      const mo = new MutationObserver(function(muts){ try{ observeChildren(); }catch(e){} });
+      mo.observe(container, { childList:true, subtree:true });
+      window.__builder_moveCardIO = io; window.__builder_moveCardMO = mo;
+    }catch(e){}
+  })();
 
 })();

@@ -22,6 +22,35 @@ let smeargleSelectedMoves = new Array(9).fill(null);
 // slot alvo quando usuário clica em "Adicionar" num slot vazio (null ou 0-based index)
 let smeargleTargetSlot = null;
 
+// Scheduler para agrupar/adiar atualizações pesadas (evita várias execuções seguidas)
+window._smeargleUpdateFlags = { card:false, reorder:false, buscar:false, timer:null };
+window.scheduleSmeargleUpdate = function(opts){
+    try{
+        opts = opts || {};
+        if(opts.card) window._smeargleUpdateFlags.card = true;
+        if(opts.reorder) window._smeargleUpdateFlags.reorder = true;
+        if(opts.buscar) window._smeargleUpdateFlags.buscar = true;
+        if(window._smeargleUpdateFlags.timer) return; // já agendado
+        function run(){
+            try{
+                if(window._smeargleUpdateFlags.card && typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle();
+                if(window._smeargleUpdateFlags.buscar && typeof buscarPokemonsCompativeis==='function') buscarPokemonsCompativeis();
+                if(window._smeargleUpdateFlags.reorder && typeof reordenarGridMovesOrdenado==='function') reordenarGridMovesOrdenado();
+            }catch(e){console.warn('scheduleSmeargleUpdate run error', e);} finally {
+                window._smeargleUpdateFlags.card = false; window._smeargleUpdateFlags.reorder = false; window._smeargleUpdateFlags.buscar = false;
+                window._smeargleUpdateFlags.timer = null;
+            }
+        }
+        if(window.requestIdleCallback){ window._smeargleUpdateFlags.timer = requestIdleCallback(run, {timeout:500}); }
+        else { window._smeargleUpdateFlags.timer = setTimeout(run, 80); }
+    }catch(e){ console.warn('scheduleSmeargleUpdate error', e); }
+};
+
+// Helpers de timing seguros (evitam warnings do console sobre timers duplicados)
+const __smTimers = new Map();
+function smTimeStart(label){ try{ if(!__smTimers.has(label)) __smTimers.set(label, performance.now()); }catch(e){} }
+function smTimeEnd(label){ try{ const t = __smTimers.get(label); if(typeof t === 'number'){ console.log(label + ': ' + (performance.now() - t).toFixed(3) + ' ms'); __smTimers.delete(label); } }catch(e){} }
+
 // Garantir estilos visuais para o slot alvo
 function ensureSmeargleStyles() {
     if (document.getElementById('smeargle-slot-styles')) return;
@@ -33,6 +62,15 @@ function ensureSmeargleStyles() {
         .selected-move-item .move-info small { display:block; opacity:0.85; margin-top:4px }
         .move-tm-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
         .tm-badge-mini{background:rgba(255,255,255,0.04);padding:4px 8px;border-radius:10px;font-size:11px;color:#fff;border:1px solid rgba(255,255,255,0.03)}
+        .move-stats .move-stat { margin-right:8px; }
+        .move-stat-power { display:inline-block; background: #ffd700; padding:6px 10px; border-radius:10px; border:1px solid #e6b800; box-shadow: 0 8px 24px rgba(230,184,0,0.18); margin-right:8px; }
+        .move-stat-power .power-value { color: #161616; font-weight:900; font-size:1.18em; letter-spacing:0.4px; }
+        /* texto padrão dos cards: escuro em fundos claros */
+        .move-card, .builder-card { color: #111; }
+        .move-card * , .builder-card * { color: inherit; }
+        /* para cards com fundo escuro aplicamos texto branco */
+        .move-card.text-white, .builder-card.text-white { color: #fff; }
+        .move-card.text-white .move-acao, .move-card.text-white .move-origem, .move-card.text-white .move-slot-origem { color: rgba(255,255,255,0.95); }
     `;
     const s = document.createElement('style');
     s.id = 'smeargle-slot-styles';
@@ -78,6 +116,95 @@ function simplifyForCompare(s) {
     try {
         return normalizeName(s).replace(/[^a-z0-9]/g, '');
     } catch (e) { return (s || '').toString().toLowerCase().replace(/[^a-z0-9]/g, ''); }
+}
+
+// Construir índice rápido de ataques/TMs para lookup O(1) por nome/numero
+function buildAttackLookup(){
+    try{
+        if(window.__smAttackLookup) return window.__smAttackLookup;
+        const lookup = { byName: new Map(), byNumber: new Map(), raw: [] };
+        const candidates = [];
+        // priorizar arrays já conhecidas
+        const known = ['smeargleAtacksData','todosTMs','todos','todosAtacks','todos_tms','DEX_TMS'];
+        known.forEach(k=>{ try{ if(window[k] && Array.isArray(window[k]) && window[k].length) candidates.push(window[k]); }catch(e){} });
+        // também incluir smeargleAtacksData local se definida
+        try{ if(Array.isArray(smeargleAtacksData) && smeargleAtacksData.length) candidates.push(smeargleAtacksData); }catch(e){}
+        // flatenar e dedup
+        const seen = new Set();
+        candidates.forEach(arr=>{
+            arr.forEach(obj=>{
+                try{
+                    if(!obj || typeof obj !== 'object') return;
+                    const rawName = (obj['ATACK']||obj['ATACK_NAME']||obj['nome']||obj['NOME']||obj.name||'')+'';
+                    const key = simplifyForCompare(normalizeName(rawName||''));
+                    if(!key) return;
+                    if(!seen.has(key)){
+                        seen.add(key);
+                        lookup.byName.set(key, obj);
+                        lookup.raw.push(obj);
+                    }
+                    const num = (obj.numero||obj.NUMERO||obj.Number||'')+'';
+                    if(num) lookup.byNumber.set(String(num).replace(/\D/g,''), obj);
+                }catch(e){}
+            });
+        });
+        // fallback: scan window once for arrays that pareçam tabelas de ataques
+        try{
+            for(const k in window){
+                try{
+                    const v = window[k];
+                    if(!Array.isArray(v) || !v.length) continue;
+                    if(lookup.raw.length>0 && lookup.raw.length>200) break; // já temos bom índice
+                    const keys = Object.keys(v[0]).join(' ').toUpperCase();
+                    if(/ATACK|POWER|PP|EFEITO|TIPAGEM|NOME|TM/.test(keys)){
+                        v.forEach(obj=>{
+                            try{
+                                if(!obj || typeof obj !== 'object') return;
+                                const rawName = (obj['ATACK']||obj['ATACK_NAME']||obj['nome']||obj['NOME']||obj.name||'')+'';
+                                const key = simplifyForCompare(normalizeName(rawName||''));
+                                if(!key) return;
+                                if(!seen.has(key)){
+                                    seen.add(key);
+                                    lookup.byName.set(key, obj);
+                                    lookup.raw.push(obj);
+                                }
+                                const num = (obj.numero||obj.NUMERO||obj.Number||'')+'';
+                                if(num) lookup.byNumber.set(String(num).replace(/\D/g,''), obj);
+                            }catch(e){}
+                        });
+                    }
+                }catch(e){}
+            }
+        }catch(e){}
+        window.__smAttackLookup = lookup;
+        return lookup;
+    }catch(e){ return { byName:new Map(), byNumber:new Map(), raw:[] }; }
+}
+
+// Lookup rápido por nome ou numero (usa buildAttackLookup)
+function fastLookupAttack(nameOrObj){
+    try{
+        const lookup = buildAttackLookup();
+        if(!lookup) return null;
+        if(!nameOrObj) return null;
+        if(typeof nameOrObj === 'string'){
+            const key = simplifyForCompare(normalizeName(nameOrObj));
+            if(!key) return null;
+            if(lookup.byName.has(key)) return lookup.byName.get(key);
+            // tentativa por inclusão (fallback rápido via raw array)
+            for(const o of lookup.raw){
+                try{ const on = (o['ATACK']||o['ATACK_NAME']||o.nome||o.name||'')+''; const k2 = simplifyForCompare(normalizeName(on)); if(k2 && (k2===key || k2.includes(key) || key.includes(k2))) return o; }catch(e){}
+            }
+            return null;
+        }
+        if(typeof nameOrObj === 'object'){
+            const num = (nameOrObj.numero||nameOrObj.NUMERO||'')+'';
+            if(num){ const n = String(num).replace(/\D/g,''); if(lookup.byNumber.has(n)) return lookup.byNumber.get(n); }
+            const raw = (nameOrObj.nome||nameOrObj.name||'')+'';
+            if(raw) return fastLookupAttack(raw);
+        }
+    }catch(e){}
+    return null;
 }
 // Extrai o nome primário de um campo que pode conter qualifiers como " - passive - poison"
 function extractPrimaryMoveName(raw) {
@@ -207,6 +334,7 @@ async function carregarDadosSmeargle() {
         }
                     smeargleAtacksData = atacksData;
                     try{ window.smeargleAtacksData = smeargleAtacksData; }catch(e){}
+                    try{ buildAttackLookup(); }catch(e){}
                     try{ if(typeof atualizarCardSmeargle === 'function'){ setTimeout(atualizarCardSmeargle, 120); } }catch(e){}
 
                 // 2.5 Tentar carregar abilities (fallback) — algumas habilidades aparecem como "Flame Body" etc.
@@ -400,8 +528,11 @@ function popularFiltrosSmeargle() {
 // Renderizar golpes no grid
 function renderizarGolpesSmeargle(golpes) {
     const grid = document.getElementById('movesGrid');
+    const _smTimerLabel = '[Smeargle] renderizarGolpesSmeargle';
+    smTimeStart(_smTimerLabel);
     if (!grid) {
         console.warn('[Smeargle] renderizarGolpesSmeargle: elemento #movesGrid não encontrado. Pulando render.');
+        try{ smTimeEnd(_smTimerLabel); }catch(e){}
         return;
     }
     if (!Array.isArray(golpes) || golpes.length === 0) {
@@ -411,30 +542,29 @@ function renderizarGolpesSmeargle(golpes) {
                 <p>Nenhum golpe encontrado com esses filtros</p>
             </div>
         `;
+        try{ smTimeEnd(_smTimerLabel); }catch(e){}
         return;
     }
 
     const nomesSelecionados = smeargleSelectedMoves.filter(Boolean).map(m => m.nome.toLowerCase());
 
-    grid.innerHTML = golpes.map(golpe => {
+    // Construir array de HTML por item (não inserir tudo de uma vez para evitar bloqueio em grandes listas)
+    // Minimizar trabalho pesado aqui: usar dados diretos do objeto e evitar lookups caros
+    const itemsHtml = golpes.map(golpe => {
         const estaSelecionado = nomesSelecionados.includes((golpe.nome||'').toLowerCase());
         const classeExtra = estaSelecionado ? ' move-card-selected' : '';
+        const darkTypes = new Set(['dark','ghost','rock','steel','poison','ground','dragon','fighting']);
         const slotOrigem = golpe.local ? golpe.local.toUpperCase() : '';
-        const tipoResolvido = (typeof obterTipoGolpe === 'function') ? (obterTipoGolpe(golpe) || 'Normal') : (golpe.tipo || 'Normal');
+        const tipoResolvido = (golpe.tipo && golpe.tipo.toString().trim()) ? golpe.tipo : 'Normal';
         const tipoClassSafe = (tipoResolvido||'Normal').toString().toLowerCase().replace(/\s+/g,'-');
-        const iconClass = TIPO_ICONS[tipoResolvido] || TIPO_ICONS[(tipoResolvido.charAt(0).toUpperCase()+tipoResolvido.slice(1).toLowerCase())] || 'fa-circle';
-        const pp = (typeof obterPPGolpe === 'function' ? obterPPGolpe(golpe) : (golpe.PP || golpe.pp || golpe['PP'] || '')) || (golpe.PP || golpe.pp || golpe['PP'] || '');
-        const powerVal = (typeof obterPowerGolpe === 'function') ? obterPowerGolpe(golpe) : (golpe.POWER || golpe.power || '');
-        const powerText = (powerVal !== undefined && powerVal !== null && powerVal !== '') ? String(powerVal) : (golpe.POWER || golpe.power || '');
-        const accuracy = (typeof obterAccuracyGolpe === 'function' ? obterAccuracyGolpe(golpe) : (golpe.ACCURACY || golpe.accuracy || golpe.ACC || golpe.Acc || '')) || (golpe.ACCURACY || golpe.accuracy || golpe.ACC || golpe.Acc || '');
-        const gen = (typeof obterGenGolpe === 'function' ? obterGenGolpe(golpe) : (golpe.GEN || golpe.gen || golpe.Gen || '')) || (golpe.GEN || golpe.gen || golpe.Gen || '');
-        const efeito = (typeof obterEfeitoGolpe === 'function') ? obterEfeitoGolpe(golpe) : (golpe.EFEITO || golpe.efeito || '');
-        const acao = golpe.ACAO || golpe.AÇÃO || golpe.acao || golpe['AÇÃO'] || golpe.Action || golpe.action || '';
-        const categoria = golpe.CATEGORIA || golpe.categoria || golpe.Category || golpe.category || '';
+        const iconClass = TIPO_ICONS[tipoResolvido] || 'fa-circle';
+        const acao = golpe.acao || golpe.ACAO || golpe['AÇÃO'] || '';
+        const categoria = golpe.categoria || golpe.CATEGORIA || '';
 
+        const textClass = darkTypes.has(tipoClassSafe) ? ' text-white' : '';
         return `
-            <div class="move-card builder-card type-${tipoClassSafe}${classeExtra}" 
-                 data-move='${JSON.stringify(golpe)}'
+            <div class="move-card builder-card type-${tipoClassSafe}${classeExtra}${textClass}"
+                 data-move-name="${(golpe.nome||'').replace(/"/g,'&quot;')}" data-move-local="${(golpe.local||'') }"
                  onclick="selecionarGolpe(this)">
                 <div class="move-tipo-icon">
                     <i class="fas ${iconClass}"></i>
@@ -445,17 +575,12 @@ function renderizarGolpesSmeargle(golpes) {
                     <span class="move-categoria">${categoria}</span>
                 </div>
                 <div class="move-acao" style="display:${acao ? 'block' : 'none'}">${acao}</div>
-                <div class="move-efeito" style="display:${efeito ? 'block' : 'none'}">${efeito}</div>
-                <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.95;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                    ${pp ? `<span class="move-stat">PP: <b>${pp}</b></span>` : ''}
-                    ${powerText ? `<span class="move-stat" style="font-weight:900;color:#ffd966;background:rgba(0,0,0,0.08);padding:2px 6px;border-radius:6px;">Pow: <b>${powerText}</b></span>` : ''}
-                    ${accuracy ? `<span class="move-stat">Acc: <b>${accuracy}</b></span>` : ''}
-                    ${gen ? `<span class="move-stat">Gen: <b>${gen}</b></span>` : ''}
-                </div>
+                <div class="move-efeito" style="display:none"></div>
+                <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.9"></div>
                 <div class="move-origem">
                     <i class="fas fa-paw"></i> ${golpe.origem || ''}
                 </div>
-                <div class="move-slot-origem" style="font-size:0.95em;color:#ffd700;margin-top:6px;">
+                <div class="move-slot-origem" style="font-size:0.95em;margin-top:6px;">
                     <i class="fas fa-hashtag"></i> Slot: <b>${slotOrigem}</b>
                 </div>
                 <div class="move-actions" style="margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
@@ -466,12 +591,52 @@ function renderizarGolpesSmeargle(golpes) {
                 ${estaSelecionado ? '<div class="move-selected-badge"><i class="fas fa-check-circle"></i></div>' : ''}
             </div>
         `;
-    }).join('');
+    });
+
+    // Renderizar em chunks para evitar travamento em grandes listas
+    grid.innerHTML = '';
+    var CHUNK = 40;
+    var idx = 0;
+    function appendChunk(){
+        try{
+            var end = Math.min(idx + CHUNK, itemsHtml.length);
+            if(end > idx){ grid.insertAdjacentHTML('beforeend', itemsHtml.slice(idx, end).join('')); 
+                // preencher detalhes (PP / Power / Acc / Efeito) dos itens recém-inseridos sem travar
+                try{ if(window.requestIdleCallback) requestIdleCallback(function(){ preencherDetalhesMovimentosBatch(grid, 12); }, {timeout:400}); else setTimeout(function(){ preencherDetalhesMovimentosBatch(grid,12); }, 60); }catch(e){}
+            }
+            idx = end;
+            if(idx < itemsHtml.length){
+                if(window.requestIdleCallback) requestIdleCallback(appendChunk, {timeout:200});
+                else setTimeout(appendChunk, 40);
+            } else {
+                // fim da renderização
+                try{ smTimeEnd(_smTimerLabel); }catch(e){}
+            }
+        }catch(e){ console.warn('renderizarGolpesSmeargle chunk error', e); try{ smTimeEnd(_smTimerLabel); }catch(e){} }
+    }
+    // iniciar primeiro chunk imediatamente para rapidez percebida
+    appendChunk();
+    // timer será encerrado ao final dos chunks
 }
 
 // Selecionar golpe
 window.selecionarGolpe = function(element) {
-    const golpe = JSON.parse(element.dataset.move);
+    var golpe = null;
+    try{
+        if(element && element.dataset && element.dataset.move){ golpe = JSON.parse(element.dataset.move); }
+        else if(element && element.dataset && element.dataset.moveName){
+            var nm = (element.dataset.moveName||'')+'';
+            var local = (element.dataset.moveLocal||'')+'';
+            var found = null;
+            try{ if(Array.isArray(smeargleMovesData)){
+                const key = normalizeName(nm);
+                found = smeargleMovesData.find(function(m){ try{ return normalizeName(m.nome||m.name||m.NOME||'') === key && ((m.local||'')===(local||'') || !local); }catch(e){return false;} });
+                if(!found) found = smeargleMovesData.find(function(m){ try{ return normalizeName(m.nome||m.name||m.NOME||'') === key; }catch(e){return false;} });
+            }}catch(e){}
+            golpe = found || { nome: nm, local: local };
+        }
+    }catch(e){ console.warn('selecionarGolpe parse fallback', e); golpe = null; }
+    if(!golpe) golpe = {};
 
     // Se estamos em modo seleção de slot específico, tentar inserir no slot alvo
     if (typeof smeargleTargetSlot === 'number' && smeargleTargetSlot !== null) {
@@ -482,23 +647,28 @@ window.selecionarGolpe = function(element) {
             const msg = `⚠️ Este golpe só pode ser copiado no slot ${golpe.local}.`;
             if (window.showToast) window.showToast(msg, 'error'); else alert(msg);
             smeargleTargetSlot = null;
-            atualizarCardSmeargle();
+            try{ scheduleSmeargleUpdate({card:true}); }catch(e){}
             return;
         }
         if (smeargleSelectedMoves[slotIdx]) {
             const msg = `⚠️ O slot M${slotIdx + 1} já está ocupado.`;
             if (window.showToast) window.showToast(msg, 'error'); else alert(msg);
             smeargleTargetSlot = null;
-            atualizarCardSmeargle();
+            try{ scheduleSmeargleUpdate({card:true}); }catch(e){}
             return;
         }
+        // Inserção imediata no modelo e feedback visual rápido
         smeargleSelectedMoves[slotIdx] = golpe;
         smeargleTargetSlot = null;
-        atualizarCardSmeargle();
-        buscarPokemonsCompativeis();
-        reordenarGridMovesOrdenado();
+        try{ const movesCount = document.getElementById('movesCount'); if(movesCount) movesCount.textContent = smeargleSelectedMoves.filter(Boolean).length; }catch(e){}
+        try{ const slotEl = document.querySelector(`#movesList [data-slot="${slotIdx+1}"]`); if(slotEl){ slotEl.outerHTML = `<div class="selected-move-item" data-slot="${slotIdx+1}">\n                        <span class="move-number">${slotIdx + 1}</span>\n                        <span class="move-info">\n                            <strong>${golpe.nome}</strong>\n                            <small>${(golpe.tipo||'')} ${(golpe.categoria?('• '+golpe.categoria):'')}</small>\n                        </span>\n                        <div style="display:flex;gap:6px;align-items:center;margin-left:8px;">\n                            <button class="btn-edit-move" onclick="editarSlot(${slotIdx})" title="Editar"><i class="fas fa-edit"></i></button>\n                            <button class="btn-move-left" onclick="moverGolpeEsquerda(${slotIdx})" title="Mover para a esquerda"><i class="fas fa-arrow-left"></i></button>\n                            <button class="btn-move-right" onclick="moverGolpeDireita(${slotIdx})" title="Mover para a direita"><i class="fas fa-arrow-right"></i></button>\n                            <button class="btn-remove-move" onclick="removerGolpe(${slotIdx})" title="Remover"><i class="fas fa-times"></i></button>\n                        </div>\n                    </div>`; } }catch(e){}
         const okMsg = `✔️ Golpe adicionado em M${slotIdx + 1}`;
-        if (window.showToast) window.showToast(okMsg, 'success'); else alert(okMsg);
+        if (window.showToast) window.showToast(okMsg, 'success');
+
+        // sinalizar adição recente para evitar que a atualização de card sobrescreva status
+        try{ window.__smeargle_recently_added_move = true; setTimeout(function(){ try{ window.__smeargle_recently_added_move = false; }catch(e){} }, 350); }catch(e){}
+        // agendar trabalho pesado sem bloquear a interação
+        try{ scheduleSmeargleUpdate({card:true,buscar:true,reorder:true}); }catch(e){}
         return;
     }
 
@@ -526,15 +696,91 @@ window.selecionarGolpe = function(element) {
         return;
     }
     smeargleSelectedMoves[slotOrigem - 1] = golpe;
+    // atualização imediata e feedback visual leve
+    try{ const movesCount = document.getElementById('movesCount'); if(movesCount) movesCount.textContent = smeargleSelectedMoves.filter(Boolean).length; }catch(e){}
+    try{ element.style.animation = 'none'; setTimeout(() => { element.style.animation = 'pulseSelect 0.4s ease'; }, 10); }catch(e){}
+    try{ const slotIdx2 = slotOrigem - 1; const slotEl2 = document.querySelector(`#movesList [data-slot="${slotIdx2+1}"]`); if(slotEl2){ slotEl2.outerHTML = `<div class="selected-move-item" data-slot="${slotIdx2+1}">\n                        <span class="move-number">${slotIdx2 + 1}</span>\n                        <span class="move-info">\n                            <strong>${golpe.nome}</strong>\n                            <small>${(golpe.tipo||'')} ${(golpe.categoria?('• '+golpe.categoria):'')}</small>\n                        </span>\n                        <div style="display:flex;gap:6px;align-items:center;margin-left:8px;">\n                            <button class="btn-edit-move" onclick="editarSlot(${slotIdx2})" title="Editar"><i class="fas fa-edit"></i></button>\n                            <button class="btn-move-left" onclick="moverGolpeEsquerda(${slotIdx2})" title="Mover para a esquerda"><i class="fas fa-arrow-left"></i></button>\n                            <button class="btn-move-right" onclick="moverGolpeDireita(${slotIdx2})" title="Mover para a direita"><i class="fas fa-arrow-right"></i></button>\n                            <button class="btn-remove-move" onclick="removerGolpe(${slotIdx2})" title="Remover"><i class="fas fa-times"></i></button>\n                        </div>\n                    </div>`; } }catch(e){}
 
-    atualizarCardSmeargle();
-    buscarPokemonsCompativeis();
-    reordenarGridMovesOrdenado();
-
-    // Feedback visual
-    element.style.animation = 'none';
-    setTimeout(() => { element.style.animation = 'pulseSelect 0.4s ease'; }, 10);
+    // sinalizar adição recente para evitar que a atualização de card sobrescreva status
+    try{ window.__smeargle_recently_added_move = true; setTimeout(function(){ try{ window.__smeargle_recently_added_move = false; }catch(e){} }, 350); }catch(e){}
+    // agendar trabalho pesado sem bloquear a interação
+    try{ scheduleSmeargleUpdate({card:true,buscar:true,reorder:true}); }catch(e){}
 };
+
+// Preenche detalhes de movimentos em lotes não bloqueantes (PP / Power / Acc / Efeito / Tipo)
+function preencherDetalhesMovimentosBatch(container, batchSize){
+    try{
+        batchSize = batchSize || 10;
+        container = container || document.getElementById('movesGrid');
+        if(!container) return;
+        const cards = Array.from(container.querySelectorAll('.move-card'));
+        const toProcess = [];
+        for(const c of cards){
+            try{
+                const statsEl = c.querySelector('.move-stats');
+                const efEl = c.querySelector('.move-efeito');
+                // processar apenas se ainda não preenchido
+                if(statsEl && (!statsEl.__filled) ){ toProcess.push(c); }
+                else if(efEl && (!efEl.__filled) && (!efEl.textContent || efEl.textContent.trim()==='')) toProcess.push(c);
+            }catch(e){}
+        }
+        if(toProcess.length===0) return;
+        let i = 0;
+        function runChunk(){
+            const end = Math.min(i + batchSize, toProcess.length);
+            for(; i<end; i++){
+                const card = toProcess[i];
+                try{
+                    const name = (card.dataset && card.dataset.moveName) ? card.dataset.moveName : (card.querySelector('.move-name') && card.querySelector('.move-name').textContent) || '';
+                    const g = { nome: name };
+                    // tentar lookup rápido antes de usar as funções mais pesadas
+                    let pp = '';
+                    let pow = '';
+                    let acc = '';
+                    let gen = '';
+                    let ef = '';
+                    let tipo = '';
+                    try{
+                        const found = fastLookupAttack(name);
+                        if(found){
+                            pp = found.PP || found.pp || found['PP'] || '';
+                            pow = found.POWER || found.power || found.Power || found['POWER'] || '';
+                            acc = found.ACCURACY || found.accuracy || found.ACC || '';
+                            gen = found.GEN || found.gen || '';
+                            ef = found.EFEITO || found.efeito || found.effect || found.Effect || '';
+                            tipo = found.TYPE || found.type || found.TIPAGEM || found.tipagem || found.tipo || '';
+                        } else {
+                            pp = obterPPGolpe(g) || '';
+                            pow = obterPowerGolpe(g) || '';
+                            acc = obterAccuracyGolpe(g) || '';
+                            gen = obterGenGolpe(g) || '';
+                            ef = obterEfeitoGolpe(g) || '';
+                            tipo = obterTipoGolpe(g) || '';
+                        }
+                    }catch(e){ pp = obterPPGolpe(g) || ''; pow = obterPowerGolpe(g) || ''; acc = obterAccuracyGolpe(g) || ''; gen = obterGenGolpe(g) || ''; ef = obterEfeitoGolpe(g) || ''; tipo = obterTipoGolpe(g) || ''; }
+                    // preencher DOM
+                    try{ const tipoEl = card.querySelector('.move-tipo'); if(tipoEl && (!tipoEl.textContent || tipoEl.textContent.trim()==='')) tipoEl.textContent = tipo; }catch(e){}
+                    try{ const catEl = card.querySelector('.move-categoria'); if(catEl && (!catEl.textContent || catEl.textContent.trim()==='')) {} }catch(e){}
+                        try{ const efEl = card.querySelector('.move-efeito'); if(efEl && (!efEl.textContent || efEl.textContent.trim()==='')){ efEl.textContent = ef; efEl.style.display = ef ? 'block' : 'none'; efEl.__filled = true; } }catch(e){}
+                    try{ const statsEl = card.querySelector('.move-stats'); if(statsEl && (!statsEl.__filled)){
+                        const parts = [];
+                        if(pp) parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`);
+                        if(pow) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${pow}</b></span>`);
+                        if(acc) parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`);
+                        if(gen) parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`);
+                        if(parts.length){ statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display = 'block'; }
+                        statsEl.__filled = true;
+                        try{ card.classList.add('details-visible'); }catch(e){}
+                    } }catch(e){}
+                }catch(e){}
+            }
+            if(i < toProcess.length){
+                if(window.requestIdleCallback) requestIdleCallback(runChunk, {timeout:400}); else setTimeout(runChunk, 60);
+            }
+        }
+        runChunk();
+    }catch(e){ console.warn('preencherDetalhesMovimentosBatch error', e); }
+}
 
 // Copiar golpe para clipboard (botão Copiar)
 window.copiarGolpeParaClipboard = function(btn){
@@ -624,6 +870,7 @@ function obterPosicoesDisponiveis(golpe) {
 
 // Reordenar grid para mostrar moves selecionados no topo
 function reordenarGridMovesOrdenado() {
+    smTimeStart('[Smeargle] reordenarGridMovesOrdenado');
     // obter valores de filtros com fallback caso os elementos não existam (p.ex. na aba Builder)
     const el = id => document.getElementById(id);
     const filtros = {
@@ -663,6 +910,7 @@ function reordenarGridMovesOrdenado() {
         const movesOrdenados = movesSelecionados.filter(Boolean).concat(movesNaoSelecionados);
     
     renderizarGolpesSmeargle(movesOrdenados);
+    smTimeEnd('[Smeargle] reordenarGridMovesOrdenado');
 }
 
 // Atualizar card do Smeargle
@@ -805,7 +1053,7 @@ function atualizarCardSmeargle() {
             // atualizar conteúdo existente (types / fraquezas / stats)
             try{ var typesNode = pokedexBlock.querySelector('.pokemon-types'); if(typesNode) typesNode.outerHTML = typesHTML; }catch(e){}
             try{ var wnode = pokedexBlock.querySelector('.pokemon-weaknesses'); if(wnode) wnode.innerHTML = fraquezasHTML; }catch(e){}
-            try{ var statsNode = pokedexBlock.querySelector('.pokemon-stats'); if(statsNode) statsNode.outerHTML = statsHTML; }catch(e){}
+            try{ var statsNode = pokedexBlock.querySelector('.pokemon-stats'); if(statsNode){ if(!window.__smeargle_recently_added_move) statsNode.outerHTML = statsHTML; } }catch(e){}
         }
     }catch(e){ console.warn('Erro injetando bloco Pokédex no card Smeargle', e); }
 
@@ -1074,9 +1322,7 @@ window.moverGolpeEsquerda = function(index) {
     const tmp = smeargleSelectedMoves[index-1];
     smeargleSelectedMoves[index-1] = smeargleSelectedMoves[index];
     smeargleSelectedMoves[index] = tmp;
-    atualizarCardSmeargle();
-    reordenarGridMovesOrdenado();
-    buscarPokemonsCompativeis();
+    try{ scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); }catch(e){}
 };
 
 // Mover golpe para a direita (swap)
@@ -1085,9 +1331,7 @@ window.moverGolpeDireita = function(index) {
     const tmp = smeargleSelectedMoves[index+1];
     smeargleSelectedMoves[index+1] = smeargleSelectedMoves[index];
     smeargleSelectedMoves[index] = tmp;
-    atualizarCardSmeargle();
-    reordenarGridMovesOrdenado();
-    buscarPokemonsCompativeis();
+    try{ scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); }catch(e){}
 };
 
 // Editar um slot manualmente
@@ -1100,9 +1344,7 @@ window.editarSlot = function(index) {
     const categoria = prompt('Categoria (opcional):', atual ? atual.categoria : '');
     const origem = atual && atual.origem ? atual.origem : (window.builderSelectedPokemonName || 'Manual');
     smeargleSelectedMoves[index] = { nome: nome.trim(), tipo: (tipo||'').trim(), categoria: (categoria||'').trim(), acao: '', efeito: '', origem: origem, local: `M${index+1}` };
-    atualizarCardSmeargle();
-    reordenarGridMovesOrdenado();
-    buscarPokemonsCompativeis();
+    try{ scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); }catch(e){}
 };
 
 // Calcular tipo dominante
@@ -1372,22 +1614,31 @@ window.removerGolpe = function(index) {
     if (index >= 0 && index < smeargleSelectedMoves.length) {
         smeargleSelectedMoves[index] = null;
     }
-    atualizarCardSmeargle();
-    buscarPokemonsCompativeis();
-    reordenarGridMovesOrdenado();
+    // feedback imediato: atualizar contagem e substituir visual do slot removido
+    try{
+        const movesCount = document.getElementById('movesCount');
+        if(movesCount) movesCount.textContent = smeargleSelectedMoves.filter(Boolean).length;
+        const movesList = document.getElementById('movesList');
+        if(movesList){
+            const sel = movesList.querySelector(`[data-slot="${index+1}"]`);
+            if(sel){
+                sel.outerHTML = `<div class="selected-move-item selected-move-empty" data-slot="${index+1}">\n                        <span class="move-number">${index + 1}</span>\n                        <span class="move-info"><em>Slot livre</em></span>\n                        <button class="btn-add-slot" onclick="iniciarSelecaoSlot(${index})" style="margin-left:8px;">Adicionar</button>\n                    </div>`;
+            }
+        }
+    }catch(e){/* ignore quick update errors */}
+
+    // agendar trabalho pesado sem bloquear interação
+    try{ scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); }catch(e){}
 };
 
 // Limpar todos os golpes
 function limparGolpes() {
+    // limpar slots (feedback imediato)
     smeargleSelectedMoves = new Array(9).fill(null);
-    atualizarCardSmeargle();
-    reordenarGridMovesOrdenado();
-    document.getElementById('compatibleGrid').innerHTML = `
-        <div class="no-selection">
-            <i class="fas fa-hand-pointer"></i>
-            <p>Selecione golpes acima para ver os Pokémons compatíveis</p>
-        </div>
-    `;
+    try{ const movesCount = document.getElementById('movesCount'); if(movesCount) movesCount.textContent = '0'; }catch(e){}
+    try{ const movesList = document.getElementById('movesList'); if(movesList) movesList.innerHTML = '<div class="no-moves-yet">Nenhum golpe selecionado</div>'; }catch(e){}
+    // agendar re-renderizações pesadas sem bloquear interação
+    try{ scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); }catch(e){}
 }
 
 // Iniciar seleção de slot vazio para inserir o próximo golpe clicado
@@ -1397,20 +1648,23 @@ window.iniciarSelecaoSlot = function(index) {
     if (smeargleTargetSlot === index) {
         smeargleTargetSlot = null;
         if (window.showToast) window.showToast('Seleção cancelada', 'error'); else alert('Seleção cancelada');
-        atualizarCardSmeargle();
+        try{ scheduleSmeargleUpdate({card:true}); }catch(e){}
         return;
     }
     smeargleTargetSlot = index;
     const msg = `Selecione um golpe no grid para inserir em M${index + 1} (clique em "Adicionar" novamente para cancelar).`;
     if (window.showToast) window.showToast(msg, 'success'); else alert(msg);
-    atualizarCardSmeargle();
+    try{ scheduleSmeargleUpdate({card:true}); }catch(e){}
 };
 
 // Buscar Pokémons compatíveis (mostra o Pokémon de origem de cada golpe)
 function buscarPokemonsCompativeis() {
     const grid = document.getElementById('compatibleGrid');
+    const _smBuscarLabel = '[Smeargle] buscarPokemonsCompativeis';
+    smTimeStart(_smBuscarLabel);
     if (!grid) {
         console.warn('[Smeargle] buscarPokemonsCompativeis: elemento #compatibleGrid não encontrado. Pulando render.');
+        try{ smTimeEnd(_smBuscarLabel); }catch(e){}
         return;
     }
 
@@ -1515,6 +1769,7 @@ function buscarPokemonsCompativeis() {
         `);
     }
     grid.innerHTML = cards.join('');
+    try{ smTimeEnd(_smBuscarLabel); }catch(e){}
 }
 
 // Configurar eventos
@@ -1545,7 +1800,7 @@ function configurarEventosSmeargle() {
 
 // Aplicar filtros
 function aplicarFiltrosSmeargle() {
-    reordenarGridMovesOrdenado();
+    try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({reorder:true}); else if(typeof reordenarGridMovesOrdenado === 'function') reordenarGridMovesOrdenado(); }catch(e){}
 }
 
 // Registrar inicializador
@@ -1554,6 +1809,30 @@ if (typeof registerPageInitializer !== 'undefined') {
     registerPageInitializer('smeargle', initSmeargle);
     console.log('✅ Inicializador Smeargle registrado');
 }
+
+// Delegação segura para botões de toggle na página Smeargle
+(function ensureSmeargleToggleDelegation(){
+    try{
+        if(window.__smeargle_toggle_delegation_added) return;
+        window.__smeargle_toggle_delegation_added = true;
+        document.addEventListener('click', function(ev){
+            try{
+                if(ev.button && ev.button !== 0) return;
+                var btn = ev.target && ev.target.closest ? ev.target.closest('.btn-toggle-stats, .btn-toggle-weaknesses') : null;
+                if(!btn) return;
+                try{ ev.preventDefault(); ev.stopPropagation(); }catch(e){}
+                if(btn.dataset && btn.dataset.__delegationHandled === '1') return;
+                var isStats = btn.classList.contains('btn-toggle-stats');
+                var isWeak = btn.classList.contains('btn-toggle-weaknesses');
+                var next = btn.nextElementSibling;
+                if(isStats){ if(next) next.classList.toggle('stats-hidden'); btn.classList.toggle('stats-open'); }
+                else if(isWeak){ if(next) next.classList.toggle('weaknesses-hidden'); btn.classList.toggle('stats-open'); }
+                try{ if(btn.dataset) btn.dataset.__delegationHandled = '1'; }catch(e){}
+                setTimeout(function(){ try{ if(btn.dataset) delete btn.dataset.__delegationHandled; }catch(e){} }, 80);
+            }catch(e){}
+        }, true);
+    }catch(e){}
+})();
 
 /* ============================================
    FUNÇÕES DE GERENCIAMENTO DE BUILDS
@@ -1764,10 +2043,8 @@ window.aplicarBuild = function(buildCompleta, nomeBuild) {
         });
         smeargleSelectedMoves = arr;
         
-        // Atualizar interface
-        atualizarCardSmeargle();
-        buscarPokemonsCompativeis();
-        reordenarGridMovesOrdenado();
+        // Atualizar interface (agendado para não travar)
+        try{ scheduleSmeargleUpdate({card:true,buscar:true,reorder:true}); }catch(e){}
         
         // Fechar modal
         fecharModalBuilds();
