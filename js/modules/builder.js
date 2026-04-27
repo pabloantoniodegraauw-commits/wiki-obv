@@ -501,7 +501,8 @@
       if(!raw) return;
       var candidates = [];
       candidates.push(raw);
-      candidates.push(raw.replace(/^\s*TM\s*\d+\s*[-:\s]?/i,''));
+      candidates.push(raw.replace(/^\s*TM\s*\d+\s*[-:\s]?/i,''));  // strip TM do início
+      candidates.push(raw.replace(/\s+TM\s*\d+\s*$/i,''));          // strip TM do final (ex: "Psychic TM29" → "Psychic")
       if(raw.indexOf('-')!==-1) candidates.push(raw.split('-').slice(1).join('-').trim());
       // dedupe
       candidates = candidates.filter(function(v,i){ return v && candidates.indexOf(v)===i; });
@@ -517,7 +518,7 @@
           const tipo = _getField(found, 'TYPE','type','TIPO','tipo','TIPAGEM','tipagem');
           const cat  = _getField(found, 'CATEGORIA','categoria','CATEGORY','category');
           const acEl2 = tile.querySelector('.move-acao'); if(acEl2 && !acEl2.textContent){ acEl2.textContent = atAc; acEl2.style.display = atAc ? 'block' : 'none'; } if(atAc){ try{ tile.dataset.moveAcao = atAc; }catch(e){} }
-          const efEl2 = tile.querySelector('.move-efeito'); if(efEl2 && !efEl2.textContent){ efEl2.textContent = atEf; efEl2.style.display = atEf ? 'block' : 'none'; }
+          const efEl2 = tile.querySelector('.move-efeito'); if(efEl2){ if(atEf){ efEl2.textContent = atEf; efEl2.style.display = 'block'; efEl2.style.opacity = ''; } else if(!efEl2.textContent){ efEl2.style.display = 'none'; } }
           const statsEl2 = tile.querySelector('.move-stats'); if(statsEl2){ const parts2=[]; if(pp) parts2.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts2.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`); if(acc) parts2.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts2.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl2.innerHTML = parts2.join(' &nbsp; '); statsEl2.style.display = parts2.length ? 'block' : 'none'; }
           if(tipo){ const tipoEl = tile.querySelector('.move-tipo'); if(tipoEl) tipoEl.textContent = tipo; try{ tile.dataset.moveType = tipo.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){} }
           if(cat){ const catEl = tile.querySelector('.move-categoria'); if(catEl) catEl.textContent = cat; }
@@ -2230,9 +2231,11 @@
         .move-slot-origem { color: inherit !important; }
         .move-stat-power .power-value { background: #ffd54d; padding: 2px 6px; border-radius: 6px; color: #111; font-weight:700; }
         .move-stat-power { display: inline-block; margin-left:6px; }
-        /* Fade-in details */
-        .move-efeito, .move-stats { opacity: 0; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease; }
-        .move-card.details-visible .move-efeito, .move-card.details-visible .move-stats { opacity: 1; transform: none; }
+        /* Fade-in details (apenas stats) */
+        .move-stats { opacity: 0; transform: translateY(6px); transition: opacity 180ms ease, transform 180ms ease; }
+        .move-card.details-visible .move-stats { opacity: 1; transform: none; }
+        /* efeito: visível quando display:block, sem animação de opacity */
+        .move-efeito { display: none; }
       `;
       const s = document.createElement('style'); s.id = '__builder_injected_styles'; s.appendChild(document.createTextNode(css)); document.head.appendChild(s);
     }catch(e){/* ignore */}
