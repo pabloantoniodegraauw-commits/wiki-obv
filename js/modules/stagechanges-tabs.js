@@ -190,6 +190,10 @@ window.carregarAtacksParaTabela = async function() {
                     <label class="filter-label"><i class="fas fa-bolt"></i> Ação</label>
                     <select id="atacksFilterAcao" class="filter-select"><option value="">Todos</option>${acoes.map(a=>`<option value="${a}">${a}</option>`).join('')}</select>
                 </div>
+                <div class="filter-group" style="flex:1;min-width:180px;">
+                    <label class="filter-label"><i class="fas fa-search"></i> Pesquisar</label>
+                    <input type="text" id="atacksSearch" class="filter-select" placeholder="Buscar registro..." style="width:100%;box-sizing:border-box;">
+                </div>
                 <button id="atacksClearFilters" class="filter-clear-btn"><i class="fas fa-times"></i> Limpar Filtros</button>
             </div>`;
 
@@ -565,6 +569,7 @@ window.carregarAtacksParaTabela = async function() {
                 responsive: true,
                 pageLength: 100,
                 order: [[0, 'asc']],
+                searching: false,
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
                 }
@@ -580,21 +585,25 @@ window.carregarAtacksParaTabela = async function() {
             const selT = document.getElementById('atacksFilterTipo');
             const selC = document.getElementById('atacksFilterCategoria');
             const selA = document.getElementById('atacksFilterAcao');
+            const inpS = document.getElementById('atacksSearch');
             function aplicarFiltroAtacks() {
                 const vT = selT ? selT.value.toString().trim() : '';
                 const vC = selC ? selC.value.toString().trim() : '';
                 const vA = selA ? selA.value.toString().trim() : '';
+                const vS = inpS ? inpS.value.toString().trim().toLowerCase() : '';
+                const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
                 const rows = document.querySelectorAll('#atacksDataTable tbody tr');
                 rows.forEach(r => {
                     try {
                         const rowType = (r.getAttribute('data-type') || '').toString().trim();
                         const rowCat = (r.getAttribute('data-category') || '').toString().trim();
                         const rowAction = (r.getAttribute('data-action') || '').toString().trim();
-                        const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
+                        const rowText = vS ? normalize(r.textContent || '') : '';
                         let show = true;
                         if (vT) show = show && (normalize(rowType) === normalize(vT));
                         if (vC) show = show && (normalize(rowCat) === normalize(vC));
                         if (vA) show = show && (normalize(rowAction) === normalize(vA));
+                        if (vS) show = show && rowText.includes(normalize(vS));
                         r.style.display = show ? '' : 'none';
                     } catch (e) { }
                 });
@@ -602,8 +611,15 @@ window.carregarAtacksParaTabela = async function() {
             if (selT) selT.addEventListener('change', aplicarFiltroAtacks);
             if (selC) selC.addEventListener('change', aplicarFiltroAtacks);
             if (selA) selA.addEventListener('change', aplicarFiltroAtacks);
+            if (inpS) inpS.addEventListener('input', aplicarFiltroAtacks);
             const clearBtn = document.getElementById('atacksClearFilters');
-            if (clearBtn) clearBtn.addEventListener('click', function(){ if (selT) selT.value=''; if (selC) selC.value=''; if (selA) selA.value=''; aplicarFiltroAtacks(); });
+            if (clearBtn) clearBtn.addEventListener('click', function(){
+                if (selT) selT.value='';
+                if (selC) selC.value='';
+                if (selA) selA.value='';
+                if (inpS) inpS.value='';
+                aplicarFiltroAtacks();
+            });
         } catch (e) { console.warn('Erro ao configurar filtros na aba Atacks', e); }
     }
 
