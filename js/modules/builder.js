@@ -65,14 +65,15 @@
           if(!tOk) ok = false;
         }
         // Ação: TM tiles não têm ação — escondê-los quando filtro Ação ativo
-        // Attacks com ação vazia passam (dado ainda não carregado)
+        // Attacks sem ação também são escondidos (??? ou vazio não bate com nenhum filtro)
         if(fAcao && ok){
           if(isTmTile){ ok = false; }
           else if(f.acao){
             var aOk = (f.acao === fAcao || f.acao.indexOf(fAcao) !== -1 || fAcao.indexOf(f.acao) !== -1);
             if(!aOk) ok = false;
+          } else {
+            ok = false; // ação desconhecida/vazia → não mostrar quando filtro Ação está ativo
           }
-          // ataque sem ação: passa (pode não ter carregado ainda)
         }
         // Categoria: TM tiles sem categoria ficam visíveis; attacks sem cat passam
         if(fCat && ok){
