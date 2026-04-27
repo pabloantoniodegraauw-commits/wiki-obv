@@ -2,101 +2,137 @@
 (function(){
   function safe(q){return document.getElementById(q)}
 
-  // Garantir função global de filtro como fallback caso o script inline não tenha sido carregado
-  try{
-    if(!window.filterCombinedMoves || typeof window.filterCombinedMoves !== 'function'){
-      window.filterCombinedMoves = function(){
-        try{
-          var inp = document.getElementById('moveSearchInput');
-          var q = (inp && inp.value) ? inp.value.toString() : '';
-          try{ q = q.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){ q = q.toLowerCase().replace(/[^a-z0-9\s]/g,'').trim(); }
-          var grid = document.getElementById('combinedMovesGrid');
-          if(!grid) return;
-          var items = Array.from(grid.children || []);
-          if(!q){ items.forEach(function(it){ it.style.display = ''; }); return; }
+  // Normaliza string para comparação
+  function _nk(s){ try{ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){ return (s||'').toString().toLowerCase().replace(/[^a-z0-9\s]/g,'').trim(); } }
 
-          var typesList = ['normal','fogo','fire','agua','água','water','electric','eletrico','elétrico','grass','grama','ice','gelo','fighting','lutador','poison','veneno','ground','terra','flying','voador','psychic','psiquico','bug','inseto','rock','pedra','ghost','fantasma','dragon','dragão','dark','noturno','steel','metalico','metálico','fairy','fada'];
-          var typesSet = new Set(typesList.map(function(t){ try{return t.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){return t.toString().toLowerCase();}}));
-          var tokens = q.split(/\s+/).filter(Boolean);
-          var typeTokens = tokens.filter(function(t){ return typesSet.has(t); });
+  // Filtro e ordenação do grid de golpes do Builder (lê todos os filtros da barra)
+  window.filterCombinedMoves = function(){
+    try{
+      var grid = document.getElementById('combinedMovesGrid');
+      if(!grid) return;
 
-          function itemFields(it){
-            var name = (it.dataset && it.dataset.moveName) ? it.dataset.moveName : (it.querySelector && it.querySelector('.move-name') && it.querySelector('.move-name').textContent) || it.textContent || '';
-            var typeRaw = (it.dataset && it.dataset.moveType) ? it.dataset.moveType : (it.querySelector && it.querySelector('.move-tipo') && it.querySelector('.move-tipo').textContent) || '';
-            if(!typeRaw){ try{ var cls=(it.className||''); var m=cls.match(/\btype-([a-z0-9\-]+)\b/i); if(m && m[1]) typeRaw = m[1]; }catch(e){} }
-            var type = '';
-            try{ type = (typeRaw||'').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ type = (typeRaw||'').toString().toLowerCase().replace(/[^a-z0-9\s]/g,''); }
-            var effect = (it.dataset && it.dataset.moveEffect) ? it.dataset.moveEffect : (it.dataset && it.dataset.moveEfeito) ? it.dataset.moveEfeito : (it.querySelector && it.querySelector('.move-efeito') && it.querySelector('.move-efeito').textContent) || '';
-            var cat = (it.dataset && it.dataset.moveCategory) ? it.dataset.moveCategory : (it.querySelector && it.querySelector('.move-categoria') && it.querySelector('.move-categoria').textContent) || '';
-            try{ name = name.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ name = name.toLowerCase().replace(/[^a-z0-9\s]/g,''); }
-            try{ effect = effect.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ effect = effect.toLowerCase().replace(/[^a-z0-9\s]/g,''); }
-            try{ cat = cat.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,''); }catch(e){ cat = cat.toLowerCase().replace(/[^a-z0-9\s]/g,''); }
-            return {name,type,effect,cat};
-          }
+      // ── leitura dos filtros ──────────────────────────────────────────────
+      var q         = _nk((document.getElementById('moveSearchInput')||{value:''}).value);
+      var fTipo     = _nk((document.getElementById('builderFilterTipo')||{value:''}).value);
+      var fAcao     = _nk((document.getElementById('builderFilterAcao')||{value:''}).value);
+      var fCat      = _nk((document.getElementById('builderFilterCategoria')||{value:''}).value);
+      var fLocal    = (document.getElementById('builderFilterLocal')||{value:''}).value.trim();
+      var fPowerSort= (document.getElementById('builderFilterPower')||{value:''}).value.trim();
 
-          var isTypeSearch = (typeTokens.length > 0 && typeTokens.length === tokens.length);
-          var isNameSearch = false; var isEffectSearch = false;
-          for(var i=0;i<items.length;i++){
-            var f = itemFields(items[i]);
-            for(var t of tokens){ if(f.name.indexOf(t)!==-1){ isNameSearch = true; break; } }
-            if(isNameSearch) break;
-          }
-          if(!isNameSearch){
-            for(var i2=0;i2<items.length;i2++){
-              var f2 = itemFields(items[i2]);
-              for(var t2 of tokens){ if(f2.effect.indexOf(t2)!==-1){ isEffectSearch = true; break; } }
-              if(isEffectSearch) break;
-            }
-          }
+      var items = Array.from(grid.children || []);
 
-          items.forEach(function(it){
-            var f = itemFields(it);
-            var matched = false;
-            if(isTypeSearch){
-              var typeToCheck = f.type || '';
-              if(!typeToCheck){
-                try{
-                  var inferred = '';
-                  if(typeof findAttackDetails === 'function'){
-                    var full = findAttackDetails(f.name || ''); if(full) inferred = (full.TYPE||full.type||full.TIPAGEM||full.tipagem||full.tipo||'').toString();
-                  }
-                  if(!inferred && typeof buildTmLookup === 'function'){
-                    try{
-                      var lu = buildTmLookup();
-                      if(lu && lu.byName){
-                        var rawName = (f.name||'').toString();
-                        var keyMain = (typeof _key === 'function') ? _key(rawName) : rawName.toLowerCase().trim();
-                        var keyNoTm = keyMain.replace(/^tm\s*\d+/,'').replace(/^tm\s*-\s*/,'').replace(/^tm/,'').replace(/[^a-z0-9]/g,'');
-                        var keyStripNum = (typeof _key === 'function') ? _key(rawName.replace(/^\s*tm\s*\d+\s*[-:\s]?/i,'')) : rawName.replace(/^\s*tm\s*\d+\s*[-:\s]?/i,'').toLowerCase().trim();
-                        var keyCandidates = [keyMain, keyNoTm, keyStripNum];
-                        var foundObj = null;
-                        for(var kk of keyCandidates){ if(kk && lu.byName.has(kk)){ foundObj = lu.byName.get(kk); break; } }
-                        if(foundObj) inferred = (foundObj.tipagem||foundObj.TIPAGEM||foundObj.type||foundObj.tipo||'').toString();
-                        if(!inferred && Array.isArray(lu.raw)){
-                          var rn = (typeof _key === 'function') ? _key(rawName) : rawName.toLowerCase().trim();
-                          var rf = lu.raw.find(function(a){ try{ var aName = (a.nome||a['NOME DO TM']||a.NOME||a.name||'')+''; var an = (typeof _key === 'function') ? _key(aName) : aName.toLowerCase().trim(); if(an===rn || an.includes(rn) || rn.includes(an)) return true; return false;}catch(e){return false;} });
-                          if(rf) inferred = (rf.tipagem||rf.TIPAGEM||rf['TIPAGEM DO TM']||rf.type||rf.tipo||'').toString();
-                        }
-                      }
-                    }catch(e){}
-                  }
-                  if(inferred) typeToCheck = inferred.toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'');
-                }catch(e){}
-              }
-              for(var tt of typeTokens){ var parts = (typeToCheck||'').split(/[-\s]+/).filter(Boolean); if(parts.indexOf(tt)!==-1 || (typeToCheck||'')===tt){ matched = true; break; } }
-            } else if(isNameSearch){
-              for(var tt2 of tokens){ if(f.name.indexOf(tt2)!==-1){ matched = true; break; } }
-            } else if(isEffectSearch){
-              for(var tt3 of tokens){ if(f.effect.indexOf(tt3)!==-1){ matched = true; break; } }
-            } else {
-              for(var tt4 of tokens){ if((f.name+ ' ' + f.type + ' ' + f.effect + ' ' + f.cat).indexOf(tt4)!==-1){ matched = true; break; } }
-            }
-            it.style.display = matched ? '' : 'none';
-          });
-        }catch(e){ console.warn('filterCombinedMoves fallback error', e); }
-      };
-    }
-  }catch(e){}
+      // ── helper: extrai campos de um tile ─────────────────────────────────
+      function fields(it){
+        var name  = _nk((it.dataset && it.dataset.moveName) || (it.querySelector('.move-name') && it.querySelector('.move-name').textContent) || '');
+        var typeR = (it.dataset && it.dataset.moveType) || (it.querySelector('.move-tipo') && it.querySelector('.move-tipo').textContent) || '';
+        if(!typeR){ var cm = (it.className||'').match(/\btype-([a-z0-9\-]+)\b/i); if(cm) typeR = cm[1]; }
+        var tipo  = _nk(typeR);
+        var acao  = _nk((it.querySelector('.move-acao') && it.querySelector('.move-acao').textContent) || (it.dataset && it.dataset.moveAcao) || '');
+        var cat   = _nk((it.dataset && it.dataset.moveCategory) || (it.querySelector('.move-categoria') && it.querySelector('.move-categoria').textContent) || '');
+        var slot  = (it.dataset && it.dataset.slotBadge) || (it.querySelector('.slot-badge') && it.querySelector('.slot-badge').textContent) || '';
+        var powerTxt = (it.querySelector('.power-value') && it.querySelector('.power-value').textContent) || '';
+        var power = parseFloat(powerTxt) || 0;
+        var isSep = it.classList.contains('tm-section-separator');
+        var isNotice = it.id === 'builderAllAttacksNotice';
+        return { name, tipo, acao, cat, slot: slot.trim(), power, isSep, isNotice };
+      }
+
+      // ── visibilidade ─────────────────────────────────────────────────────
+      var hasAnyFilter = q || fTipo || fAcao || fCat || fLocal;
+      var visibleCount = 0;
+      items.forEach(function(it){
+        var f = fields(it);
+        if(f.isNotice){ it.style.display = ''; return; } // aviso: sempre visível
+        if(f.isSep){ it.style.display = 'none'; return; } // separador: esconder por padrão, reativar ao final se houver TMs visíveis
+
+        if(!hasAnyFilter){ it.style.display = ''; visibleCount++; return; }
+
+        var ok = true;
+        if(q    && f.name.indexOf(q) === -1)    ok = false;
+        if(fTipo && ok){
+          var tOk = f.tipo && (f.tipo === fTipo || f.tipo.includes(fTipo) || fTipo.includes(f.tipo));
+          if(!tOk) ok = false;
+        }
+        if(fAcao && ok){
+          var aOk = f.acao && (f.acao === fAcao || f.acao.includes(fAcao) || fAcao.includes(f.acao));
+          if(!aOk) ok = false;
+        }
+        if(fCat && ok){
+          var cOk = f.cat && (f.cat === fCat || f.cat.includes(fCat) || fCat.includes(f.cat));
+          if(!cOk) ok = false;
+        }
+        if(fLocal && ok){
+          // ler slot do dataset.slotBadge (preferência) ou do elemento .slot-badge
+          var slotTxt = (it.dataset && it.dataset.slotBadge) ? it.dataset.slotBadge.trim() : ((it.querySelector('.slot-badge') && it.querySelector('.slot-badge').textContent) ? it.querySelector('.slot-badge').textContent.trim() : '');
+          // só filtrar por posição se o card tem um slot atribuído
+          if(slotTxt && slotTxt !== fLocal) ok = false;
+        }
+        it.style.display = ok ? '' : 'none';
+        if(ok) visibleCount++;
+      });
+
+      // Mostrar separador de TMs apenas se houver TM tiles visíveis após o separador
+      items.forEach(function(it, idx){
+        if(!it.classList.contains('tm-section-separator')) return;
+        var hasTmVisible = false;
+        for(var j = idx+1; j < items.length; j++){
+          if(items[j].style.display !== 'none') { hasTmVisible = true; break; }
+        }
+        it.style.display = hasTmVisible ? '' : 'none';
+      });
+
+      // ── ordenação por Power ───────────────────────────────────────────────
+      if(fPowerSort === 'desc' || fPowerSort === 'asc'){
+        // separar separadores dos tiles
+        var seps = items.filter(function(it){ return fields(it).isSep; });
+        var tiles = items.filter(function(it){ return !fields(it).isSep && it.style.display !== 'none'; });
+        var hidden = items.filter(function(it){ return !fields(it).isSep && it.style.display === 'none'; });
+        tiles.sort(function(a,b){
+          var pa = fields(a).power, pb = fields(b).power;
+          return fPowerSort === 'desc' ? pb - pa : pa - pb;
+        });
+        // reordenar no DOM: tiles visiveis ordenados + separadores mantidos no lugar
+        var allOrdered = tiles.concat(hidden);
+        // reinserir seps na posição original
+        seps.forEach(function(s){ grid.appendChild(s); });
+        allOrdered.forEach(function(t){ grid.insertBefore(t, seps[0] || null); });
+      }
+    }catch(e){ console.warn('filterCombinedMoves error', e); }
+  };
+
+  // Popula os dropdowns de Tipo/Ação/Categoria com os valores dos golpes renderizados
+  window._builderPopulateFilters = function(){
+    try{
+      var grid = document.getElementById('combinedMovesGrid');
+      if(!grid) return;
+      var selTipo = document.getElementById('builderFilterTipo');
+      var selAcao = document.getElementById('builderFilterAcao');
+      var selCat  = document.getElementById('builderFilterCategoria');
+      if(!selTipo || !selAcao || !selCat) return;
+
+      var tipos = new Set(), acoes = new Set(), cats = new Set();
+      Array.from(grid.querySelectorAll('.move-card')).forEach(function(it){
+        var tipo = (it.querySelector('.move-tipo') && it.querySelector('.move-tipo').textContent) || (it.dataset && it.dataset.moveType) || '';
+        var acao = (it.querySelector('.move-acao') && it.querySelector('.move-acao').textContent) || '';
+        var cat  = (it.querySelector('.move-categoria') && it.querySelector('.move-categoria').textContent) || (it.dataset && it.dataset.moveCategory) || '';
+        if(tipo.trim()) tipos.add(tipo.trim());
+        if(acao.trim()) acoes.add(acao.trim());
+        if(cat.trim())  cats.add(cat.trim());
+      });
+
+      function rebuild(sel, set, defaultLabel){
+        var prev = sel.value;
+        sel.innerHTML = '<option value="">'+defaultLabel+'</option>';
+        Array.from(set).sort().forEach(function(v){
+          var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
+        });
+        if(prev) sel.value = prev;
+      }
+      rebuild(selTipo, tipos, 'Todos');
+      rebuild(selAcao, acoes, 'Todas');
+      rebuild(selCat,  cats,  'Todas');
+    }catch(e){}
+  };
 
   function parsePokedexText(text){
     if(!text) return {moves:[], tms:[]};
@@ -170,29 +206,20 @@
       if(nome) tms.push({nome:nome.trim(), numero:num});
     }
 
-    // heurísticas por linha para linhas simples (Name / Type / Category) e TM simple lines
+    // Coletar TMs de qualquer linha que contenha TM/MT (com ou sem número)
     lines.forEach(ln=>{
-      // Ignorar linhas que sejam apenas indicação de clã (ex: "Clã recomendado: Void")
-      if(/cl[ãa]\s*recomendad/i.test(ln)) return;
-      if(/^cl[ãa]\b/i.test(ln)) return;
-      if(/\[Move\s*\d+\]|\[TM\s*\d+/i.test(ln)) return;
-      if(/\bTM\b|\bMT\b/i.test(ln)){
-        // extract name and optional number
-        const nm = ln.replace(/\[?TM\]?[:\-#\s0-9]*/ig,'').trim();
-        if(nm) tms.push({nome:nm});
+      if(!/(?:^|\s|\[)(?:TM|MT)\s*\d/i.test(ln) && !/\bTM\b|\bMT\b/i.test(ln)) return;
+      // Formato com número: TM09 - Venoshock  ou  [TM09 - Venoshock]:
+      const tmNum = /(?:TM|MT)\s*(\d+)\s*[-–:]\s*([^\]:\n]+)/i.exec(ln);
+      if(tmNum){
+        const nm = tmNum[2].trim();
+        if(nm && !tms.find(t=>t.nome.toLowerCase()===nm.toLowerCase()))
+          tms.push({ numero: tmNum[1], nome: nm });
         return;
       }
-      if(ln.includes('/')){
-        const parts = ln.split('/').map(x=>x.trim()).filter(Boolean);
-        if(parts.length>=1){
-          const nome = parts[0];
-          if(nome && !moves.find(x=>x.nome.toLowerCase()===nome.toLowerCase())) moves.push({nome: nome, tipo: parts[2]||'', categoria: parts[3]||''});
-        }
-      }
-      // short lines
-      if(/^[A-Za-zÀ-ÿ0-9'\-\s]+$/.test(ln) && ln.length>2 && ln.length<60){
-        if(!moves.find(x=>x.nome.toLowerCase()===ln.toLowerCase())) moves.push({nome:ln, tipo:'', categoria:''});
-      }
+      // Formato genérico: qualquer linha com TM/MT — extrai o nome
+      const nm = ln.replace(/\[?(?:TM|MT)\]?[:\-#\s0-9]*/ig,'').replace(/[\[\]:]/g,'').trim();
+      if(nm && !tms.find(t=>t.nome.toLowerCase()===nm.toLowerCase())) tms.push({nome:nm});
     });
 
     // Tentar extrair EV/qualificador mesmo quando estiver embutido no `meta.nome`
@@ -364,6 +391,23 @@
   // helper: normalize string for fuzzy matching (simple)
   function _key(s){ try{ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g,''); }catch(e){ return (s||'').toString().toLowerCase().replace(/[^a-z0-9]/g,''); } }
 
+  // helper: lê um campo de um objeto ignorando case e espaços nas chaves; suporta múltiplos nomes alternativos
+  // Resolve problemas de espaço nas chaves ("PP ", "AÇÃO ") e nomes alternativos
+  function _getField(obj, ...keys){
+    if(!obj) return '';
+    // cache de chaves normalizadas do objeto
+    const objKeys = Object.keys(obj);
+    for(const key of keys){
+      // tentativa direta
+      if(key in obj && obj[key] !== undefined && obj[key] !== null && obj[key] !== '') return String(obj[key]);
+      // busca ignorando case e espaços extras
+      const kn = key.toLowerCase().trim();
+      const match = objKeys.find(k => k.toLowerCase().trim() === kn);
+      if(match !== undefined && obj[match] !== undefined && obj[match] !== null && obj[match] !== '') return String(obj[match]);
+    }
+    return '';
+  }
+
   // Busca detalhes de ataque na tabela `smeargleAtacksData` ou em window.todosTMs/lookup
   function findAttackDetails(nameOrObj){
     try{
@@ -426,14 +470,14 @@
 
       function applyFound(found){
         try{
-          const atAc = found['AÇÃO']||found.ACAO||found.acao||found.action||'';
-          const atEf = found['EFEITO']||found.EFEITO||found.efeito||found.effect||'';
-          const pp = found['PP']||found.pp||'';
-          const power = found['POWER']||found.power||found.DANO||'';
-          const acc = found['ACCURACY']||found.accuracy||'';
-          const gen = found['GEN']||found.GEN||'';
-          const tipo = found['TYPE']||found.type||found.TIPO||found['TIPAGEM']||found.tipagem||'';
-          const cat = found['CATEGORIA']||found.CATEGORIA||found.categoria||'';
+          const atAc = _getField(found, 'AÇÃO','ACAO','acao','action','ACTION');
+          const atEf = _getField(found, 'EFEITO','efeito','effect','EFFECT');
+          const pp   = _getField(found, 'PP','pp');
+          const power= _getField(found, 'POWER','power','DANO','dano');
+          const acc  = _getField(found, 'ACCURACY','accuracy','PRECISAO','ACURACIA');
+          const gen  = _getField(found, 'GEN','gen');
+          const tipo = _getField(found, 'TYPE','type','TIPO','tipo','TIPAGEM','tipagem');
+          const cat  = _getField(found, 'CATEGORIA','categoria','CATEGORY','category');
           const acEl2 = tile.querySelector('.move-acao'); if(acEl2 && !acEl2.textContent){ acEl2.textContent = atAc; acEl2.style.display = atAc ? 'block' : 'none'; }
           const efEl2 = tile.querySelector('.move-efeito'); if(efEl2 && !efEl2.textContent){ efEl2.textContent = atEf; efEl2.style.display = atEf ? 'block' : 'none'; }
           const statsEl2 = tile.querySelector('.move-stats'); if(statsEl2){ const parts2=[]; if(pp) parts2.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts2.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`); if(acc) parts2.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts2.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl2.innerHTML = parts2.join(' &nbsp; '); statsEl2.style.display = parts2.length ? 'block' : 'none'; }
@@ -556,7 +600,10 @@
     const combined = safe('combinedMovesGrid'); if(combined) {
       combined.innerHTML = '';
       (parsed.moves||[]).forEach((mv, idx)=>{
-        const slotBadge = mv.assignedSlot ? `<div class="slot-badge">M${mv.assignedSlot}</div>` : '';
+        // mv.slot vem de parsePokedexText; mv.assignedSlot é legado (pode não existir)
+        const slotNum = mv.slot || mv.assignedSlot || null;
+        const slotLabel = slotNum ? `M${slotNum}` : '';
+        const slotBadge = slotLabel ? `<div class="slot-badge">${slotLabel}</div>` : '';
         const card = document.createElement('div');
         card.className = `move-card builder-card type-${(mv.tipo||'').toString().toLowerCase()}`;
         const origemName = (parsed && parsed.meta && parsed.meta.nome) ? parsed.meta.nome : 'Pokedex';
@@ -573,10 +620,10 @@
           <div class="move-stats" style="margin-top:6px;font-size:12px;opacity:0.9"></div>
           <div class="move-origem">${origemName}</div>
             <div class="move-slot-origem" style="font-size:0.95em;margin-top:6px;">
-            <i class="fas fa-hashtag"></i> Slot: <b>M${mv.assignedSlot||''}</b>
+            <i class="fas fa-hashtag"></i> Slot: <b>${slotLabel}</b>
           </div>
           <div class="move-actions" style="margin-top:8px;display:flex;gap:8px;align-items:center">
-            <select id="parsed-slot-${idx}">${[...Array(slots)].map((_,i)=>`<option value="${i+1}" ${mv.assignedSlot===(i+1)?'selected':''}>M${i+1}</option>`).join('')}</select>
+            <select id="parsed-slot-${idx}">${[...Array(slots)].map((_,i)=>`<option value="${i+1}" ${slotNum===(i+1)?'selected':''}>M${i+1}</option>`).join('')}</select>
             <button data-idx="${idx}" class="btn-add-parsed">Adicionar</button>
             ${slotBadge}
           </div>
@@ -587,6 +634,7 @@
           card.dataset.moveType = mv.tipo || mv.type || '';
           card.dataset.moveEffect = mv.efeito || mv.effect || mv.EFEITO || '';
           card.dataset.moveCategory = mv.categoria || mv.categoria || '';
+          card.dataset.slotBadge = slotLabel; // para filtro de Posição do Move
         }catch(e){}
         // preenche Ação / Efeito / Stats a partir do objeto mv (preferência) ou buscando detalhes na tabela ATACKS/TMs
         try{
@@ -617,7 +665,7 @@
             tryEnrichTileFromAttacks(card, mv);
           }
         }catch(e){}
-        card.addEventListener('click', function(ev){ if(ev.target && ev.target.classList && ev.target.classList.contains('btn-add-parsed')) return; openCombinedAssignInline(Object.assign({}, mv), mv.assignedSlot?mv.assignedSlot-1:0); });
+        card.addEventListener('click', function(ev){ if(ev.target && ev.target.classList && ev.target.classList.contains('btn-add-parsed')) return; openCombinedAssignInline(Object.assign({}, mv), slotNum ? slotNum-1 : 0); });
         combined.appendChild(card);
       });
     }
@@ -629,7 +677,7 @@
     // garantir alinhamento da altura do painel combinado com o card do Pokémon
     try{ if(typeof adjustCombinedPanelHeight === 'function'){ setTimeout(adjustCombinedPanelHeight, 60); } }catch(e){}
     // aplicar filtro de busca automaticamente após render (se houver termo na caixa)
-    try{ setTimeout(function(){ if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 120); }catch(e){}
+    try{ setTimeout(function(){ if(window && typeof window._builderPopulateFilters === 'function') window._builderPopulateFilters(); if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 120); }catch(e){}
   }
 
   // Re-renderizar os parsed moves quando os dados de ATACKS/TMs estiverem disponíveis
@@ -776,27 +824,59 @@
       tmsContainer.innerHTML = ''; tmsContainer.appendChild(grid);
     }
 
-  function renderParsedTms(tms){
-    // default rendering for the right-hand TM panel
-    // try common target ids for TM panels (compatibility): prefer combinedTmsGrid, fall back to builderTmsList
-    const c = safe('combinedTmsGrid') || safe('builderTmsList'); if(!c) return; c.innerHTML='';
-    if(!tms || tms.length===0){ c.innerHTML = '<div style="opacity:0.8">Nenhum TM detectado</div>'; return; }
-    const grid = document.createElement('div'); grid.className='tm-grid';
-    tms.forEach((tm,i)=>{
-      const tile = document.createElement('div'); tile.className='tm-tile move-card builder-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || '';
-      try{ tile.dataset.moveName = tm.nome || tm.name || ''; tile.dataset.moveType = (tm.tipagem||tm.tipo||tm.type||''); tile.dataset.moveEffect = tm.efeito||tm.effect||tm.EFEITO||''; tile.dataset.moveCategory = tm.categoria||''; }catch(e){}
-      try{ tile.dataset.moveName = tm.nome || tm.name || ''; tile.dataset.moveType = (tm.tipagem||tm.tipo||tm.type||''); tile.dataset.moveEffect = tm.efeito||tm.effect||tm.EFEITO||''; tile.dataset.moveCategory = tm.categoria||''; }catch(e){}
-      // preencher atributos diretos vindos do parsed tm (caso applyAttacksToParsed tenha populado)
-      try{
-        if(tm && typeof tm === 'object'){
-          if(tm.ACAO && !tm.acao) tm.acao = tm.ACAO;
-          if(tm.EFEITO && !tm.efeito) tm.efeito = tm.EFEITO;
-          if(tm.PP && !tm.pp) tm.pp = tm.PP;
-          if(tm.POWER && !tm.power) tm.power = tm.POWER;
+  // Enriquece objeto tm com PP/Power/Acc/Ação/Efeito de forma síncrona (busca em todas as fontes disponíveis)
+  function _enrichTmFromAvailableData(tm){
+    try{
+      if(!tm || !tm.nome) return;
+      const sources = [
+        window.smeargleAtacksData,
+        window.__smeargleRawCache && window.__smeargleRawCache.atacks,
+        window.todosAtacks,
+      ].filter(s => Array.isArray(s) && s.length > 0);
+      if(!sources.length) return;
+      const name = _key(tm.nome);
+      if(!name) return;
+      for(const src of sources){
+        const found = src.find(a => {
+          const atn = _key(_getField(a, 'ATACK','ATACK_NAME','ATACK_PT','ATACK_BR','nome','NAME'));
+          return atn === name || (atn && name && (atn.includes(name) || name.includes(atn)));
+        });
+        if(found){
+          if(!tm.pp)       tm.pp       = _getField(found, 'PP', 'pp');
+          if(!tm.power)    tm.power    = _getField(found, 'POWER', 'power', 'DANO', 'dano');
+          if(!tm.accuracy) tm.accuracy = _getField(found, 'ACCURACY', 'accuracy', 'PRECISAO', 'ACURACIA');
+          if(!tm.gen)      tm.gen      = _getField(found, 'GEN', 'gen');
+          if(!tm.acao)     tm.acao     = _getField(found, 'AÇÃO', 'ACAO', 'acao', 'action', 'ACTION');
+          if(!tm.efeito)   tm.efeito   = _getField(found, 'EFEITO', 'efeito', 'effect', 'EFFECT');
+          if(!tm.tipo)     tm.tipo     = _getField(found, 'TYPE', 'type', 'TIPO', 'tipo', 'tipagem', 'TIPAGEM');
+          if(!tm.categoria)tm.categoria= _getField(found, 'CATEGORIA', 'categoria', 'CATEGORY', 'category');
+          return;
         }
-      }catch(e){}
+      }
+    }catch(e){}
+  }
+
+  function renderParsedTms(tms){
+    // Injeta TMs direto no combinedMovesGrid (mesma janela dos moves)
+    const c = safe('combinedMovesGrid') || safe('builderTmsList'); if(!c) return;
+    // Remover TMs e separador anteriores
+    Array.from(c.querySelectorAll('[data-is-tm]')).forEach(el=>el.remove());
+    Array.from(c.querySelectorAll('.tm-section-separator')).forEach(el=>el.remove());
+    if(!tms || tms.length===0) return;
+    // Separador de título
+    const sep = document.createElement('div');
+    sep.className = 'tm-section-separator';
+    sep.setAttribute('data-is-tm','1');
+    sep.style.cssText = 'grid-column:1/-1;padding:8px 4px 4px;color:#ffd700;font-weight:700;font-size:0.95em;border-top:1px solid rgba(255,215,0,0.2);margin-top:4px;';
+    sep.innerHTML = '<i class="fas fa-compact-disc"></i> TMs detectados';
+    c.appendChild(sep);
+    tms.forEach((tm,i)=>{
+      // Enriquecer sincronamente com dados disponíveis ANTES de criar o tile
+      _enrichTmFromAvailableData(tm);
+      const tile = document.createElement('div'); tile.className='tm-tile move-card builder-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || ''; tile.dataset.isTm='1';
+      try{ tile.dataset.moveName = tm.nome || tm.name || ''; tile.dataset.moveType = (tm.tipo||tm.tipagem||tm.type||''); tile.dataset.moveEffect = tm.efeito||''; tile.dataset.moveCategory = tm.categoria||''; }catch(e){}
       (function(){
-        let tipo = (tm.tipagem || tm.tipo || tm.type || '').toString().trim();
+        let tipo = (tm.tipo || tm.tipagem || tm.type || '').toString().trim();
         try{
           const todos = window.todosTMs || [];
           if(!tipo && Array.isArray(todos) && todos.length){
@@ -857,6 +937,28 @@
         </div>
       `;
       tile.tabIndex=0; tile.setAttribute('role','button');
+      // preencher stats diretamente dos campos do objeto tm (já enriquecido por applyAttacksToParsed)
+      try{
+        const acEl = tile.querySelector('.move-acao');
+        const efEl = tile.querySelector('.move-efeito');
+        const statsEl = tile.querySelector('.move-stats');
+        if(acEl){ acEl.textContent = tm.acao||tm.ACAO||tm['AÇÃO']||''; acEl.style.display = acEl.textContent ? 'block':'none'; }
+        if(efEl){ efEl.textContent = tm.efeito||tm.EFEITO||tm['EFEITO']||''; efEl.style.display = efEl.textContent ? 'block':'none'; }
+        if(statsEl){
+          const parts=[];
+          const pp    = tm.pp||tm.PP||'';
+          const power = tm.power||tm.POWER||tm.DANO||'';
+          const acc   = tm.accuracy||tm.ACCURACY||'';
+          const gen   = tm.gen||tm.GEN||'';
+          if(pp)    parts.push(`<span class="move-stat">PP: <b>${pp}</b></span>`);
+          if(power) parts.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`);
+          if(acc)   parts.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`);
+          if(gen)   parts.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`);
+          if(parts.length){ statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display='block'; }
+        }
+      }catch(e){}
+      // se os campos ainda estiverem vazios, buscar da tabela de ataques (primeiro render antes do enriquecimento)
+      try{ tryEnrichTileFromAttacks(tile, tm); }catch(e){}
       tile.addEventListener('click', ()=>{
         window.builderMeta = window.builderMeta || {tms:[]};
         const name = tile.dataset.tmName;
@@ -865,10 +967,52 @@
         else{ window.builderMeta.tms.push({nome:name}); tile.classList.add('selected'); }
         updateTmCounter();
       });
-      grid.appendChild(tile);
+      c.appendChild(tile);
     });
-    c.appendChild(grid);
-    try{ setTimeout(function(){ if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 90); }catch(e){}
+    // Re-enriquecimento em lote: aguardar dados carregarem e atualizar tiles sem stats
+    (function schedulePostRenderEnrich(){
+      try{
+        ensureAttacksLoaded(8000).then(function(atacksSrc){
+          try{
+            if(!Array.isArray(atacksSrc) || !atacksSrc.length) return;
+            const container = safe('combinedMovesGrid') || safe('builderTmsList');
+            if(!container) return;
+            container.querySelectorAll('[data-is-tm="1"].tm-tile').forEach(function(t){
+              try{
+                const statsEl = t.querySelector('.move-stats');
+                if(statsEl && statsEl.children.length > 0) return; // já tem stats
+                const name = _key(t.dataset.tmName || t.dataset.moveName || '');
+                if(!name) return;
+                const found = atacksSrc.find(function(a){
+                  const atn = _key(_getField(a,'ATACK','ATACK_NAME','ATACK_PT','ATACK_BR','nome','NAME'));
+                  return atn===name || (atn&&name&&(atn.includes(name)||name.includes(atn)));
+                });
+                if(!found) return;
+                const pp    = _getField(found,'PP','pp');
+                const power = _getField(found,'POWER','power','DANO','dano');
+                const acc   = _getField(found,'ACCURACY','accuracy','PRECISAO','ACURACIA');
+                const gen   = _getField(found,'GEN','gen');
+                const acao  = _getField(found,'AÇÃO','ACAO','acao','action','ACTION');
+                const efeito= _getField(found,'EFEITO','efeito','effect','EFFECT');
+                const acEl = t.querySelector('.move-acao');
+                const efEl = t.querySelector('.move-efeito');
+                if(acEl && acao){ acEl.textContent = acao; acEl.style.display='block'; }
+                if(efEl && efeito){ efEl.textContent = efeito; efEl.style.display='block'; }
+                if(statsEl){
+                  const parts=[];
+                  if(pp)    parts.push('<span class="move-stat">PP: <b>'+pp+'</b></span>');
+                  if(power) parts.push('<span class="move-stat move-stat-power">Pow: <b class="power-value">'+power+'</b></span>');
+                  if(acc)   parts.push('<span class="move-stat">Acc: <b>'+acc+'</b></span>');
+                  if(gen)   parts.push('<span class="move-stat">Gen: <b>'+gen+'</b></span>');
+                  if(parts.length){ statsEl.innerHTML = parts.join(' &nbsp; '); statsEl.style.display='block'; }
+                }
+              }catch(ex){}
+            });
+          }catch(ex){}
+        });
+      }catch(e){}
+    })();
+    try{ setTimeout(function(){ if(window && typeof window._builderPopulateFilters === 'function') window._builderPopulateFilters(); if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 90); }catch(e){}
   }
 
   // Render TM grid into a given container for assigning to a specific moveObj
@@ -970,7 +1114,7 @@
       grid.appendChild(tile);
     });
     container.appendChild(grid);
-    try{ setTimeout(function(){ if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 80); }catch(e){}
+    try{ setTimeout(function(){ if(window && typeof window._builderPopulateFilters === 'function') window._builderPopulateFilters(); if(window && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }, 80); }catch(e){}
   }
 
   function updateTmCounter(){ const el = safe('tmCountVal'); if(!el) return; const n = (window.builderMeta && Array.isArray(window.builderMeta.tms))?window.builderMeta.tms.length:0; el.textContent = n; }
@@ -1158,14 +1302,30 @@
     return new Promise(async (resolve, reject)=>{
       try{
         if(Array.isArray(window.smeargleAtacksData) && window.smeargleAtacksData.length>0) return resolve(window.smeargleAtacksData);
-        // tentar retryFetchAttacks se disponível
-        if(window.retryFetchAttacks && typeof window.retryFetchAttacks === 'function'){
-          try{ await window.retryFetchAttacks(); }catch(e){}
+        // usar cache bruto do smeargle se disponível (pre-fetch roda 2s após page load)
+        if(window.__smeargleRawCache && Array.isArray(window.__smeargleRawCache.atacks) && window.__smeargleRawCache.atacks.length){
+          window.smeargleAtacksData = window.__smeargleRawCache.atacks;
+          return resolve(window.smeargleAtacksData);
         }
-        // aguardar curto período até que dados apareçam
+        // buscar diretamente do Apps Script se nenhum dado disponível
+        try{
+          const base = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
+          const resp = await fetch(base + '?acao=obter_atacks&page=1&limit=10000');
+          if(resp.ok){
+            const data = await resp.json().catch(()=>null);
+            let arr = [];
+            if(Array.isArray(data)) arr = data;
+            else if(data && Array.isArray(data.data)) arr = data.data;
+            if(arr.length){ window.smeargleAtacksData = arr; return resolve(arr); }
+          }
+        }catch(e){}
+        // aguardar curto período até que dados apareçam (smeargle pode carregar em paralelo)
         const start = Date.now();
         (function waitFor(){
           if(Array.isArray(window.smeargleAtacksData) && window.smeargleAtacksData.length>0) return resolve(window.smeargleAtacksData);
+          if(window.__smeargleRawCache && Array.isArray(window.__smeargleRawCache.atacks) && window.__smeargleRawCache.atacks.length){
+            window.smeargleAtacksData = window.__smeargleRawCache.atacks; return resolve(window.smeargleAtacksData);
+          }
           if(Date.now() - start > timeoutMs) return resolve(window.smeargleAtacksData || []);
           setTimeout(waitFor, 120);
         })();
@@ -1179,27 +1339,34 @@
     if(!parsed) parsed = window._builder_parsed || null;
     if(!parsed) return;
     const lookup = await ensureAttacksLoaded(5000) || [];
-    if(!Array.isArray(lookup) || lookup.length===0) return;
+    // combinar com window.todosAtacks (populado pelo script.js)
+    const extraSrc = (window.todosAtacks && Array.isArray(window.todosAtacks)) ? window.todosAtacks : [];
+    const allSrc = lookup.length ? lookup : extraSrc;
+    if(!Array.isArray(allSrc) || allSrc.length===0) return;
+
+    function enrichObj(obj){
+      try{
+        const name = _key(obj.nome||'');
+        if(!name) return;
+        const found = allSrc.find(a=>{ const atn = _key(_getField(a,'ATACK','ATACK_NAME','ATACK_PT','ATACK_BR','nome','NAME')); return atn===name || (atn&&name&&(atn.includes(name)||name.includes(atn))); });
+        if(found){
+          if(!obj.pp)       obj.pp       = _getField(found, 'PP', 'pp');
+          if(!obj.power)    obj.power    = _getField(found, 'POWER', 'power', 'DANO', 'dano');
+          if(!obj.accuracy) obj.accuracy = _getField(found, 'ACCURACY', 'accuracy', 'PRECISAO', 'ACURACIA');
+          if(!obj.gen)      obj.gen      = _getField(found, 'GEN', 'gen');
+          if(!obj.acao)     obj.acao     = _getField(found, 'AÇÃO', 'ACAO', 'acao', 'action', 'ACTION');
+          if(!obj.efeito)   obj.efeito   = _getField(found, 'EFEITO', 'efeito', 'effect', 'EFFECT');
+          if(!obj.tipo)     obj.tipo     = _getField(found, 'TYPE', 'type', 'TIPO', 'tipo', 'tipagem', 'TIPAGEM');
+          if(!obj.categoria)obj.categoria= _getField(found, 'CATEGORIA', 'categoria', 'CATEGORY', 'category');
+        }
+      }catch(e){}
+    }
     try{
-      (parsed.moves||[]).forEach(mv=>{
-        try{
-          const name = (mv.nome||'').toString().toLowerCase().trim();
-          const found = lookup.find(a=>{ const atn = ((a['ATACK']||a['ATACK_NAME']||a['ATACK_PT']||a['ATACK_BR']||'')+'').toString().toLowerCase().trim(); return atn===name || atn.includes(name) || name.includes(atn); });
-          if(found){
-            mv.acao = mv.acao || (found['AÇÃO']||found.ACAO||found.acao||found.action||'')+'';
-            mv.efeito = mv.efeito || (found['EFEITO']||found.EFEITO||found.efeito||found.effect||'')+'';
-            mv.pp = mv.pp || (found['PP']||found.pp||'')+'';
-            mv.power = mv.power || (found['POWER']||found.power||found.DANO||'')+'';
-            mv.accuracy = mv.accuracy || (found['ACCURACY']||found.accuracy||found.ACCURACAO||'')+'';
-            mv.gen = mv.gen || (found['GEN']||found.GEN||'')+'';
-            mv.tipo = mv.tipo || (found['TYPE']||found.type||found.TIPO||'')+'';
-            mv.categoria = mv.categoria || (found['CATEGORIA']||found.CATEGORIA||found.categoria||'')+'';
-          }
-        }catch(e){}
-      });
-      // re-render parsed moves grid
+      (parsed.moves||[]).forEach(enrichObj);
+      (parsed.tms||[]).forEach(enrichObj);
+      // re-render tudo
       try{ renderParsedMoves(parsed); }catch(e){}
-      // atualizar cards/tms adicionais
+      try{ renderParsedTms(parsed.tms||[]); }catch(e){}
       try{ if(window.refreshParsedMovesAttacks) window.refreshParsedMovesAttacks(); if(window.refreshTmTypes) window.refreshTmTypes(); }catch(e){}
     }catch(e){ console.error('applyAttacksToParsed error', e); }
   }
@@ -1226,6 +1393,8 @@
       window._builder_parsed = parsed;
       console.log('ENVIAR MOVE7 parsed moves:', parsed.moves && parsed.moves.length);
       renderParsedMoves(parsed);
+      // enriquecer moves E tms com dados da tabela de ataques (async — atualiza tiles quando dados chegarem)
+      try{ applyAttacksToParsed(parsed); }catch(e){}
       // ensure user can copy moveset afterwards
       if(window.refreshParsedMovesAttacks) try{ window.refreshParsedMovesAttacks(); }catch(e){}
       if(window.refreshTmTypes) try{ window.refreshTmTypes(); }catch(e){}
@@ -1441,18 +1610,254 @@
     const movesList = safe('movesList'); if(movesList){ movesList.addEventListener('click', function(ev){ const item = ev.target.closest ? ev.target.closest('.selected-move-item') : null; if(!item) return; const slot = parseInt(item.dataset-slot,10); if(!slot) return; const moveObj = (typeof smeargleSelectedMoves !== 'undefined' ? smeargleSelectedMoves[slot-1] : window.smeargleSelectedMoves[slot-1]); openCombinedAssignInline(moveObj, slot-1); }); }
     // also update counter display
     updateTmCounter();
-    // ensure search input listeners are attached when builder UI initializes (SPA navigation)
+    // event listeners para a barra de filtros do Builder
     try{
-      var inp = document.getElementById('moveSearchInput');
-      var clearBtn = document.getElementById('clearMoveSearch');
-      if(inp){ inp.removeEventListener && inp.removeEventListener('input', window._builder_search_handler); window._builder_search_handler = function(){ try{ if(window.filterCombinedMoves) window.filterCombinedMoves(); }catch(e){} }; inp.addEventListener('input', window._builder_search_handler); inp.addEventListener('keyup', window._builder_search_handler); }
-      // If input already has value, immediately run filter to reflect current state
-      try{ if(inp && inp.value && typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }catch(e){}
-      if(clearBtn){ clearBtn.removeEventListener && clearBtn.removeEventListener('click', window._builder_clear_handler); window._builder_clear_handler = function(){ try{ var i=document.getElementById('moveSearchInput'); if(i){ i.value=''; if(window.filterCombinedMoves) window.filterCombinedMoves(); i.focus(); } }catch(e){} }; clearBtn.addEventListener('click', window._builder_clear_handler); }
+      var handler = function(){ try{ if(window.filterCombinedMoves) window.filterCombinedMoves(); }catch(e){} };
+      ['moveSearchInput','builderFilterTipo','builderFilterAcao','builderFilterCategoria','builderFilterLocal','builderFilterPower'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(!el) return;
+        el.removeEventListener('input', handler);
+        el.removeEventListener('change', handler);
+        el.addEventListener('input', handler);
+        el.addEventListener('change', handler);
+      });
+      try{ if(typeof window.filterCombinedMoves === 'function') window.filterCombinedMoves(); }catch(e){}
+    }catch(e){ /* ignore */ }
+
+    // Se o usuário já parseou um Pokémon antes e navegou de volta, re-exibir os golpes
+    // Caso contrário, pré-popular o grid com todos os ataques disponíveis para pesquisa
+    try{
+      var grid = document.getElementById('combinedMovesGrid');
+      if(grid && grid.children.length === 0){
+        if(window._builder_parsed && window._builder_parsed.moves && window._builder_parsed.moves.length > 0){
+          // Re-renderizar a última parse ao voltar para a aba
+          setTimeout(function(){
+            try{ if(typeof renderParsedMoves === 'function') renderParsedMoves(window._builder_parsed); }catch(e){}
+          }, 50);
+        } else {
+          // Pré-popular com todos os ataques para pesquisa (como a aba Smeargle)
+          setTimeout(_prePopularTodosAtaques, 200);
+        }
+      }
     }catch(e){ /* ignore */ }
   }
 
-  // try to init now if document ready
+  // Popula o grid com todos os ataques disponíveis quando não há moveset parseado
+  function _prePopularTodosAtaques(){
+    try{
+      var grid = document.getElementById('combinedMovesGrid');
+      if(!grid) return;
+      // Verificar se já foi populado (checar o notice, não children.length, para permitir append de TMs)
+      var alreadyPopulated = !!grid.querySelector('#builderAllAttacksNotice');
+      var tmSepExists = !!grid.querySelector('.tm-section-separator[data-preload]');
+      if(alreadyPopulated && tmSepExists) return; // tudo já adicionado
+      // Se o grid tem conteúdo mas NÃO é o modo pré-populado (ex: moveset de Pokémon), não sobrescrever
+      if(!alreadyPopulated && grid.children.length > 0) return;
+
+      var attacks = (window.smeargleAtacksData && Array.isArray(window.smeargleAtacksData) && window.smeargleAtacksData.length > 0)
+        ? window.smeargleAtacksData
+        : (window.todosAtacks && Array.isArray(window.todosAtacks) && window.todosAtacks.length > 0
+            ? window.todosAtacks : null);
+      var tms = (window.todosTMs && Array.isArray(window.todosTMs) && window.todosTMs.length > 0) ? window.todosTMs : null;
+
+      if(!attacks && !tms){
+        // Dados ainda não chegaram: tentar novamente a cada 500ms por até 15s
+        var tries = 0;
+        var iv = setInterval(function(){
+          tries++;
+          var a = (window.smeargleAtacksData && Array.isArray(window.smeargleAtacksData) && window.smeargleAtacksData.length > 0)
+            ? window.smeargleAtacksData
+            : (window.todosAtacks && Array.isArray(window.todosAtacks) && window.todosAtacks.length > 0 ? window.todosAtacks : null);
+          var t = (window.todosTMs && Array.isArray(window.todosTMs) && window.todosTMs.length > 0) ? window.todosTMs : null;
+          if(a || t){
+            clearInterval(iv);
+            if(document.getElementById('combinedMovesGrid')) _prePopularTodosAtaques();
+          }
+          if(tries > 30) clearInterval(iv);
+        }, 500);
+        return;
+      }
+
+      // Se já populado com ataques mas TMs ainda não estavam disponíveis, tentar adicionar TMs
+      if(alreadyPopulated && !tmSepExists && tms && tms.length){
+        _appendTMsToGrid(grid, tms);
+        return;
+      }
+
+      // Se TMs estão disponíveis mas ataques não chegaram ainda, aguardar mais 2s
+      if(!attacks && tms){
+        setTimeout(function(){
+          if(document.getElementById('combinedMovesGrid') && !document.querySelector('#builderAllAttacksNotice')){
+            _prePopularTodosAtaques();
+          }
+        }, 2000);
+        // Mas já tentar adicionar TMs como fallback imediato
+      }
+
+      // Mostrar aviso de modo "todos os ataques/TMs"
+      var notice = document.createElement('div');
+      notice.id = 'builderAllAttacksNotice';
+      notice.style.cssText = 'grid-column:1/-1;padding:8px 12px;background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);border-radius:8px;color:#ffd700;font-size:0.85em;text-align:center;';
+      notice.innerHTML = '<i class="fas fa-info-circle"></i> Exibindo todos os ataques e TMs. Use <b>ENVIAR MOVE7</b> para carregar o moveset de um Pokémon.';
+
+      var frag = document.createDocumentFragment();
+      frag.appendChild(notice);
+
+      // ── Ataques ──────────────────────────────────────────────────────────
+      if(attacks){
+        attacks.forEach(function(atk){
+          try{
+            var nome = _getField(atk, 'ATACK', 'ATACK_NAME', 'ATACK_PT', 'nome', 'name', 'NOME') || '';
+            if(!nome || nome.length < 2) return;
+            var tipo    = _getField(atk, 'TYPE', 'TIPO', 'tipo', 'tipagem', 'TIPAGEM') || '';
+            var cat     = _getField(atk, 'CATEGORIA', 'categoria', 'CATEGORY') || '';
+            var power   = _getField(atk, 'POWER', 'power', 'DANO', 'dano') || '';
+            var pp      = _getField(atk, 'PP', 'pp') || '';
+            var acc     = _getField(atk, 'ACCURACY', 'accuracy') || '';
+            var acao    = _getField(atk, 'AÇÃO', 'ACAO', 'acao', 'action') || '';
+            var efeito  = _getField(atk, 'EFEITO', 'efeito', 'effect') || '';
+            var tipoClass = (tipo||'').toString().toLowerCase().replace(/[^a-z]/g,'');
+
+            var card = document.createElement('div');
+            card.className = 'move-card builder-card type-' + (tipoClass || 'normal');
+            card.innerHTML =
+              '<div class="move-tipo-icon"><i class="fas ' + getTypeIcon(tipo) + '"></i></div>' +
+              '<div class="move-name">' + nome + '</div>' +
+              '<div class="move-details">' +
+                '<span class="move-tipo">' + tipo + '</span>' +
+                '<span class="move-categoria">' + cat + '</span>' +
+              '</div>' +
+              '<div class="move-acao" style="font-size:0.82em;opacity:0.75;margin-top:3px">' + acao + '</div>' +
+              '<div class="move-stats" style="margin-top:4px;font-size:11px;opacity:0.8">' +
+                (pp    ? 'PP: <b>' + pp + '</b> ' : '') +
+                (power ? 'Pow: <b class="power-value">' + power + '</b> ' : '') +
+                (acc   ? 'Acc: <b>' + acc + '</b>' : '') +
+              '</div>' +
+              '<div class="move-efeito" style="font-size:0.8em;opacity:0.65;margin-top:3px;display:none">' + efeito + '</div>';
+
+            card.dataset.moveName     = nome;
+            card.dataset.moveType     = tipo;
+            card.dataset.moveCategory = cat;
+            card.dataset.moveEffect   = efeito;
+            card.dataset.slotBadge    = '';
+
+            frag.appendChild(card);
+          }catch(e){}
+        });
+      }
+
+      // ── TMs ──────────────────────────────────────────────────────────────
+      if(tms && tms.length){
+        var tmSep = document.createElement('div');
+        tmSep.className = 'tm-section-separator';
+        tmSep.setAttribute('data-preload', '1');
+        tmSep.style.cssText = 'grid-column:1/-1;padding:8px 4px 4px;color:#ffd700;font-weight:700;font-size:0.95em;border-top:1px solid rgba(255,215,0,0.2);margin-top:4px;';
+        tmSep.innerHTML = '<i class="fas fa-compact-disc"></i> TMs disponíveis';
+        frag.appendChild(tmSep);
+
+        tms.forEach(function(tm){
+          try{
+            var tmNome  = _getField(tm, 'NOME DO TM', 'nome', 'name', 'NOME') || '';
+            if(!tmNome || tmNome.length < 2) return;
+            var tmNum   = _getField(tm, 'NUMERO DO TM', 'numero', 'NUMERO', 'number') || '';
+            var tmTipo  = _getField(tm, 'TIPAGEM DO TM', 'tipagem', 'TIPAGEM', 'tipo', 'TYPE', 'type') || '';
+            var tipoClass = (tmTipo||'').toString().toLowerCase().replace(/[^a-z]/g,'');
+            var tmLabel = tmNum ? 'TM' + tmNum : 'TM';
+            // dataset.moveName inclui nome + número para pesquisa por ambos
+            var searchName = tmNome + (tmNum ? ' TM' + tmNum : '');
+
+            var tile = document.createElement('div');
+            tile.className = 'move-card builder-card tm-tile type-' + (tipoClass || 'normal');
+            tile.setAttribute('data-is-tm', '1');
+            tile.setAttribute('data-preload-tm', '1');
+            tile.innerHTML =
+              '<div class="move-tipo-icon"><i class="fas ' + getTypeIcon(tmTipo) + '"></i></div>' +
+              '<div style="display:flex;align-items:center;justify-content:center;gap:6px">' +
+                '<div class="move-name">' + tmNome + '</div>' +
+                '<div class="tm-num-badge" style="font-size:0.82em;background:rgba(255,255,255,0.04);padding:3px 7px;border-radius:8px;color:#ffd700;border:1px solid rgba(255,255,255,0.08);">' + tmLabel + '</div>' +
+              '</div>' +
+              '<div class="move-details">' +
+                '<span class="move-tipo">' + tmTipo + '</span>' +
+              '</div>' +
+              '<div class="move-stats" style="margin-top:4px;font-size:11px;opacity:0.8"></div>';
+
+            tile.dataset.moveName     = searchName;
+            tile.dataset.moveType     = tmTipo;
+            tile.dataset.moveCategory = '';
+            tile.dataset.moveEffect   = '';
+            tile.dataset.slotBadge    = '';
+
+            frag.appendChild(tile);
+          }catch(e){}
+        });
+      }
+
+      grid.appendChild(frag);
+
+      try{ if(window._builderPopulateFilters) window._builderPopulateFilters(); }catch(e){}
+      try{ if(window.filterCombinedMoves) window.filterCombinedMoves(); }catch(e){}
+
+      // Se TMs ainda não estavam disponíveis, vigiar e adicionar quando chegarem
+      if(!tms){
+        var tmWatchTries = 0;
+        var tmWatch = setInterval(function(){
+          tmWatchTries++;
+          var t = (window.todosTMs && Array.isArray(window.todosTMs) && window.todosTMs.length > 0) ? window.todosTMs : null;
+          if(t){
+            clearInterval(tmWatch);
+            var g = document.getElementById('combinedMovesGrid');
+            if(g && !g.querySelector('.tm-section-separator[data-preload]')) _appendTMsToGrid(g, t);
+          }
+          if(tmWatchTries > 30) clearInterval(tmWatch);
+        }, 600);
+      }
+    }catch(e){ console.warn('_prePopularTodosAtaques err', e); }
+  }
+
+  // Adiciona seção de TMs ao grid pré-populado (quando chegam depois dos ataques)
+  function _appendTMsToGrid(grid, tms){
+    try{
+      if(!grid || !tms || !tms.length) return;
+      if(grid.querySelector('.tm-section-separator[data-preload]')) return; // já adicionado
+      var frag = document.createDocumentFragment();
+      var tmSep = document.createElement('div');
+      tmSep.className = 'tm-section-separator';
+      tmSep.setAttribute('data-preload', '1');
+      tmSep.style.cssText = 'grid-column:1/-1;padding:8px 4px 4px;color:#ffd700;font-weight:700;font-size:0.95em;border-top:1px solid rgba(255,215,0,0.2);margin-top:4px;';
+      tmSep.innerHTML = '<i class="fas fa-compact-disc"></i> TMs disponíveis';
+      frag.appendChild(tmSep);
+      tms.forEach(function(tm){
+        try{
+          var tmNome = _getField(tm, 'NOME DO TM', 'nome', 'name', 'NOME') || '';
+          if(!tmNome || tmNome.length < 2) return;
+          var tmNum  = _getField(tm, 'NUMERO DO TM', 'numero', 'NUMERO', 'number') || '';
+          var tmTipo = _getField(tm, 'TIPAGEM DO TM', 'tipagem', 'TIPAGEM', 'tipo', 'TYPE', 'type') || '';
+          var tipoClass = (tmTipo||'').toString().toLowerCase().replace(/[^a-z]/g,'');
+          var tmLabel = tmNum ? 'TM' + tmNum : 'TM';
+          var searchName = tmNome + (tmNum ? ' TM' + tmNum : '');
+          var tile = document.createElement('div');
+          tile.className = 'move-card builder-card tm-tile type-' + (tipoClass || 'normal');
+          tile.setAttribute('data-is-tm', '1');
+          tile.setAttribute('data-preload-tm', '1');
+          tile.innerHTML =
+            '<div class="move-tipo-icon"><i class="fas ' + getTypeIcon(tmTipo) + '"></i></div>' +
+            '<div style="display:flex;align-items:center;justify-content:center;gap:6px">' +
+              '<div class="move-name">' + tmNome + '</div>' +
+              '<div class="tm-num-badge" style="font-size:0.82em;background:rgba(255,255,255,0.04);padding:3px 7px;border-radius:8px;color:#ffd700;border:1px solid rgba(255,255,255,0.08);">' + tmLabel + '</div>' +
+            '</div>' +
+            '<div class="move-details"><span class="move-tipo">' + tmTipo + '</span></div>' +
+            '<div class="move-stats" style="margin-top:4px;font-size:11px;opacity:0.8"></div>';
+          tile.dataset.moveName = searchName;
+          tile.dataset.moveType = tmTipo;
+          tile.dataset.slotBadge = '';
+          frag.appendChild(tile);
+        }catch(e){}
+      });
+      grid.appendChild(frag);
+      try{ if(window._builderPopulateFilters) window._builderPopulateFilters(); }catch(e){}
+      try{ if(window.filterCombinedMoves) window.filterCombinedMoves(); }catch(e){}
+    }catch(e){}
+  }
   if(document.readyState === 'complete' || document.readyState === 'interactive'){
     setTimeout(initBuilderUI, 50);
   } else {
@@ -1467,8 +1872,173 @@
     window.parsePokedexText = parsePokedexText;
     window.savePokedexMovesToSheet = savePokedexMovesToSheet;
     window.renderParsedMoves = renderParsedMoves;
+    window.renderParsedTms = renderParsedTms;
     window.initBuilderUI = initBuilderUI;
   }catch(e){ console.warn('builder: failed to expose globals', e); }
+
+  // ─── SISTEMA DE BUILDS DO MOVE7 ─────────────────────────────────────────────
+  // Prefixo para diferenciar builds Move7 das builds Smeargle na mesma planilha
+  var MOVE7_BUILD_PREFIX = '[MOVE7] ';
+  var SHEETS_URL_BUILDS = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
+
+  // Abre o modal de builds do Move7 (sobrepõe abrirModalBuilds global quando este modal existir)
+  window.abrirModalBuilds = function(){
+    var modal = document.getElementById('modalBuildsMove7');
+    if(modal){
+      modal.style.display = 'flex';
+      _builderAtualizarPreview();
+      _builderCarregarBuilds();
+    }
+  };
+
+  function _builderAtualizarPreview(){
+    var preview = document.getElementById('builderBuildPreview');
+    if(!preview) return;
+    var parsed = window._builder_parsed;
+    if(!parsed || ((!parsed.moves || !parsed.moves.length) && (!parsed.tms || !parsed.tms.length))){
+      preview.innerHTML = '<em>Nenhum golpe detectado. Use ENVIAR MOVE7 primeiro.</em>';
+      return;
+    }
+    var parts = (parsed.moves||[]).filter(Boolean).map(function(m,i){
+      return 'M'+(m.slot||i+1)+': '+m.nome;
+    });
+    var tmParts = (parsed.tms||[]).filter(Boolean).map(function(t){ return 'TM: '+t.nome; });
+    preview.innerHTML = '<strong>Preview:</strong> '+(parts.concat(tmParts).join(' / ') || '—');
+  }
+
+  // Salvar build atual do Move7
+  window._builderSalvarBuild = async function(){
+    var nomeInput = document.getElementById('builderInputNomeBuild');
+    var nomeBuild = nomeInput ? nomeInput.value.trim() : '';
+    if(!nomeBuild){ alert('⚠️ Digite um nome para a build!'); return; }
+    var parsed = window._builder_parsed;
+    if(!parsed || ((!parsed.moves||!parsed.moves.length)&&(!parsed.tms||!parsed.tms.length))){
+      alert('⚠️ Nenhum golpe detectado. Use ENVIAR MOVE7 primeiro!'); return;
+    }
+    try{
+      var userStr = localStorage.getItem('user');
+      var user = userStr ? JSON.parse(userStr) : null;
+      var usuario = user && user.nickname ? user.nickname : 'Anônimo';
+      var pokeName = (parsed.meta && parsed.meta.nome) ? parsed.meta.nome : 'Pokémon';
+
+      // Combinar moves e TMs num array com formato compatível com o GAS:
+      // moves: { nome, origem } — TMs com origem='[TM]'
+      var movesArr = (parsed.moves||[]).filter(Boolean).map(function(m){
+        return { nome: m.nome, origem: pokeName };
+      });
+      var tmsArr = (parsed.tms||[]).filter(Boolean).map(function(t){
+        return { nome: t.nome, origem: '[TM]' };
+      });
+      var allMoves = movesArr.concat(tmsArr);
+
+      var SHEETS_URL_BUILDS = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
+      var formData = new URLSearchParams({
+        action: 'salvarBuild',
+        nomeBuild: MOVE7_BUILD_PREFIX + nomeBuild,
+        moves: JSON.stringify(allMoves),
+        usuario: usuario
+      });
+      var resp = await fetch(SHEETS_URL_BUILDS, { method: 'POST', body: formData });
+      var result = await resp.json();
+      if(result.success){
+        alert('✅ Build salva com sucesso!');
+        if(nomeInput) nomeInput.value = '';
+        _builderCarregarBuilds();
+      } else {
+        alert('❌ Erro ao salvar: ' + result.message);
+      }
+    }catch(e){ console.error('_builderSalvarBuild error', e); alert('❌ Erro ao salvar build.'); }
+  };
+
+  // Carregar builds do Move7 (filtra pelo prefixo [MOVE7])
+  async function _builderCarregarBuilds(){
+    var lista = document.getElementById('builderBuildsList');
+    if(!lista) return;
+    lista.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+    try{
+      var SHEETS_URL_BUILDS = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
+      var resp = await fetch(SHEETS_URL_BUILDS + '?action=carregarBuilds');
+      var result = await resp.json();
+      var userStr = localStorage.getItem('user');
+      var user = userStr ? JSON.parse(userStr) : null;
+      var isAdmin = user && user.role === 'admin';
+      if(result.success && result.builds && result.builds.length){
+        // filtrar apenas builds do Move7
+        var builds = result.builds.filter(function(b){ return b.nome && b.nome.startsWith(MOVE7_BUILD_PREFIX); });
+        if(!builds.length){
+          lista.innerHTML = '<p style="color:rgba(255,255,255,0.6);text-align:center;padding:20px;">Nenhuma build salva ainda.</p>';
+          return;
+        }
+        lista.innerHTML = builds.map(function(build, idx){
+          var displayNome = build.nome.replace(MOVE7_BUILD_PREFIX, '');
+          var dataFmt = build.data ? (function(d){ try{ return new Date(d).toLocaleDateString('pt-BR'); }catch(e){ return d||''; } })(build.data) : '';
+          var deleteBtn = isAdmin ? '<button class="btn-delete-build" onclick="event.stopPropagation();window._builderExcluirBuild('+build.id+',\''+displayNome.replace(/'/g,"&apos;")+'\')"><i class="fas fa-trash"></i></button>' : '';
+          return '<div class="build-item" style="display:flex;align-items:flex-start;gap:8px;">'
+            +'<div onclick="window._builderAplicarBuild(\''+build.buildCompleta.replace(/'/g,"&apos;")+'\',\''+displayNome.replace(/'/g,"&apos;")+'\')\" style="cursor:pointer;flex:1;">'
+            +'<div class="build-item-header"><div class="build-item-name">'+displayNome+'</div><div class="build-item-date">'+dataFmt+'</div></div>'
+            +'<div class="build-item-content">'+build.buildCompleta+'</div>'
+            +'<div class="build-item-usuario">Por: '+(build.usuario||'—')+'</div>'
+            +'</div>'+deleteBtn+'</div>';
+        }).join('');
+      } else {
+        lista.innerHTML = '<p style="color:rgba(255,255,255,0.6);text-align:center;padding:20px;">Nenhuma build salva ainda.</p>';
+      }
+    }catch(e){ console.error('_builderCarregarBuilds error', e); lista.innerHTML = '<p style="color:#ff6464;text-align:center;padding:20px;">Erro ao carregar builds.</p>'; }
+  }
+
+  // Aplicar build selecionada no Builder (re-popula os golpes e TMs)
+  window._builderAplicarBuild = function(buildCompleta, nomeBuild){
+    try{
+      // Parsear formato: "m1 - MoveName - Pokemon / m2 - MoveName - [TM]"
+      var moves = [], tms = [];
+      var parts = buildCompleta.split(' / ');
+      parts.forEach(function(part, idx){
+        var segs = part.trim().split(' - ');
+        if(segs.length < 2) return;
+        var slotStr = segs[0].trim(); // ex: "m1"
+        var nomeMov = segs[1].trim();
+        var origem  = segs[2] ? segs[2].trim() : '';
+        var slotNum = parseInt(slotStr.replace(/^m/i,''), 10);
+        if(origem === '[TM]'){
+          tms.push({ nome: nomeMov });
+        } else {
+          moves.push({ nome: nomeMov, slot: isNaN(slotNum) ? (idx+1) : slotNum, origem: origem });
+        }
+      });
+      if(!moves.length && !tms.length){ alert('⚠️ Nenhum golpe válido encontrado!'); return; }
+      // Pokemon nome: pegar da origem do primeiro move
+      var pokeName = moves.length ? (moves[0].origem || 'Pokémon') : 'Pokémon';
+      var parsed = { moves: moves, tms: tms, meta: { nome: pokeName } };
+      window._builder_parsed = parsed;
+      if(typeof renderParsedMoves === 'function') try{ renderParsedMoves(parsed); }catch(e){}
+      if(typeof renderParsedTms === 'function')   try{ renderParsedTms(tms); }catch(e){}
+      if(window.applyAttacksToParsed)             try{ window.applyAttacksToParsed(parsed); }catch(e){}
+      document.getElementById('modalBuildsMove7').style.display = 'none';
+      alert('✅ Build "'+nomeBuild+'" aplicada! '+moves.length+' golpe(s) + '+tms.length+' TM(s).');
+    }catch(e){ console.error('_builderAplicarBuild error', e); alert('❌ Erro ao aplicar build.'); }
+  };
+
+  // Excluir build do Move7 (apenas admin)
+  window._builderExcluirBuild = async function(buildIndex, nomeBuild){
+    if(!confirm('❌ Excluir a build "'+nomeBuild+'"?\n\nEsta ação não pode ser desfeita!')) return;
+    try{
+      var userStr = localStorage.getItem('user');
+      var user = userStr ? JSON.parse(userStr) : null;
+      if(!user || !user.authToken || !user.email){ alert('❌ Você precisa estar logado como admin!'); return; }
+      var SHEETS_URL_BUILDS = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
+      var formData = new URLSearchParams({
+        action: 'excluirBuild',
+        buildIndex: buildIndex.toString(),
+        authToken: user.authToken,
+        adminEmail: user.email
+      });
+      var resp = await fetch(SHEETS_URL_BUILDS, { method: 'POST', body: formData });
+      var result = await resp.json();
+      if(result.success){ alert('✅ Build excluída!'); _builderCarregarBuilds(); }
+      else { alert('❌ Erro: ' + result.message); }
+    }catch(e){ console.error('_builderExcluirBuild error', e); alert('❌ Erro ao excluir build.'); }
+  };
+  // ─────────────────────────────────────────────────────────────────────────────
 
   // -- Modal combinado: golpes + TMs --
   function openCombinedAssignModal(moveObj, slotIndex){

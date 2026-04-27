@@ -132,6 +132,9 @@ document.addEventListener('click', async function(ev){
                 if(!parsed || !parsed.moves || parsed.moves.length===0){ mostrarToastSucesso && mostrarToastSucesso('Nenhum golpe detectado'); return; }
                 window._builder_parsed = parsed;
                 if(typeof window.renderParsedMoves === 'function') try{ window.renderParsedMoves(parsed); }catch(e){}
+                if(typeof window.renderParsedTms === 'function') try{ window.renderParsedTms(parsed.tms||[]); }catch(e){}
+                // enriquecer moves E tms com dados da tabela de ataques
+                if(typeof window.applyAttacksToParsed === 'function') try{ window.applyAttacksToParsed(parsed); }catch(e){}
                 try{ if(window.refreshParsedMovesAttacks) window.refreshParsedMovesAttacks(); }catch(e){}
                 try{ if(window.refreshTmTypes) window.refreshTmTypes(); }catch(e){}
                 // enviar automaticamente se função estiver disponível (cobre caso initBuilderUI não tenha sido chamado)

@@ -212,6 +212,9 @@ function extractPrimaryMoveName(raw) {
     let s = raw.toString().trim();
     // Remover conteúdo entre parênteses
     s = s.replace(/\(.*?\)/g, '').trim();
+    // Padrão "TMxx - Nome do Ataque": retornar o nome após o traço
+    const tmMatch = s.match(/^TM\d+\s*[-–]\s*(.+)/i);
+    if (tmMatch) return tmMatch[1].trim();
     // Se houver separadores com ' - ' ou '–' ou ':' pegar a primeira parte
     const parts = s.split(/\s[-–:]\s/);
     if (parts && parts.length > 0) return parts[0].trim();
@@ -221,6 +224,16 @@ function extractPrimaryMoveName(raw) {
 function initSmeargle() {
     console.log('🎨 Inicializando Smeargle Builder...');
     ensureSmeargleStyles();
+
+    // Se os golpes já foram extraídos (retorno à aba), re-renderiza instantaneamente
+    if (Array.isArray(smeargleMovesData) && smeargleMovesData.length > 0) {
+        console.log('⚡ Smeargle: dados em cache, renderizando sem fetch...');
+        popularFiltrosSmeargle();
+        renderizarGolpesSmeargle(smeargleMovesData);
+        configurarEventosSmeargle();
+        return;
+    }
+
     carregarDadosSmeargle();
 }
 
@@ -283,99 +296,108 @@ function extractSpeciesName(raw){
 }
 
 // Carregar dados do Google Sheets
+// Busca os dados brutos (pokemon + ataques + abilities + TMs) e armazena em cache global.
+// Retorna Promise<boolean> (true = sucesso).
+async function _fetchSmeargleRawData() {
+    try {
+        const ATACKS_URL = SHEETS_BASE_URL + '?acao=obter_atacks&page=1&limit=10000';
+        const TMS_URL    = SHEETS_BASE_URL + '?acao=obter_tms&page=1&limit=10000';
+        const [pokeResp, atacksResp, tmsResp] = await Promise.all([
+            fetch(SHEETS_URL),
+            fetch(ATACKS_URL),
+            fetch(TMS_URL)
+        ]);
+        if (!pokeResp.ok) throw new Error(`HTTP ${pokeResp.status}`);
+        if (!atacksResp.ok) throw new Error(`HTTP ataques ${atacksResp.status}`);
+
+        const [pokeJson, atacksJson] = await Promise.all([
+            pokeResp.json(),
+            atacksResp.json()
+        ]);
+
+        let tms = [];
+        try {
+            const tmsJson = await tmsResp.json();
+            const rawTms  = Array.isArray(tmsJson) ? tmsJson : (tmsJson.data || []);
+            tms = rawTms.map(tm => ({
+                tipo: tm['TIPO DE ITEM'] || 'TM',
+                numero: String(tm['NUMERO DO TM'] || ''),
+                nome: tm['NOME DO TM'] || '',
+                tipagem: tm['TIPAGEM DO TM'] || 'Normal',
+                categoria: tm['TIPO DE DROP'] || ''
+            }));
+        } catch(e) { console.warn('[Smeargle] TMs não carregados:', e); }
+
+        const pokemon = Array.isArray(pokeJson) ? pokeJson : (pokeJson.data || []);
+        const atacks  = Array.isArray(atacksJson) ? atacksJson : (atacksJson.data || []);
+
+        // abilities: usar cache global ou buscar
+        let abilities = [];
+        if (window.todasAbilities && window.todasAbilities.length > 0) {
+            abilities = window.todasAbilities;
+        } else {
+            try {
+                const abResp = await fetch(SHEETS_BASE_URL + '?acao=obter_abilities&page=1&limit=10000');
+                if (abResp.ok) {
+                    const abJson = await abResp.json();
+                    abilities = Array.isArray(abJson) ? abJson : (abJson.data || []);
+                }
+            } catch(e) {}
+        }
+
+        window.__smeargleRawCache = { pokemon, atacks, abilities, tms, ts: Date.now() };
+        // expor TMs globalmente para outros módulos
+        if (tms.length > 0 && (!window.todosTMs || window.todosTMs.length === 0)) {
+            window.todosTMs = tms;
+        }
+        console.log('✅ [Smeargle] Cache bruto pronto — pokemon:', pokemon.length, 'ataques:', atacks.length, 'TMs:', tms.length);
+        return true;
+    } catch(e) {
+        console.warn('[Smeargle] _fetchSmeargleRawData error:', e);
+        return false;
+    }
+}
+
 async function carregarDadosSmeargle() {
     const grid = document.getElementById('movesGrid');
-    
-    if (!grid) {
-        console.error('❌ Elemento movesGrid não encontrado!');
-        return;
-    }
-    
+    if (!grid) { console.error('❌ Elemento movesGrid não encontrado!'); return; }
+
     try {
-        // 1. Buscar dados da Pokédex (Pokémon e ataques)
-        console.log('📡 Fazendo fetch da URL:', SHEETS_URL);
-        const response = await fetch(SHEETS_URL);
-        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        const textoResposta = await response.text();
-        let resultado;
-        try {
-            resultado = JSON.parse(textoResposta);
-        } catch (e) {
-            throw new Error('Resposta não é JSON válido: ' + e.message);
+        // --- Usar cache bruto se já disponível (pré-fetch ou visita anterior) ---
+        if (!window.__smeargleRawCache || !window.__smeargleRawCache.pokemon) {
+            // Dados ainda não chegaram: mostrar loading e buscar agora
+            grid.innerHTML = `<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando golpes...</p></div>`;
+            const ok = await _fetchSmeargleRawData();
+            if (!ok) throw new Error('Falha ao buscar dados do servidor');
         }
-        let dados;
-        if (Array.isArray(resultado)) {
-            dados = resultado;
-        } else if (resultado.data && Array.isArray(resultado.data)) {
-            dados = resultado.data;
-        } else {
-            throw new Error('Formato de resposta não reconhecido');
-        }
-        smearglePokemonData = dados;
 
-        // 2. Buscar dados da aba de ataques
-        const ATACKS_URL = SHEETS_BASE_URL + '?acao=obter_atacks&page=1&limit=10000';
-        const atacksResp = await fetch(ATACKS_URL);
-        if (!atacksResp.ok) throw new Error(`HTTP ${atacksResp.status}: ${atacksResp.statusText}`);
-        const atacksText = await atacksResp.text();
-        let atacksResult;
-        try {
-            atacksResult = JSON.parse(atacksText);
-        } catch (e) {
-            throw new Error('Resposta de ataques não é JSON válido: ' + e.message);
+        const cache = window.__smeargleRawCache;
+        smearglePokemonData  = cache.pokemon;
+        smeargleAtacksData   = cache.atacks;
+        smeargleAbilitiesData = cache.abilities.length > 0 ? cache.abilities : (window.todasAbilities || []);
+        // TMs: injetar no global para uso no extrair
+        if (cache.tms && cache.tms.length > 0 && (!window.todosTMs || window.todosTMs.length === 0)) {
+            window.todosTMs = cache.tms;
         }
-        let atacksData;
-        if (Array.isArray(atacksResult)) {
-            atacksData = atacksResult;
-        } else if (atacksResult.data && Array.isArray(atacksResult.data)) {
-            atacksData = atacksResult.data;
-        } else {
-            throw new Error('Formato de resposta de ataques não reconhecido');
+
+        try{ window.smeargleAtacksData = smeargleAtacksData; }catch(e){}
+        try{ buildAttackLookup(); }catch(e){}
+        try{ if(typeof atualizarCardSmeargle === 'function') setTimeout(atualizarCardSmeargle, 120); }catch(e){}
+
+        if (!Array.isArray(smeargleAtacksData) || smeargleAtacksData.length === 0) {
+            console.warn('smeargleAtacksData is empty, scheduling retry');
+            showAttacksMissingBanner();
+            setTimeout(() => { try{ retryFetchAttacks(); }catch(e){} }, 1200);
         }
-                    smeargleAtacksData = atacksData;
-                    try{ window.smeargleAtacksData = smeargleAtacksData; }catch(e){}
-                    try{ buildAttackLookup(); }catch(e){}
-                    try{ if(typeof atualizarCardSmeargle === 'function'){ setTimeout(atualizarCardSmeargle, 120); } }catch(e){}
 
-                // 2.5 Tentar carregar abilities (fallback) — algumas habilidades aparecem como "Flame Body" etc.
-                try {
-                    if (window.todasAbilities && window.todasAbilities.length > 0) {
-                        // usar cache global se já pré-carregado
-                        smeargleAbilitiesData = window.todasAbilities;
-                        console.log('[Smeargle] Usando abilities pré-carregadas:', smeargleAbilitiesData.length);
-                    } else {
-                        const AB_URL = SHEETS_BASE_URL + '?acao=obter_abilities&page=1&limit=10000';
-                        try {
-                            const abResp = await fetch(AB_URL);
-                            if (abResp.ok) {
-                                const abText = await abResp.text();
-                                const abRes = JSON.parse(abText);
-                                smeargleAbilitiesData = Array.isArray(abRes) ? abRes : (abRes.data && Array.isArray(abRes.data) ? abRes.data : []);
-                                console.log('[Smeargle] Abilities carregadas:', smeargleAbilitiesData.length);
-                            }
-                        } catch(e) {
-                            console.warn('[Smeargle] Não foi possível carregar abilities localmente:', e);
-                            smeargleAbilitiesData = [];
-                        }
-                    }
-                } catch(e) { smeargleAbilitiesData = []; }
-
-                // se a tabela de ataques veio vazia, mostrar banner e tentar um retry automático
-                try{
-                    if(!Array.isArray(smeargleAtacksData) || smeargleAtacksData.length===0){
-                        console.warn('smeargleAtacksData is empty, scheduling retry');
-                        showAttacksMissingBanner();
-                        setTimeout(()=>{ try{ retryFetchAttacks(); }catch(e){} }, 1200);
-                    }
-                }catch(e){}
-        extrairGolpesSmeargle(dados);
+        extrairGolpesSmeargle(smearglePokemonData);
         popularFiltrosSmeargle();
         renderizarGolpesSmeargle(smeargleMovesData);
         configurarEventosSmeargle();
-        // Após carregar os dados de ataques, pedir ao builder que atualize cards/parsers
         try{ setTimeout(()=>{ if(window.refreshParsedMovesAttacks) window.refreshParsedMovesAttacks(); if(window.refreshTmTypes) window.refreshTmTypes(); }, 80); }catch(e){}
+
     } catch (erro) {
-        console.error('❌ Erro ao carregar dados:', erro);
+        console.error('❌ Erro ao carregar dados Smeargle:', erro);
         grid.innerHTML = `
             <div class="error">
                 <i class="fas fa-exclamation-triangle"></i>
@@ -389,94 +411,78 @@ async function carregarDadosSmeargle() {
 // Extrair todos os golpes de M1 a M10
 function extrairGolpesSmeargle(pokemons) {
     const golpesMap = new Map();
-    
     console.log('🔍 Extraindo golpes de', pokemons.length, 'pokémons...');
-    
-    let totalM1 = 0;
-    let golpesValidos = 0;
-    
+    let totalM1 = 0, golpesValidos = 0;
+
+    // Helper: adiciona golpe ao mapa
+    function addGolpe(g, origem, origPoke, coluna) {
+        const key = g.nome.toLowerCase() + '_' + origem.toLowerCase();
+        if (!golpesMap.has(key)) {
+            golpesMap.set(key, Object.assign({ origem, origem_pokemon: origPoke, local: coluna }, g));
+            golpesValidos++;
+        }
+    }
+
+    // Helper: monta origem
+    function getOrigem(pokemon) {
+        return (pokemon['EV'] && pokemon['EV'].toString().trim()) ? pokemon['EV'].toString().trim() : (pokemon['POKEMON'] || '').toString().trim();
+    }
+
     pokemons.forEach((pokemon, index) => {
         for (let i = 1; i <= 10; i++) {
             const coluna = `M${i}`;
             const celula = pokemon[coluna];
-            if (celula) {
-                if (i === 1) totalM1++;
-                if (index < 3 && i === 1) {
-                    console.log(`M1 de ${pokemon['POKEMON']}:`, celula);
-                }
-                // Buscar detalhes do ataque na aba de ataques (usar normalização tolerante)
-                const rawNomeAtaque = celula.split('/')[0].trim();
-                const primaryName = extractPrimaryMoveName(rawNomeAtaque);
-                const nomeNorm = normalizeName(primaryName);
-                const nomeSimple = simplifyForCompare(nomeNorm);
+            if (!celula) continue;
 
-                let atackDetalhes = smeargleAtacksData.find(a => simplifyForCompare(normalizeName(a['ATACK'])) === nomeSimple);
-                // fallback: busca por inclusão (ex: 'Knock Off' vs 'Knock-Off' ou variações)
-                if (!atackDetalhes) {
-                    atackDetalhes = smeargleAtacksData.find(a => {
-                        const anSimple = simplifyForCompare(normalizeName(a['ATACK']));
-                        return anSimple.includes(nomeSimple) || nomeSimple.includes(anSimple);
-                    });
-                }
-                if (atackDetalhes) {
-                    const golpe = {
-                        nome: atackDetalhes['ATACK'] || nomeAtaque,
-                        acao: atackDetalhes['AÇÃO'] || '',
-                        efeito: atackDetalhes['EFEITO'] || '',
-                        tipo: atackDetalhes['TYPE'] || '',
-                        categoria: atackDetalhes['CATEGORIA'] || '',
-                        origem: (pokemon['EV'] && pokemon['EV'].toString().trim()) ? pokemon['EV'].toString().trim() : (pokemon['POKEMON'] || '').toString().trim(),
-                        origem_pokemon: (pokemon['POKEMON'] || '').toString().trim(),
-                        local: coluna
-                    };
-                    golpesValidos++;
-                    const key = golpe.nome.toLowerCase() + '_' + golpe.origem.toLowerCase();
-                    if (!golpesMap.has(key)) {
-                        golpesMap.set(key, golpe);
-                    }
-                }
-                else {
-                    // Se não achou em atacks, tentar buscar em abilities (ex: Flame Body)
-                    let abilityMatch = null;
-                    try {
-                        const pool = (smeargleAbilitiesData && smeargleAbilitiesData.length>0) ? smeargleAbilitiesData : (window.todasAbilities || []);
-                        abilityMatch = pool.find(ab => simplifyForCompare(normalizeName(ab['ABILITY'] || ab['Ability'] || ab['ability'])) === nomeSimple);
-                        if (!abilityMatch) {
-                            abilityMatch = pool.find(ab => {
-                                const aSimple = simplifyForCompare(normalizeName(ab['ABILITY'] || ab['Ability'] || ab['ability']));
-                                return aSimple.includes(nomeSimple) || nomeSimple.includes(aSimple);
-                            });
-                        }
-                    } catch(e){ abilityMatch = null; }
+            if (i === 1) totalM1++;
 
-                    if (abilityMatch) {
-                        const golpe = {
-                            nome: abilityMatch['ABILITY'] || abilityMatch['ability'] || primaryName,
-                            acao: 'passive',
-                            efeito: abilityMatch['DESCRIÇÃO'] || abilityMatch['DESCRICAO'] || abilityMatch['descricao'] || abilityMatch['EFFECT'] || '',
-                            tipo: abilityMatch['TYPE'] || '',
-                            categoria: 'Ability',
-                            origem: (pokemon['EV'] && pokemon['EV'].toString().trim()) ? pokemon['EV'].toString().trim() : (pokemon['POKEMON'] || '').toString().trim(),
-                            origem_pokemon: (pokemon['POKEMON'] || '').toString().trim(),
-                            local: coluna
-                        };
-                        golpesValidos++;
-                        const key = golpe.nome.toLowerCase() + '_' + golpe.origem.toLowerCase();
-                        if (!golpesMap.has(key)) golpesMap.set(key, golpe);
-                    } else {
-                        console.warn(`[Smeargle] Ataque não encontrado em atacks/abilities: "${rawNomeAtaque}" (origem ${pokemon['POKEMON']} / EV=${pokemon['EV']})`);
-                    }
-                }
+            const celulaStr = String(celula).trim();
+
+            // Suportar tanto "Nome / ação / tipo / categoria" quanto nome simples ("Shadow Ball")
+            // ou formato com traço ("TM09 - Venoshock", "Shadow Ball - Special - Ghost")
+            const partes = celulaStr.includes('/') ? celulaStr.split('/').map(s => s.trim()) : celulaStr.split(/\s[-–]\s/).map(s => s.trim());
+            const rawName = partes[0];
+            if (!rawName || /^Descri[çc]/i.test(rawName) || rawName.length > 80) continue;
+
+            const origem   = getOrigem(pokemon);
+            const origPoke = (pokemon['POKEMON'] || '').toString().trim();
+
+            const primaryName = extractPrimaryMoveName(rawName);
+            const nomeSimple  = simplifyForCompare(normalizeName(primaryName));
+            const found = _lookupAtack(nomeSimple);
+            if (found) {
+                addGolpe(_makeGolpeFromAtack(found, primaryName), origem, origPoke, coluna);
+            } else {
+                // fallback: criar com dados da própria célula
+                addGolpe({ nome: primaryName, acao: partes[1]||'', tipo: partes[2]||'', categoria: partes[3]||'', efeito: '', power: 0 }, origem, origPoke, coluna);
             }
         }
     });
-    
-    console.log('📊 Total M1 encontrados:', totalM1);
-    console.log('✅ Golpes válidos:', golpesValidos);
-    console.log('🎯 Golpes únicos:', golpesMap.size);
-    
-    smeargleMovesData = Array.from(golpesMap.values())
-        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+    console.log('📊 Total M1:', totalM1, '| Válidos:', golpesValidos, '| Únicos:', golpesMap.size);
+    smeargleMovesData = Array.from(golpesMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+}
+
+// Lookup rápido em smeargleAtacksData (exact + inclusion fallback)
+function _lookupAtack(nomeSimple) {
+    if (!nomeSimple) return null;
+    let found = smeargleAtacksData.find(a => simplifyForCompare(normalizeName(a['ATACK'])) === nomeSimple);
+    if (!found) found = smeargleAtacksData.find(a => { const s = simplifyForCompare(normalizeName(a['ATACK'])); return s && (s.includes(nomeSimple) || nomeSimple.includes(s)); });
+    return found || null;
+}
+
+// Cria objeto golpe a partir de um registro de smeargleAtacksData
+function _makeGolpeFromAtack(a, fallbackNome) {
+    const _rawPow  = a['POWER'] || a['power'] || a['Power'] || '';
+    const _powMatch = _rawPow ? String(_rawPow).match(/-?\d+/) : null;
+    return {
+        nome:      a['ATACK'] || fallbackNome,
+        acao:      a['AÇÃO'] || '',
+        efeito:    a['EFEITO'] || '',
+        tipo:      a['TYPE'] || '',
+        categoria: a['CATEGORIA'] || '',
+        power:     _powMatch ? parseInt(_powMatch[0], 10) : 0
+    };
 }
 
 // Parse do formato: "Giga Impact / pulo / Normal / Físico"
@@ -564,7 +570,7 @@ function renderizarGolpesSmeargle(golpes) {
         const textClass = darkTypes.has(tipoClassSafe) ? ' text-white' : '';
         return `
             <div class="move-card builder-card type-${tipoClassSafe}${classeExtra}${textClass}"
-                 data-move-name="${(golpe.nome||'').replace(/"/g,'&quot;')}" data-move-local="${(golpe.local||'') }"
+                 data-move-name="${(golpe.nome||'').replace(/"/g,'&quot;')}" data-move-local="${(golpe.local||'') }" data-move-origem="${(golpe.origem||'').replace(/"/g,'&quot;')}"
                  onclick="selecionarGolpe(this)">
                 <div class="move-tipo-icon">
                     <i class="fas ${iconClass}"></i>
@@ -786,10 +792,10 @@ function preencherDetalhesMovimentosBatch(container, batchSize){
 window.copiarGolpeParaClipboard = function(btn){
     try{
         const card = btn && btn.closest ? btn.closest('.move-card') : null;
-        const moveStr = card && card.dataset ? card.dataset.move : null;
-        const move = moveStr ? JSON.parse(moveStr) : null;
-        if(!move) { if(window.showToast) window.showToast('Erro ao copiar golpe','error'); else alert('Erro ao copiar golpe'); return; }
-        const texto = (move.nome || '') + (move.origem ? (' — ' + move.origem) : '');
+        const nome = card && card.dataset ? (card.dataset.moveName || '') : '';
+        const origem = card && card.dataset ? (card.dataset.moveOrigem || '') : '';
+        if(!nome) { if(window.showToast) window.showToast('Erro ao copiar golpe','error'); else alert('Erro ao copiar golpe'); return; }
+        const texto = nome + (origem ? (' — ' + origem) : '');
         if(navigator.clipboard && navigator.clipboard.writeText){
             navigator.clipboard.writeText(texto).then(()=>{ if(window.showToast) window.showToast('Golpe copiado','success'); else alert('Golpe copiado'); }).catch(()=>{
                 // fallback
@@ -878,17 +884,26 @@ function reordenarGridMovesOrdenado() {
         tipo: (el('filterTipo') && el('filterTipo').value) ? el('filterTipo').value : '',
         acao: (el('filterAcao') && el('filterAcao').value) ? el('filterAcao').value : '',
         categoria: (el('filterCategoria') && el('filterCategoria').value) ? el('filterCategoria').value : '',
-        local: (el('filterLocal') && el('filterLocal').value) ? el('filterLocal').value : ''
+        local: (el('filterLocal') && el('filterLocal').value) ? el('filterLocal').value : '',
+        power: (el('filterPower') && el('filterPower').value) ? el('filterPower').value : ''
     };
     
     // Aplicar filtros primeiro
     let movesFiltrados = smeargleMovesData.filter(golpe => {
-        return (!filtros.nome || golpe.nome.toLowerCase().includes(filtros.nome)) &&
-               (!filtros.tipo || golpe.tipo === filtros.tipo) &&
-               (!filtros.acao || golpe.acao === filtros.acao) &&
-               (!filtros.categoria || golpe.categoria === filtros.categoria) &&
-               (!filtros.local || golpe.local === filtros.local);
+        if (filtros.nome && !golpe.nome.toLowerCase().includes(filtros.nome)) return false;
+        if (filtros.tipo && golpe.tipo !== filtros.tipo) return false;
+        if (filtros.acao && golpe.acao !== filtros.acao) return false;
+        if (filtros.categoria && golpe.categoria !== filtros.categoria) return false;
+        if (filtros.local && golpe.local !== filtros.local) return false;
+        return true;
     });
+
+    // Ordenar por Power se selecionado (usa campo pré-cacheado .power)
+    if (filtros.power === 'desc') {
+        movesFiltrados = movesFiltrados.slice().sort((a, b) => (b.power || 0) - (a.power || 0));
+    } else if (filtros.power === 'asc') {
+        movesFiltrados = movesFiltrados.slice().sort((a, b) => (a.power || 0) - (b.power || 0));
+    }
         
         // Separar moves selecionados (por slot) e não selecionados
         const movesSelecionados = [];
@@ -1780,6 +1795,7 @@ function configurarEventosSmeargle() {
     document.getElementById('filterAcao').addEventListener('change', aplicarFiltrosSmeargle);
     document.getElementById('filterCategoria').addEventListener('change', aplicarFiltrosSmeargle);
     document.getElementById('filterLocal').addEventListener('change', aplicarFiltrosSmeargle);
+    document.getElementById('filterPower').addEventListener('change', aplicarFiltrosSmeargle);
     
     // Limpar tudo
     document.getElementById('btnClearMoves').addEventListener('click', limparGolpes);
@@ -1809,6 +1825,25 @@ if (typeof registerPageInitializer !== 'undefined') {
     registerPageInitializer('smeargle', initSmeargle);
     console.log('✅ Inicializador Smeargle registrado');
 }
+
+// ─── Pré-carregamento em background ──────────────────────────────────────────
+// Inicia o fetch dos dados assim que o script é carregado, antes do usuário
+// clicar na aba. Usa um pequeno delay para não competir com o carregamento
+// inicial das outras abas.
+(function smearglePreFetch() {
+    try {
+        if (window.__smeargleRawCache) return; // já disponível
+        var delay = 2000; // 2s após o script carregar
+        setTimeout(function() {
+            try {
+                if (!window.__smeargleRawCache) {
+                    console.log('[Smeargle] Iniciando pré-fetch em background...');
+                    _fetchSmeargleRawData();
+                }
+            } catch(e) {}
+        }, delay);
+    } catch(e) {}
+})();
 
 // Delegação segura para botões de toggle na página Smeargle
 (function ensureSmeargleToggleDelegation(){
@@ -1942,7 +1977,13 @@ async function carregarBuilds() {
         const isAdmin = user && user.role === 'admin';
         
         if (result.success && result.builds.length > 0) {
-            buildsList.innerHTML = result.builds.map((build, index) => `
+            // Filtrar builds do Move7 (prefixo [MOVE7]) — essas aparecem apenas na aba Move7
+            const buildsSmeargle = result.builds.filter(b => !b.nome || !b.nome.startsWith('[MOVE7] '));
+            if (!buildsSmeargle.length) {
+                buildsList.innerHTML = '<p style="color: rgba(255,255,255,0.6); text-align: center; padding: 20px;">Nenhuma build salva ainda.</p>';
+                return;
+            }
+            buildsList.innerHTML = buildsSmeargle.map((build, index) => `
                 <div class="build-item">
                     <div onclick="aplicarBuild('${build.buildCompleta.replace(/'/g, "&apos;")}', '${build.nome.replace(/'/g, "&apos;")}')" style="cursor: pointer; flex: 1;">
                         <div class="build-item-header">
@@ -1953,7 +1994,7 @@ async function carregarBuilds() {
                         <div class="build-item-usuario">Por: ${build.usuario}</div>
                     </div>
                     ${isAdmin ? `
-                        <button class="btn-delete-build" onclick="event.stopPropagation(); excluirBuild(${index}, '${build.nome.replace(/'/g, "&apos;")}')">
+                        <button class="btn-delete-build" onclick="event.stopPropagation(); excluirBuild(${build.id}, '${build.nome.replace(/'/g, "&apos;")}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     ` : ''}

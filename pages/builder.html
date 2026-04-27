@@ -57,12 +57,62 @@
             <div id="combinedPanel" style="display:flex;flex-direction:column;gap:12px;align-items:stretch;">
               <div id="combinedInnerPanel" style="width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));padding:10px;border-radius:12px;box-sizing:border-box;flex:0 0 auto;height:auto;overflow:hidden">
                 <h4 style="margin-top:0;margin-bottom:8px">Golpes detectados</h4>
-                <div class="search-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                  <input id="moveSearchInput" type="search" placeholder="Pesquisar golpes, tipo, efeito..." style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:rgba(255,255,255,0.95);color:#000">
-                  <div id="searchCount" style="min-width:140px;text-align:right;font-size:0.95em;color:#fff;opacity:0.95">0 resultados</div>
-                  <button id="clearMoveSearch" class="btn-action" title="Limpar">Limpar</button>
+                <!-- Filtros do Builder (igual Smeargle) -->
+                <div class="moves-filters" id="builderFilters">
+                  <div class="filter-group">
+                    <label><i class="fas fa-search"></i> Buscar</label>
+                    <input type="text" id="moveSearchInput" placeholder="Nome do golpe..." oninput="if(window.filterCombinedMoves)window.filterCombinedMoves()">
+                  </div>
+                  <div class="filter-group">
+                    <label><i class="fas fa-fire"></i> Tipo</label>
+                    <select id="builderFilterTipo" onchange="if(window.filterCombinedMoves)window.filterCombinedMoves()">
+                      <option value="">Todos</option>
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label><i class="fas fa-running"></i> Ação</label>
+                    <select id="builderFilterAcao" onchange="if(window.filterCombinedMoves)window.filterCombinedMoves()">
+                      <option value="">Todas</option>
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label><i class="fas fa-fist-raised"></i> Categoria</label>
+                    <select id="builderFilterCategoria" onchange="if(window.filterCombinedMoves)window.filterCombinedMoves()">
+                      <option value="">Todas</option>
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label><i class="fas fa-map-marker-alt"></i> Posição do Move</label>
+                    <select id="builderFilterLocal" onchange="if(window.filterCombinedMoves)window.filterCombinedMoves()">
+                      <option value="">Todos</option>
+                      <option value="M1">M1</option>
+                      <option value="M2">M2</option>
+                      <option value="M3">M3</option>
+                      <option value="M4">M4</option>
+                      <option value="M5">M5</option>
+                      <option value="M6">M6</option>
+                      <option value="M7">M7</option>
+                      <option value="M8">M8</option>
+                      <option value="M9">M9</option>
+                      <option value="M10">M10</option>
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <label><i class="fas fa-bolt"></i> Power</label>
+                    <select id="builderFilterPower" onchange="if(window.filterCombinedMoves)window.filterCombinedMoves()">
+                      <option value="">Padrão</option>
+                      <option value="desc">Maior → Menor</option>
+                      <option value="asc">Menor → Maior</option>
+                    </select>
+                  </div>
+                  <div class="filter-group">
+                    <button class="btn-builds" id="btnBuilds" onclick="abrirModalBuilds()">
+                      <i class="fas fa-save"></i> BUILDS
+                    </button>
+                  </div>
                 </div>
                 <div id="combinedMovesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
+                <!-- TMs são injetados diretamente nesta mesma grade pelo renderParsedTms -->
               </div>
             </div>
           </div>
@@ -74,6 +124,36 @@
   <!-- Containers auxiliares para compatibilidade com funções Smeargle (mantidos ocultos) -->
   <div id="movesGrid" style="display:none"></div>
   <div id="compatibleGrid" style="display:none"></div>
+
+  <!-- Modal de Builds do Move7 -->
+  <div class="modal-builds" id="modalBuildsMove7" style="display:none;">
+    <div class="modal-builds-content">
+      <div class="modal-builds-header">
+        <h2><i class="fas fa-save"></i> Gerenciar Builds — Move7</h2>
+        <button class="btn-close-modal" onclick="document.getElementById('modalBuildsMove7').style.display='none'">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <!-- Salvar Nova Build -->
+      <div class="modal-builds-section">
+        <h3><i class="fas fa-plus-circle"></i> Salvar Build Atual</h3>
+        <div class="save-build-form">
+          <input type="text" id="builderInputNomeBuild" placeholder="Nome da build (ex: TYRANITAR STALL)" />
+          <button class="btn-save-build" onclick="window._builderSalvarBuild()">
+            <i class="fas fa-save"></i> Salvar
+          </button>
+        </div>
+        <p class="build-preview" id="builderBuildPreview"></p>
+      </div>
+      <!-- Lista de Builds Salvas -->
+      <div class="modal-builds-section">
+        <h3><i class="fas fa-list"></i> Builds Salvas</h3>
+        <div class="builds-list" id="builderBuildsList">
+          <div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Modal combinado: golpes (esq) + TMs (dir) -->
   <div id="assignModal" style="display:none;position:fixed;right:24px;bottom:24px;width:880px;max-height:78vh;background:linear-gradient(180deg, rgba(10,10,10,0.95), rgba(20,20,20,0.95));border-radius:12px;padding:12px;box-shadow:0 30px 80px rgba(0,0,0,0.7);z-index:9999;overflow:auto;color:#fff">
