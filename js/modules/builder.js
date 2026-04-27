@@ -1781,7 +1781,7 @@
                 (power ? 'Pow: <b class="power-value">' + power + '</b> ' : '') +
                 (acc   ? 'Acc: <b>' + acc + '</b>' : '') +
               '</div>' +
-              '<div class="move-efeito" style="font-size:0.8em;opacity:0.65;margin-top:3px;display:none">' + efeito + '</div>';
+              '<div class="move-efeito" style="font-size:0.8em;opacity:0.65;margin-top:3px;' + (efeito ? '' : 'display:none') + '">' + efeito + '</div>';
 
             card.dataset.moveName     = nome;
             card.dataset.moveType     = tipo;
@@ -2290,7 +2290,15 @@
           try{
             const el = entry.target;
             if(!entry.isIntersecting) return;
-            if(shouldSkipFill(el)) { try{ el.classList.add('details-visible'); }catch(e){}; io.unobserve(el); return; }
+            if(shouldSkipFill(el)) {
+              try{
+                el.classList.add('details-visible');
+                // mostrar efeito se já tiver conteúdo mas ainda estiver oculto
+                const efEl = el.querySelector('.move-efeito');
+                if(efEl && efEl.textContent && efEl.textContent.trim()) efEl.style.display = 'block';
+              }catch(e){}
+              io.unobserve(el); return;
+            }
             try{ if(typeof tryEnrichTileFromAttacks === 'function'){ const name = el.dataset.moveName || (el.querySelector('.move-name') && el.querySelector('.move-name').textContent) || ''; tryEnrichTileFromAttacks(el, name); } }catch(e){}
             try{ if(typeof refreshParsedMovesAttacks === 'function') refreshParsedMovesAttacks(); }catch(e){}
             try{ el.classList.add('details-visible'); }catch(e){}
