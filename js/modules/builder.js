@@ -47,24 +47,36 @@
 
         if(!hasAnyFilter){ it.style.display = ''; visibleCount++; return; }
 
+        // TM tiles não têm ação/categoria/slot — detectar antes dos filtros
+        var isTmTile = !!(it.getAttribute && (it.getAttribute('data-is-tm') === '1' || it.classList.contains('tm-tile')));
+
         var ok = true;
-        if(q    && f.name.indexOf(q) === -1)    ok = false;
+        if(q && ok){
+          // Para TM tiles, buscar também no badge de número (ex: "TM09")
+          var searchName = f.name;
+          if(isTmTile){
+            var badge = it.querySelector('.slot-badge, .tm-num-badge');
+            if(badge){ var badgeTxt = _nk(badge.textContent); if(badgeTxt) searchName = f.name + ' ' + badgeTxt; }
+          }
+          if(searchName.indexOf(q) === -1) ok = false;
+        }
         if(fTipo && ok){
           var tOk = f.tipo && (f.tipo === fTipo || f.tipo.includes(fTipo) || fTipo.includes(f.tipo));
           if(!tOk) ok = false;
         }
-        if(fAcao && ok){
+        // Ação e categoria: só filtrar se o card tem esses dados (TM tiles não têm)
+        if(fAcao && ok && !isTmTile){
           var aOk = f.acao && (f.acao === fAcao || f.acao.includes(fAcao) || fAcao.includes(f.acao));
           if(!aOk) ok = false;
         }
-        if(fCat && ok){
+        if(fCat && ok && !isTmTile){
           var cOk = f.cat && (f.cat === fCat || f.cat.includes(fCat) || fCat.includes(f.cat));
           if(!cOk) ok = false;
         }
         if(fLocal && ok){
-          // ler slot do dataset.slotBadge (preferência) ou do elemento .slot-badge
-          var slotTxt = (it.dataset && it.dataset.slotBadge) ? it.dataset.slotBadge.trim() : ((it.querySelector('.slot-badge') && it.querySelector('.slot-badge').textContent) ? it.querySelector('.slot-badge').textContent.trim() : '');
-          // só filtrar por posição se o card tem um slot atribuído
+          // Usar somente dataset.slotBadge (não o badge visual) para evitar confundir "TM09" com slot M9
+          var slotTxt = (it.dataset && it.dataset.slotBadge) ? it.dataset.slotBadge.trim() : '';
+          // só filtrar por posição se o card tem um slot explicitamente atribuído
           if(slotTxt && slotTxt !== fLocal) ok = false;
         }
         it.style.display = ok ? '' : 'none';
@@ -874,7 +886,15 @@
       // Enriquecer sincronamente com dados disponíveis ANTES de criar o tile
       _enrichTmFromAvailableData(tm);
       const tile = document.createElement('div'); tile.className='tm-tile move-card builder-card'; tile.dataset.idx=i; tile.dataset.tmName = tm.nome || tm.name || ''; tile.dataset.isTm='1';
-      try{ tile.dataset.moveName = tm.nome || tm.name || ''; tile.dataset.moveType = (tm.tipo||tm.tipagem||tm.type||''); tile.dataset.moveEffect = tm.efeito||''; tile.dataset.moveCategory = tm.categoria||''; }catch(e){}
+      try{
+        var _tmNome = tm.nome || tm.name || '';
+        var _tmNum  = tm.numero || tm.number || '';
+        tile.dataset.moveName     = _tmNome + (_tmNum ? ' TM' + _tmNum : '');
+        tile.dataset.moveType     = (tm.tipo||tm.tipagem||tm.type||'');
+        tile.dataset.moveEffect   = tm.efeito||'';
+        tile.dataset.moveCategory = tm.categoria||'';
+        tile.dataset.slotBadge    = ''; // não confundir badge "TM09" com slot de posição
+      }catch(e){}
       (function(){
         let tipo = (tm.tipo || tm.tipagem || tm.type || '').toString().trim();
         try{
