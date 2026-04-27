@@ -27,7 +27,7 @@
         var typeR = (it.dataset && it.dataset.moveType) || (it.querySelector('.move-tipo') && it.querySelector('.move-tipo').textContent) || '';
         if(!typeR){ var cm = (it.className||'').match(/\btype-([a-z0-9\-]+)\b/i); if(cm) typeR = cm[1]; }
         var tipo  = _nk(typeR);
-        var acao  = _nk((it.querySelector('.move-acao') && it.querySelector('.move-acao').textContent) || (it.dataset && it.dataset.moveAcao) || '');
+        var acao  = _nk((it.dataset && it.dataset.moveAcao) || (it.querySelector('.move-acao') && it.querySelector('.move-acao').textContent) || '');
         var cat   = _nk((it.dataset && it.dataset.moveCategory) || (it.querySelector('.move-categoria') && it.querySelector('.move-categoria').textContent) || '');
         var slot  = (it.dataset && it.dataset.slotBadge) || (it.querySelector('.slot-badge') && it.querySelector('.slot-badge').textContent) || '';
         var powerTxt = (it.querySelector('.power-value') && it.querySelector('.power-value').textContent) || '';
@@ -64,14 +64,22 @@
           var tOk = f.tipo && (f.tipo === fTipo || f.tipo.includes(fTipo) || fTipo.includes(f.tipo));
           if(!tOk) ok = false;
         }
-        // Ação e categoria: só filtrar se o card TEM esse dado — itens sem dado passam (não esconder por falta de info)
-        if(fAcao && ok && f.acao){
-          var aOk = (f.acao === fAcao || f.acao.includes(fAcao) || fAcao.includes(f.acao));
-          if(!aOk) ok = false;
+        // Ação: TM tiles não têm ação — escondê-los quando filtro Ação ativo
+        // Attacks com ação vazia passam (dado ainda não carregado)
+        if(fAcao && ok){
+          if(isTmTile){ ok = false; }
+          else if(f.acao){
+            var aOk = (f.acao === fAcao || f.acao.indexOf(fAcao) !== -1 || fAcao.indexOf(f.acao) !== -1);
+            if(!aOk) ok = false;
+          }
+          // ataque sem ação: passa (pode não ter carregado ainda)
         }
-        if(fCat && ok && f.cat){
-          var cOk = (f.cat === fCat || f.cat.includes(fCat) || fCat.includes(f.cat));
-          if(!cOk) ok = false;
+        // Categoria: TM tiles sem categoria ficam visíveis; attacks sem cat passam
+        if(fCat && ok){
+          if(!isTmTile && f.cat){
+            var cOk = (f.cat === fCat || f.cat.indexOf(fCat) !== -1 || fCat.indexOf(f.cat) !== -1);
+            if(!cOk) ok = false;
+          }
         }
         if(fLocal && ok){
           // Usar somente dataset.slotBadge (não o badge visual) para evitar confundir "TM09" com slot M9
@@ -140,7 +148,7 @@
       var tipos = new Set(), acoes = new Set(), cats = new Set();
       Array.from(grid.querySelectorAll('.move-card')).forEach(function(it){
         var tipo = (it.querySelector('.move-tipo') && it.querySelector('.move-tipo').textContent) || (it.dataset && it.dataset.moveType) || '';
-        var acao = (it.querySelector('.move-acao') && it.querySelector('.move-acao').textContent) || '';
+        var acao = (it.dataset && it.dataset.moveAcao) || (it.querySelector('.move-acao') && it.querySelector('.move-acao').textContent) || '';
         var cat  = (it.querySelector('.move-categoria') && it.querySelector('.move-categoria').textContent) || (it.dataset && it.dataset.moveCategory) || '';
         if(tipo.trim()) tipos.add(tipo.trim());
         if(acao.trim()) acoes.add(acao.trim());
@@ -508,7 +516,7 @@
           const gen  = _getField(found, 'GEN','gen');
           const tipo = _getField(found, 'TYPE','type','TIPO','tipo','TIPAGEM','tipagem');
           const cat  = _getField(found, 'CATEGORIA','categoria','CATEGORY','category');
-          const acEl2 = tile.querySelector('.move-acao'); if(acEl2 && !acEl2.textContent){ acEl2.textContent = atAc; acEl2.style.display = atAc ? 'block' : 'none'; }
+          const acEl2 = tile.querySelector('.move-acao'); if(acEl2 && !acEl2.textContent){ acEl2.textContent = atAc; acEl2.style.display = atAc ? 'block' : 'none'; } if(atAc){ try{ tile.dataset.moveAcao = atAc; }catch(e){} }
           const efEl2 = tile.querySelector('.move-efeito'); if(efEl2 && !efEl2.textContent){ efEl2.textContent = atEf; efEl2.style.display = atEf ? 'block' : 'none'; }
           const statsEl2 = tile.querySelector('.move-stats'); if(statsEl2){ const parts2=[]; if(pp) parts2.push(`<span class="move-stat">PP: <b>${pp}</b></span>`); if(power) parts2.push(`<span class="move-stat move-stat-power">Pow: <b class="power-value">${power}</b></span>`); if(acc) parts2.push(`<span class="move-stat">Acc: <b>${acc}</b></span>`); if(gen) parts2.push(`<span class="move-stat">Gen: <b>${gen}</b></span>`); statsEl2.innerHTML = parts2.join(' &nbsp; '); statsEl2.style.display = parts2.length ? 'block' : 'none'; }
           if(tipo){ const tipoEl = tile.querySelector('.move-tipo'); if(tipoEl) tipoEl.textContent = tipo; try{ tile.dataset.moveType = tipo.toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){} }
@@ -660,11 +668,12 @@
         `;
         // data attributes to help search/filter
         try{
-          card.dataset.moveName = mv.nome || mv.name || '';
-          card.dataset.moveType = mv.tipo || mv.type || '';
-          card.dataset.moveEffect = mv.efeito || mv.effect || mv.EFEITO || '';
-          card.dataset.moveCategory = mv.categoria || mv.categoria || '';
-          card.dataset.slotBadge = slotLabel; // para filtro de Posição do Move
+          card.dataset.moveName     = mv.nome || mv.name || '';
+          card.dataset.moveType     = mv.tipo || mv.type || '';
+          card.dataset.moveEffect   = mv.efeito || mv.effect || mv.EFEITO || '';
+          card.dataset.moveCategory = mv.categoria || '';
+          card.dataset.moveAcao     = mv.acao || mv.ACAO || mv.action || '';
+          card.dataset.slotBadge    = slotLabel; // para filtro de Posição do Move
         }catch(e){}
         // preenche Ação / Efeito / Stats a partir do objeto mv (preferência) ou buscando detalhes na tabela ATACKS/TMs
         try{
@@ -1777,6 +1786,7 @@
             card.dataset.moveType     = tipo;
             card.dataset.moveCategory = cat;
             card.dataset.moveEffect   = efeito;
+            card.dataset.moveAcao     = acao;
             card.dataset.slotBadge    = '';
 
             frag.appendChild(card);
