@@ -64,13 +64,13 @@
           var tOk = f.tipo && (f.tipo === fTipo || f.tipo.includes(fTipo) || fTipo.includes(f.tipo));
           if(!tOk) ok = false;
         }
-        // Ação e categoria: só filtrar se o card tem esses dados (TM tiles não têm)
-        if(fAcao && ok && !isTmTile){
-          var aOk = f.acao && (f.acao === fAcao || f.acao.includes(fAcao) || fAcao.includes(f.acao));
+        // Ação e categoria: só filtrar se o card TEM esse dado — itens sem dado passam (não esconder por falta de info)
+        if(fAcao && ok && f.acao){
+          var aOk = (f.acao === fAcao || f.acao.includes(fAcao) || fAcao.includes(f.acao));
           if(!aOk) ok = false;
         }
-        if(fCat && ok && !isTmTile){
-          var cOk = f.cat && (f.cat === fCat || f.cat.includes(fCat) || fCat.includes(f.cat));
+        if(fCat && ok && f.cat){
+          var cOk = (f.cat === fCat || f.cat.includes(fCat) || fCat.includes(f.cat));
           if(!cOk) ok = false;
         }
         if(fLocal && ok){
@@ -95,20 +95,34 @@
       });
 
       // ── ordenação por Power ───────────────────────────────────────────────
-      if(fPowerSort === 'desc' || fPowerSort === 'asc'){
-        // separar separadores dos tiles
-        var seps = items.filter(function(it){ return fields(it).isSep; });
-        var tiles = items.filter(function(it){ return !fields(it).isSep && it.style.display !== 'none'; });
-        var hidden = items.filter(function(it){ return !fields(it).isSep && it.style.display === 'none'; });
-        tiles.sort(function(a,b){
-          var pa = fields(a).power, pb = fields(b).power;
-          return fPowerSort === 'desc' ? pb - pa : pa - pb;
-        });
-        // reordenar no DOM: tiles visiveis ordenados + separadores mantidos no lugar
-        var allOrdered = tiles.concat(hidden);
-        // reinserir seps na posição original
+      if(fPowerSort === 'desc' || fPowerSort === 'asc' || fPowerSort === ''){
+        // Garantir que todos os itens têm índice original registrado
+        items.forEach(function(it, i){ if(!it.dataset.origOrder) it.dataset.origOrder = String(i); });
+
+        // Separar: notice + seps ficam fora da ordenação
+        var sortable = items.filter(function(it){ var f=fields(it); return !f.isSep && !f.isNotice; });
+        var seps     = items.filter(function(it){ return fields(it).isSep; });
+        var notices  = items.filter(function(it){ return fields(it).isNotice; });
+
+        if(fPowerSort === 'desc' || fPowerSort === 'asc'){
+          sortable.sort(function(a,b){
+            var pa = fields(a).power, pb = fields(b).power;
+            return fPowerSort === 'desc' ? pb - pa : pa - pb;
+          });
+        } else {
+          // Restaurar ordem original
+          sortable.sort(function(a,b){ return parseInt(a.dataset.origOrder||0,10) - parseInt(b.dataset.origOrder||0,10); });
+        }
+
+        // Recolocar no DOM: notices no topo, ataques/TMs ordenados, seps logo antes das TMs
+        var firstTmIdx = sortable.findIndex(function(it){ return it.classList.contains('tm-tile') || it.getAttribute('data-is-tm') === '1'; });
+        var attackTiles = firstTmIdx === -1 ? sortable : sortable.slice(0, firstTmIdx);
+        var tmTiles     = firstTmIdx === -1 ? [] : sortable.slice(firstTmIdx);
+
+        notices.forEach(function(n){ grid.appendChild(n); });
+        attackTiles.forEach(function(t){ grid.appendChild(t); });
         seps.forEach(function(s){ grid.appendChild(s); });
-        allOrdered.forEach(function(t){ grid.insertBefore(t, seps[0] || null); });
+        tmTiles.forEach(function(t){ grid.appendChild(t); });
       }
     }catch(e){ console.warn('filterCombinedMoves error', e); }
   };
@@ -134,12 +148,15 @@
       });
 
       function rebuild(sel, set, defaultLabel){
-        var prev = sel.value;
+        // Usar valor normalizado como `value` para que restaurações funcionem mesmo com
+        // variações de capitalização entre re-renders (ex: "Fire" vs "fire")
+        var prev = sel.value; // já normalizado de run anterior, ou "" na 1ª vez
         sel.innerHTML = '<option value="">'+defaultLabel+'</option>';
         Array.from(set).sort().forEach(function(v){
-          var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
+          var normVal = (function(s){ try{ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9\s]/g,'').trim(); }catch(e){ return (s||'').toString().toLowerCase().trim(); } })(v);
+          var o = document.createElement('option'); o.value = normVal; o.textContent = v; sel.appendChild(o);
         });
-        if(prev) sel.value = prev;
+        if(prev) sel.value = prev; // prev já é normalizado → restauração robusta
       }
       rebuild(selTipo, tipos, 'Todos');
       rebuild(selAcao, acoes, 'Todas');
