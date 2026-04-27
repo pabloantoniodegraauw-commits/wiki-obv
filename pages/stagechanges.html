@@ -97,10 +97,6 @@
 
             <div class="navegacao-rapida" style="margin-top: 30px;">Lista de Abilities</div>
 
-            <div class="search-wrap">
-                <input type="text" id="abilitySearch" class="search-input" placeholder="Pesquisar por nome da ability ou nome do pokémon...">
-            </div>
-
             <div class="pokedex-filters-panel" style="margin-top:8px;">
                 <div class="filter-group">
                     <label class="filter-label"><i class="fas fa-paw"></i> Pokémon</label>
@@ -109,6 +105,10 @@
                 <div class="filter-group">
                     <label class="filter-label"><i class="fas fa-star"></i> Origem</label>
                     <select id="abilityFilterOrigem" class="filter-select"><option value="">Todos</option></select>
+                </div>
+                <div class="filter-group" style="flex:1;min-width:180px;">
+                    <label class="filter-label"><i class="fas fa-search"></i> Pesquisar</label>
+                    <input type="text" id="abilitySearch" class="filter-select" placeholder="Buscar por nome ou pokémon..." style="width:100%;box-sizing:border-box;">
                 </div>
                 <button id="abilityClearFilters" class="filter-clear-btn"><i class="fas fa-times"></i> Limpar Filtros</button>
             </div>

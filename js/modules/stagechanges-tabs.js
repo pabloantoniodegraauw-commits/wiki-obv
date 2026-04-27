@@ -564,14 +564,19 @@ window.carregarAtacksParaTabela = async function() {
             } catch (e) { console.warn('Erro ao converter TYPE em badges', e); }
         }
         // Inicializar DataTables após renderizar
+        let dtInstance = null;
         if (window.$ && window.$.fn && window.$.fn.DataTable) {
-            $('#atacksDataTable').DataTable({
+            dtInstance = $('#atacksDataTable').DataTable({
                 responsive: true,
                 pageLength: 100,
                 order: [[0, 'asc']],
-                searching: false,
+                searching: true,
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json'
+                },
+                initComplete: function() {
+                    // ocultar o campo de busca nativo do DataTables (usamos o nosso)
+                    try { const wrap = document.querySelector('#atacksDataTable_wrapper .dataTables_filter'); if (wrap) wrap.style.display = 'none'; } catch(e) {}
                 }
             });
             // reaplicar badges após DataTables inicializar
@@ -586,27 +591,42 @@ window.carregarAtacksParaTabela = async function() {
             const selC = document.getElementById('atacksFilterCategoria');
             const selA = document.getElementById('atacksFilterAcao');
             const inpS = document.getElementById('atacksSearch');
+
+            // índices das colunas na tabela (headers = ['ATACK','AÇÃO','EFEITO','TYPE','CATEGORIA','PP','POWER','ACCURACY','GEN','Sugestão'])
+            const COL_TYPE = 3; const COL_CAT = 4; const COL_ACAO = 1;
+
+            const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
+
             function aplicarFiltroAtacks() {
                 const vT = selT ? selT.value.toString().trim() : '';
                 const vC = selC ? selC.value.toString().trim() : '';
                 const vA = selA ? selA.value.toString().trim() : '';
-                const vS = inpS ? inpS.value.toString().trim().toLowerCase() : '';
-                const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
-                const rows = document.querySelectorAll('#atacksDataTable tbody tr');
-                rows.forEach(r => {
-                    try {
-                        const rowType = (r.getAttribute('data-type') || '').toString().trim();
-                        const rowCat = (r.getAttribute('data-category') || '').toString().trim();
-                        const rowAction = (r.getAttribute('data-action') || '').toString().trim();
-                        const rowText = vS ? normalize(r.textContent || '') : '';
-                        let show = true;
-                        if (vT) show = show && (normalize(rowType) === normalize(vT));
-                        if (vC) show = show && (normalize(rowCat) === normalize(vC));
-                        if (vA) show = show && (normalize(rowAction) === normalize(vA));
-                        if (vS) show = show && rowText.includes(normalize(vS));
-                        r.style.display = show ? '' : 'none';
-                    } catch (e) { }
-                });
+                const vS = inpS ? inpS.value.toString().trim() : '';
+
+                if (dtInstance) {
+                    // usar API do DataTables — pesquisa em TODOS os registros, não só nos visíveis
+                    dtInstance.column(COL_TYPE).search(vT ? '^' + $.fn.dataTable.util.escapeRegex(vT) + '$' : '', true, false);
+                    dtInstance.column(COL_CAT).search(vC ? '^' + $.fn.dataTable.util.escapeRegex(vC) + '$' : '', true, false);
+                    dtInstance.column(COL_ACAO).search(vA ? '^' + $.fn.dataTable.util.escapeRegex(vA) + '$' : '', true, false);
+                    dtInstance.search(vS).draw();
+                } else {
+                    // fallback sem DataTables: filtrar linhas visíveis no DOM
+                    const rows = document.querySelectorAll('#atacksDataTable tbody tr');
+                    rows.forEach(r => {
+                        try {
+                            const rowType = (r.getAttribute('data-type') || '').toString().trim();
+                            const rowCat = (r.getAttribute('data-category') || '').toString().trim();
+                            const rowAction = (r.getAttribute('data-action') || '').toString().trim();
+                            const rowText = vS ? normalize(r.textContent || '') : '';
+                            let show = true;
+                            if (vT) show = show && (normalize(rowType) === normalize(vT));
+                            if (vC) show = show && (normalize(rowCat) === normalize(vC));
+                            if (vA) show = show && (normalize(rowAction) === normalize(vA));
+                            if (vS) show = show && rowText.includes(normalize(vS));
+                            r.style.display = show ? '' : 'none';
+                        } catch (e) { }
+                    });
+                }
             }
             if (selT) selT.addEventListener('change', aplicarFiltroAtacks);
             if (selC) selC.addEventListener('change', aplicarFiltroAtacks);
@@ -788,7 +808,7 @@ window.setupStageTabs = function() {
             function aplicarBadgesESetup(tableId) {
                 try {
                     const tbl = document.getElementById(tableId);
-                    if (!tbl) return;
+                    if (!tbl) return null;
                     const headers = Array.from(tbl.querySelectorAll('thead th')).map(h => (h.textContent || '').trim().toUpperCase());
                     const typeIdx = headers.indexOf('TYPE');
                     const removeDiacritics = s => {
@@ -811,10 +831,20 @@ window.setupStageTabs = function() {
                         });
                     }
                     // inicializar datatables se disponível
+                    let dtInst = null;
                     if (window.$ && window.$.fn && window.$.fn.DataTable) {
-                        try { $('#' + tableId).DataTable({ responsive: true, pageLength: 100, order: [[0,'asc']], language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' } }); } catch (e) { /* ignore */ }
+                        try {
+                            dtInst = $('#' + tableId).DataTable({
+                                responsive: true, pageLength: 100, order: [[0,'asc']], searching: true,
+                                language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' },
+                                initComplete: function() {
+                                    try { const wrap = document.querySelector('#' + tableId + '_wrapper .dataTables_filter'); if (wrap) wrap.style.display = 'none'; } catch(e) {}
+                                }
+                            });
+                        } catch (e) { /* ignore */ }
                     }
-                } catch (e) { console.warn('Erro ao aplicar badges na tabela', e); }
+                    return dtInst;
+                } catch (e) { console.warn('Erro ao aplicar badges na tabela', e); return null; }
             }
 
             if (isStage) {
@@ -834,6 +864,10 @@ window.setupStageTabs = function() {
                             <label class="filter-label"><i class="fas fa-list"></i> Categoria</label>
                             <select id="stageFilterCategoria" class="filter-select"><option value="">Todos</option>${categoriasUnicas.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
                         </div>
+                        <div class="filter-group" style="flex:1;min-width:180px;">
+                            <label class="filter-label"><i class="fas fa-search"></i> Pesquisar</label>
+                            <input type="text" id="stageSearch" class="filter-select" placeholder="Buscar registro..." style="width:100%;box-sizing:border-box;">
+                        </div>
                         <button id="stageClearFilters" class="filter-clear-btn"><i class="fas fa-times"></i> Limpar Filtros</button>
                     </div>`;
                 container.innerHTML = stageText + selectHtml + '<div id="stageFilteredTableWrap">Carregando tabela...</div>';
@@ -841,31 +875,44 @@ window.setupStageTabs = function() {
                     document.getElementById('stageFilteredTableWrap').innerHTML = '<div style="color:#ff6464">Nenhum ataque com AÇÃO contendo "stage" encontrado.</div>';
                 } else {
                     document.getElementById('stageFilteredTableWrap').innerHTML = gerarTabelaHtml(filtered, 'stageAtacksTable');
-                    aplicarBadgesESetup('stageAtacksTable');
+                    const dtStage = aplicarBadgesESetup('stageAtacksTable');
+                    // COL indices: ATACK=0,AÇÃO=1,EFEITO=2,TYPE=3,CATEGORIA=4
+                    const ST_COL_TYPE = 3; const ST_COL_CAT = 4;
                     // adicionar listeners dos selects para filtrar linhas sem recarregar
                     try {
                         const selTipo = document.getElementById('stageFilterTipo');
                         const selCat = document.getElementById('stageFilterCategoria');
+                        const inpS = document.getElementById('stageSearch');
                         function aplicarFiltroStage() {
-                            const valTipo = (selTipo && selTipo.value) ? selTipo.value.toString().trim() : '';
-                            const valCat = (selCat && selCat.value) ? selCat.value.toString().trim() : '';
-                            const rows = document.querySelectorAll('#stageAtacksTable tbody tr');
-                            rows.forEach(r => {
-                                try {
-                                    const rowType = (r.getAttribute('data-type') || '').toString().trim();
-                                    const rowCat = (r.getAttribute('data-category') || '').toString().trim();
-                                    const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
-                                    let show = true;
-                                    if (valTipo) show = show && (normalize(rowType) === normalize(valTipo));
-                                    if (valCat) show = show && (normalize(rowCat) === normalize(valCat));
-                                    r.style.display = show ? '' : 'none';
-                                } catch (e) { }
-                            });
+                            const valTipo = selTipo ? selTipo.value.toString().trim() : '';
+                            const valCat = selCat ? selCat.value.toString().trim() : '';
+                            const valS = inpS ? inpS.value.toString().trim() : '';
+                            if (dtStage) {
+                                dtStage.column(ST_COL_TYPE).search(valTipo ? '^' + $.fn.dataTable.util.escapeRegex(valTipo) + '$' : '', true, false);
+                                dtStage.column(ST_COL_CAT).search(valCat ? '^' + $.fn.dataTable.util.escapeRegex(valCat) + '$' : '', true, false);
+                                dtStage.search(valS).draw();
+                            } else {
+                                const rows = document.querySelectorAll('#stageAtacksTable tbody tr');
+                                const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
+                                rows.forEach(r => {
+                                    try {
+                                        const rowType = (r.getAttribute('data-type') || '').toString().trim();
+                                        const rowCat = (r.getAttribute('data-category') || '').toString().trim();
+                                        const rowText = valS ? normalize(r.textContent || '') : '';
+                                        let show = true;
+                                        if (valTipo) show = show && (normalize(rowType) === normalize(valTipo));
+                                        if (valCat) show = show && (normalize(rowCat) === normalize(valCat));
+                                        if (valS) show = show && rowText.includes(normalize(valS));
+                                        r.style.display = show ? '' : 'none';
+                                    } catch (e) { }
+                                });
+                            }
                         }
-                            if (selTipo) selTipo.addEventListener('change', aplicarFiltroStage);
-                            if (selCat) selCat.addEventListener('change', aplicarFiltroStage);
-                            const clearBtn = document.getElementById('stageClearFilters');
-                            if (clearBtn) clearBtn.addEventListener('click', function(){ if (selTipo) selTipo.value=''; if (selCat) selCat.value=''; aplicarFiltroStage(); });
+                        if (selTipo) selTipo.addEventListener('change', aplicarFiltroStage);
+                        if (selCat) selCat.addEventListener('change', aplicarFiltroStage);
+                        if (inpS) inpS.addEventListener('input', aplicarFiltroStage);
+                        const clearBtn = document.getElementById('stageClearFilters');
+                        if (clearBtn) clearBtn.addEventListener('click', function(){ if (selTipo) selTipo.value=''; if (selCat) selCat.value=''; if (inpS) inpS.value=''; aplicarFiltroStage(); });
                     } catch (e) { console.warn('Erro ao configurar filtro de TYPE/CATEGORIA na Stage', e); }
                 }
                 return;
@@ -897,6 +944,10 @@ window.setupStageTabs = function() {
                             <label class="filter-label"><i class="fas fa-list"></i> Categoria</label>
                             <select id="effectsFilterCategoria" class="filter-select"><option value="">Todos</option>${categoriasUnicasEf.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
                         </div>
+                        <div class="filter-group" style="flex:1;min-width:180px;">
+                            <label class="filter-label"><i class="fas fa-search"></i> Pesquisar</label>
+                            <input type="text" id="effectsSearch" class="filter-select" placeholder="Buscar registro..." style="width:100%;box-sizing:border-box;">
+                        </div>
                         <button id="effectsClearFilters" class="filter-clear-btn"><i class="fas fa-times"></i> Limpar Filtros</button>
                     </div>`;
                 containerEffects.innerHTML = efeitosText + selectHtml + '<div id="effectsFilteredTableWrap">Carregando tabela...</div>';
@@ -904,36 +955,50 @@ window.setupStageTabs = function() {
                     document.getElementById('effectsFilteredTableWrap').innerHTML = '<div style="color:#ff6464">Nenhum ataque de efeito encontrado.</div>';
                 } else {
                     document.getElementById('effectsFilteredTableWrap').innerHTML = gerarTabelaHtml(filtered, 'effectsAtacksTable');
-                    aplicarBadgesESetup('effectsAtacksTable');
+                    const dtEffects = aplicarBadgesESetup('effectsAtacksTable');
+                    // COL indices: ATACK=0,AÇÃO=1,EFEITO=2,TYPE=3,CATEGORIA=4
+                    const EF_COL_ACAO = 1; const EF_COL_TYPE = 3; const EF_COL_CAT = 4;
                     // adicionar listeners para os selects de AÇÃO e TYPE
                     try {
                         const selA = document.getElementById('effectsFilterAcao');
                         const selT = document.getElementById('effectsFilterTipo');
                         const selC = document.getElementById('effectsFilterCategoria');
+                        const inpS = document.getElementById('effectsSearch');
                         function aplicarFiltroEf() {
-                            const valA = (selA && selA.value) ? selA.value.toString().trim() : '';
-                            const valT = (selT && selT.value) ? selT.value.toString().trim() : '';
-                            const valC = (selC && selC.value) ? selC.value.toString().trim() : '';
-                            const rows = document.querySelectorAll('#effectsAtacksTable tbody tr');
-                            rows.forEach(r => {
-                                try {
-                                    const rowAction = (r.getAttribute('data-action') || '').toString().trim();
-                                    const rowType = (r.getAttribute('data-type') || '').toString().trim();
-                                    const rowCat = (r.getAttribute('data-category') || '').toString().trim();
-                                    const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
-                                    let show = true;
-                                    if (valA) show = show && (normalize(rowAction) === normalize(valA));
-                                    if (valT) show = show && (normalize(rowType) === normalize(valT));
-                                    if (valC) show = show && (normalize(rowCat) === normalize(valC));
-                                    r.style.display = show ? '' : 'none';
-                                } catch (e) { }
-                            });
+                            const valA = selA ? selA.value.toString().trim() : '';
+                            const valT = selT ? selT.value.toString().trim() : '';
+                            const valC = selC ? selC.value.toString().trim() : '';
+                            const valS = inpS ? inpS.value.toString().trim() : '';
+                            if (dtEffects) {
+                                dtEffects.column(EF_COL_ACAO).search(valA ? '^' + $.fn.dataTable.util.escapeRegex(valA) + '$' : '', true, false);
+                                dtEffects.column(EF_COL_TYPE).search(valT ? '^' + $.fn.dataTable.util.escapeRegex(valT) + '$' : '', true, false);
+                                dtEffects.column(EF_COL_CAT).search(valC ? '^' + $.fn.dataTable.util.escapeRegex(valC) + '$' : '', true, false);
+                                dtEffects.search(valS).draw();
+                            } else {
+                                const rows = document.querySelectorAll('#effectsAtacksTable tbody tr');
+                                const normalize = s => { try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); } catch(e){ return s.toLowerCase(); } };
+                                rows.forEach(r => {
+                                    try {
+                                        const rowAction = (r.getAttribute('data-action') || '').toString().trim();
+                                        const rowType = (r.getAttribute('data-type') || '').toString().trim();
+                                        const rowCat = (r.getAttribute('data-category') || '').toString().trim();
+                                        const rowText = valS ? normalize(r.textContent || '') : '';
+                                        let show = true;
+                                        if (valA) show = show && (normalize(rowAction) === normalize(valA));
+                                        if (valT) show = show && (normalize(rowType) === normalize(valT));
+                                        if (valC) show = show && (normalize(rowCat) === normalize(valC));
+                                        if (valS) show = show && rowText.includes(normalize(valS));
+                                        r.style.display = show ? '' : 'none';
+                                    } catch (e) { }
+                                });
+                            }
                         }
                         if (selA) selA.addEventListener('change', aplicarFiltroEf);
                         if (selT) selT.addEventListener('change', aplicarFiltroEf);
                         if (selC) selC.addEventListener('change', aplicarFiltroEf);
+                        if (inpS) inpS.addEventListener('input', aplicarFiltroEf);
                         const clearEf = document.getElementById('effectsClearFilters');
-                        if (clearEf) clearEf.addEventListener('click', function(){ if (selA) selA.value=''; if (selT) selT.value=''; if (selC) selC.value=''; aplicarFiltroEf(); });
+                        if (clearEf) clearEf.addEventListener('click', function(){ if (selA) selA.value=''; if (selT) selT.value=''; if (selC) selC.value=''; if (inpS) inpS.value=''; aplicarFiltroEf(); });
                     } catch (e) { console.warn('Erro ao configurar filtros na Efeitos', e); }
                 }
                 return;
