@@ -2296,6 +2296,10 @@
                 // mostrar efeito se já tiver conteúdo mas ainda estiver oculto
                 const efEl = el.querySelector('.move-efeito');
                 if(efEl && efEl.textContent && efEl.textContent.trim()) efEl.style.display = 'block';
+                // se efeito estiver vazio, ainda precisamos enriquecer para preenchê-lo
+                else if(efEl && !efEl.textContent.trim()){
+                  try{ if(typeof tryEnrichTileFromAttacks === 'function'){ const name = el.dataset.moveName || (el.querySelector('.move-name') && el.querySelector('.move-name').textContent) || ''; tryEnrichTileFromAttacks(el, name); } }catch(e){}
+                }
               }catch(e){}
               io.unobserve(el); return;
             }
