@@ -64,11 +64,10 @@
           var tOk = f.tipo && (f.tipo === fTipo || f.tipo.includes(fTipo) || fTipo.includes(f.tipo));
           if(!tOk) ok = false;
         }
-        // Ação: TM tiles não têm ação — escondê-los quando filtro Ação ativo
-        // Attacks sem ação também são escondidos (??? ou vazio não bate com nenhum filtro)
+        // Ação: verifica em todos os tiles (TMs e ataques)
+        // Cards sem ação preenchida são ocultados quando o filtro está ativo
         if(fAcao && ok){
-          if(isTmTile){ ok = false; }
-          else if(f.acao){
+          if(f.acao){
             var aOk = (f.acao === fAcao || f.acao.indexOf(fAcao) !== -1 || fAcao.indexOf(f.acao) !== -1);
             if(!aOk) ok = false;
           } else {
@@ -921,6 +920,7 @@
         tile.dataset.moveType     = (tm.tipo||tm.tipagem||tm.type||'');
         tile.dataset.moveEffect   = tm.efeito||'';
         tile.dataset.moveCategory = tm.categoria||'';
+        tile.dataset.moveAcao     = _nk(tm.acao || '');
         tile.dataset.slotBadge    = ''; // não confundir badge "TM09" com slot de posição
       }catch(e){}
       (function(){
