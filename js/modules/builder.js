@@ -42,10 +42,10 @@
       var visibleCount = 0;
       items.forEach(function(it){
         var f = fields(it);
-        if(f.isNotice){ it.style.display = ''; return; } // aviso: sempre visível
-        if(f.isSep){ it.style.display = 'none'; return; } // separador: esconder por padrão, reativar ao final se houver TMs visíveis
+        if(f.isNotice){ it.style.removeProperty('display'); return; } // aviso: sempre visível
+        if(f.isSep){ it.style.setProperty('display','none','important'); return; } // separador: esconder por padrão, reativar ao final se houver TMs visíveis
 
-        if(!hasAnyFilter){ it.style.display = ''; visibleCount++; return; }
+        if(!hasAnyFilter){ it.style.removeProperty('display'); visibleCount++; return; }
 
         // TM tiles não têm ação/categoria/slot — detectar antes dos filtros
         var isTmTile = !!(it.getAttribute && (it.getAttribute('data-is-tm') === '1' || it.classList.contains('tm-tile')));
@@ -79,7 +79,7 @@
           // só filtrar por posição se o card tem um slot explicitamente atribuído
           if(slotTxt && slotTxt !== fLocal) ok = false;
         }
-        it.style.display = ok ? '' : 'none';
+        if(ok){ it.style.removeProperty('display'); } else { it.style.setProperty('display','none','important'); }
         if(ok) visibleCount++;
       });
 
@@ -88,9 +88,10 @@
         if(!it.classList.contains('tm-section-separator')) return;
         var hasTmVisible = false;
         for(var j = idx+1; j < items.length; j++){
-          if(items[j].style.display !== 'none') { hasTmVisible = true; break; }
+          var d = items[j].style.getPropertyValue('display');
+          if(d !== 'none') { hasTmVisible = true; break; }
         }
-        it.style.display = hasTmVisible ? '' : 'none';
+        if(hasTmVisible){ it.style.removeProperty('display'); } else { it.style.setProperty('display','none','important'); }
       });
 
       // ── ordenação por Power ───────────────────────────────────────────────
