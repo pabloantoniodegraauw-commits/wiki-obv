@@ -1692,8 +1692,19 @@
     try{
       var grid = document.getElementById('combinedMovesGrid');
       if(grid && grid.children.length === 0){
+        // Restaurar card da build aplicada se smeargleSelectedMoves estiver vazio
+        if(window._builder_applied_slots && Array.isArray(window._builder_applied_slots)){
+          try{
+            var _sm = (typeof smeargleSelectedMoves !== 'undefined') ? smeargleSelectedMoves : window.smeargleSelectedMoves;
+            if(!_sm || !_sm.some(Boolean)){
+              if(typeof smeargleSelectedMoves !== 'undefined') smeargleSelectedMoves = window._builder_applied_slots;
+              else window.smeargleSelectedMoves = window._builder_applied_slots;
+              try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true}); }catch(e){}
+            }
+          }catch(e){}
+        }
         if(window._builder_parsed && window._builder_parsed.moves && window._builder_parsed.moves.length > 0){
-          // Re-renderizar a última parse ao voltar para a aba
+          // Re-renderizar a última parse (DEX de Pokémon) ao voltar para a aba
           setTimeout(function(){
             try{ if(typeof renderParsedMoves === 'function') renderParsedMoves(window._builder_parsed); }catch(e){}
           }, 50);
@@ -2020,8 +2031,19 @@
       }));
     }
     try{
-
       var SHEETS_URL_BUILDS = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
+      // Empacotar move7 montado + parsed original (ataques/TMs da DEX) como entrada especial
+      // no final de allMoves. O Apps Script não precisa ser alterado — tudo fica em buildCompleta.
+      try{
+        var _move7Slots = [];
+        var _slotsSrc = (typeof smeargleSelectedMoves !== 'undefined') ? smeargleSelectedMoves : (window.smeargleSelectedMoves || []);
+        for(var _ssi = 0; _ssi < 9; _ssi++) _move7Slots.push(_slotsSrc[_ssi] || null);
+        var _metaObj = { move7: _move7Slots, parsed: window._builder_parsed || null };
+        var _metaEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(_metaObj))));
+        allMoves.push({ nome: '__MOVE7_META__', origem: _metaEncoded });
+        // Cache local como fallback rápido
+        try{ localStorage.setItem('move7_extra_' + nomeBuild, JSON.stringify(_metaObj)); }catch(_le){}
+      }catch(_me){ console.warn('move7 meta encode err', _me); }
       var formData = new URLSearchParams({
         action: 'salvarBuild',
         nomeBuild: MOVE7_BUILD_PREFIX + nomeBuild,
@@ -2059,14 +2081,18 @@
           lista.innerHTML = '<p style="color:rgba(255,255,255,0.6);text-align:center;padding:20px;">Nenhuma build salva ainda.</p>';
           return;
         }
+        // Guardar cache para _builderAplicarBuild acessar por índice
+        window._builder_buildsCache = builds;
         lista.innerHTML = builds.map(function(build, idx){
           var displayNome = build.nome.replace(MOVE7_BUILD_PREFIX, '');
           var dataFmt = build.data ? (function(d){ try{ return new Date(d).toLocaleDateString('pt-BR'); }catch(e){ return d||''; } })(build.data) : '';
           var deleteBtn = isAdmin ? '<button class="btn-delete-build" onclick="event.stopPropagation();window._builderExcluirBuild('+build.id+',\''+displayNome.replace(/'/g,"&apos;")+'\')"><i class="fas fa-trash"></i></button>' : '';
+          // Remover entrada __MOVE7_META__ da exibição
+          var displayBuild = (build.buildCompleta||'').split(' / ').filter(function(p){ return p.indexOf('__MOVE7_META__') === -1; }).join(' / ');
           return '<div class="build-item" style="display:flex;align-items:flex-start;gap:8px;">'
-            +'<div onclick="window._builderAplicarBuild(\''+build.buildCompleta.replace(/'/g,"&apos;")+'\',\''+displayNome.replace(/'/g,"&apos;")+'\')\" style="cursor:pointer;flex:1;">'
+            +'<div onclick="window._builderAplicarBuild('+idx+')" style="cursor:pointer;flex:1;">'
             +'<div class="build-item-header"><div class="build-item-name">'+displayNome+'</div><div class="build-item-date">'+dataFmt+'</div></div>'
-            +'<div class="build-item-content">'+build.buildCompleta+'</div>'
+            +'<div class="build-item-content">'+displayBuild+'</div>'
             +'<div class="build-item-usuario">Por: '+(build.usuario||'—')+'</div>'
             +'</div>'+deleteBtn+'</div>';
         }).join('');
@@ -2077,8 +2103,59 @@
   }
 
   // Aplicar build selecionada no Builder (re-popula os golpes e TMs)
-  window._builderAplicarBuild = function(buildCompleta, nomeBuild){
+  window._builderAplicarBuild = function(idxOrBuildCompleta, nomeBuildLegacy){
     try{
+      // ── Resolver buildCompleta / nomeBuild: índice (novo) ou parâmetros legados ──
+      var buildCompleta, nomeBuild;
+      if(typeof idxOrBuildCompleta === 'number'){
+        var _bc = window._builder_buildsCache && window._builder_buildsCache[idxOrBuildCompleta];
+        if(!_bc){ alert('❌ Build não encontrada no cache!'); return; }
+        buildCompleta = _bc.buildCompleta || '';
+        nomeBuild = (_bc.nome || '').replace(MOVE7_BUILD_PREFIX, '');
+      } else {
+        buildCompleta = idxOrBuildCompleta || '';
+        nomeBuild = nomeBuildLegacy || '';
+      }
+
+      // ── 1ª tentativa: extrair __MOVE7_META__ embutido em buildCompleta (na planilha) ──
+      var _apExtra = null;
+      try{
+        var _bParts = buildCompleta.split(' / ');
+        for(var _bpi = 0; _bpi < _bParts.length; _bpi++){
+          var _bSegs = _bParts[_bpi].trim().split(' - ');
+          if(_bSegs[1] && _bSegs[1].trim() === '__MOVE7_META__'){
+            var _bEncoded = _bSegs.slice(2).join(' - ').trim();
+            _apExtra = JSON.parse(decodeURIComponent(escape(atob(_bEncoded))));
+            break;
+          }
+        }
+      }catch(_bpe){ console.warn('move7 meta decode err', _bpe); }
+
+      // ── 2ª tentativa: cache local (localStorage) ──
+      if(!(_apExtra && Array.isArray(_apExtra.move7) && _apExtra.parsed)){
+        try{
+          var _lsStored = localStorage.getItem('move7_extra_' + nomeBuild);
+          if(_lsStored) _apExtra = JSON.parse(_lsStored);
+        }catch(_le){}
+      }
+
+      if(_apExtra && Array.isArray(_apExtra.move7) && _apExtra.parsed){
+        var _apMove7  = _apExtra.move7;   // slots montados pelo usuário
+        var _apParsed = _apExtra.parsed;  // ataques/TMs originais da DEX
+        // 1) Restaurar grid com os ataques e TMs originais da DEX
+        try{ if(typeof renderParsedMoves === 'function') renderParsedMoves(_apParsed); }catch(_ape2){}
+        // 2) Sobrescrever smeargleSelectedMoves com o Move7 montado
+        try{
+          if(typeof smeargleSelectedMoves !== 'undefined') smeargleSelectedMoves = _apMove7;
+          else window.smeargleSelectedMoves = _apMove7;
+        }catch(_ape3){ window.smeargleSelectedMoves = _apMove7; }
+        try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(_ape4){}
+        try{ document.getElementById('modalBuildsMove7').style.display = 'none'; }catch(_ape5){}
+        var _apCnt = _apMove7.filter(Boolean).length;
+        alert('✅ Build "'+nomeBuild+'" carregada! Move7: '+_apCnt+' golpe(s). Ataques e TMs originais disponíveis para edição.');
+        return;
+      }
+      // ── Fluxo legado (builds antigas sem __MOVE7_META__) ──
       // Parsear formato: "m1 - MoveName - Pokemon / m2 - MoveName - [TM]"
       var moves = [], tms = [];
       var parts = buildCompleta.split(' / ');
@@ -2120,9 +2197,12 @@
       var grid = safe('combinedMovesGrid');
       if(grid){
         grid.innerHTML = '';
-        window._builder_parsed = { moves: moves, tms: tms, meta: { nome: pokeName } };
+        // Guardar os slots da build para restaurar o card se o usuário navegar de volta
+        // NÃO sobrescrever _builder_parsed com os golpes salvos: o grid deve mostrar TODOS os ataques
+        window._builder_applied_slots = assignedArr;
+        window._builder_parsed = null;
       }
-      // Pré-popular com todos os ataques disponíveis (como modo padrão)
+      // Pré-popular com todos os ataques/TMs disponíveis (modo padrão — não apenas os da build)
       try{ if(typeof _prePopularTodosAtaques === 'function') _prePopularTodosAtaques(); }catch(e){}
 
       document.getElementById('modalBuildsMove7').style.display = 'none';
