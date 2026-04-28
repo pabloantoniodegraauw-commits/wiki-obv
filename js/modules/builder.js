@@ -632,8 +632,8 @@
       if (typeof smeargleSelectedMoves !== 'undefined') smeargleSelectedMoves = assignedArr;
       else window.smeargleSelectedMoves = assignedArr;
     } catch(e){ window.smeargleSelectedMoves = assignedArr; }
-    try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(e){}
-    try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({reorder:true,buscar:true}); else { if(typeof reordenarGridMovesOrdenado === 'function') reordenarGridMovesOrdenado(); if(typeof buscarPokemonsCompativeis === 'function') buscarPokemonsCompativeis(); } }catch(e){}
+    // Uma única chamada agendada (evita duplo re-render que causa lentidão)
+    try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(e){}
 
     // render combined moves grid (Smeargle-like)
     const combined = safe('combinedMovesGrid'); if(combined) {
@@ -1607,6 +1607,20 @@
       // legacy fallback
       if(safe('builderTmsList')) safe('builderTmsList').innerHTML='';
       window._builder_parsed = null; window.builderMeta = {tms:[]}; updateTmCounter(); }); }
+    // Botão "Limpar Tudo" no card do Pokémon (aba Move7)
+    const btnClearMoves = safe('btnClearMoves');
+    if(btnClearMoves){
+      btnClearMoves.removeEventListener && btnClearMoves.removeEventListener('click', null);
+      btnClearMoves.addEventListener('click', function(){
+        try{
+          if(typeof smeargleSelectedMoves !== 'undefined') smeargleSelectedMoves = new Array(9).fill(null);
+          else window.smeargleSelectedMoves = new Array(9).fill(null);
+        }catch(e){ window.smeargleSelectedMoves = new Array(9).fill(null); }
+        try{ const mc = safe('movesCount'); if(mc) mc.textContent = '0'; }catch(e){}
+        try{ const ml = safe('movesList'); if(ml) ml.innerHTML = '<div class="no-moves-yet">Nenhum golpe selecionado</div>'; }catch(e){}
+        try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true,reorder:true,buscar:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(e){}
+      });
+    }
     const submit = safe('btnSubmitBuild'); if(submit){
       // change label to reflect copy action
       try{ submit.textContent = 'Copiar Moveset'; }catch(e){}
@@ -1931,8 +1945,8 @@
   var MOVE7_BUILD_PREFIX = '[MOVE7] ';
   var SHEETS_URL_BUILDS = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
 
-  // Abre o modal de builds do Move7 (sobrepõe abrirModalBuilds global quando este modal existir)
-  window.abrirModalBuilds = function(){
+  // Abre o modal de builds do Move7 (função exclusiva do builder — não sobrescreve smeargle)
+  window._builderAbrirModalBuilds = function(){
     var modal = document.getElementById('modalBuildsMove7');
     if(modal){
       modal.style.display = 'flex';
@@ -1944,9 +1958,24 @@
   function _builderAtualizarPreview(){
     var preview = document.getElementById('builderBuildPreview');
     if(!preview) return;
+    // Preferir smeargleSelectedMoves (montagem real do usuário) para o preview
+    try{
+      var slotsSrc = (typeof smeargleSelectedMoves !== 'undefined') ? smeargleSelectedMoves : (window.smeargleSelectedMoves || []);
+      var hasMoves = slotsSrc && slotsSrc.some(Boolean);
+      if(hasMoves){
+        var parts = [];
+        for(var si = 0; si < slotsSrc.length; si++){
+          var sm = slotsSrc[si];
+          if(sm) parts.push('M'+(si+1)+': '+sm.nome);
+        }
+        preview.innerHTML = '<strong>Preview:</strong> '+(parts.join(' / ') || '—');
+        return;
+      }
+    }catch(e){}
+    // fallback: usar parsed
     var parsed = window._builder_parsed;
     if(!parsed || ((!parsed.moves || !parsed.moves.length) && (!parsed.tms || !parsed.tms.length))){
-      preview.innerHTML = '<em>Nenhum golpe detectado. Use ENVIAR MOVE7 primeiro.</em>';
+      preview.innerHTML = '<em>Nenhum golpe detectado. Use ENVIAR MOVE7 e adicione golpes aos slots.</em>';
       return;
     }
     var parts = (parsed.moves||[]).filter(Boolean).map(function(m,i){
@@ -1962,24 +1991,35 @@
     var nomeBuild = nomeInput ? nomeInput.value.trim() : '';
     if(!nomeBuild){ alert('⚠️ Digite um nome para a build!'); return; }
     var parsed = window._builder_parsed;
-    if(!parsed || ((!parsed.moves||!parsed.moves.length)&&(!parsed.tms||!parsed.tms.length))){
-      alert('⚠️ Nenhum golpe detectado. Use ENVIAR MOVE7 primeiro!'); return;
+    var userStr = localStorage.getItem('user');
+    var user = userStr ? JSON.parse(userStr) : null;
+    var usuario = user && user.nickname ? user.nickname : 'Anônimo';
+    var pokeName = (parsed && parsed.meta && parsed.meta.nome) ? parsed.meta.nome : 'Pokémon';
+
+    // Priorizar smeargleSelectedMoves (montagem real do usuário nos slots)
+    var allMoves = [];
+    try{
+      var slotsSrc = (typeof smeargleSelectedMoves !== 'undefined') ? smeargleSelectedMoves : (window.smeargleSelectedMoves || []);
+      for(var si = 0; si < 9; si++){
+        var sm = slotsSrc[si];
+        if(!sm) continue;
+        var isFromTM = !!(sm.numero && sm.numero !== '');
+        allMoves.push({ nome: sm.nome, origem: isFromTM ? '[TM]' : (sm.origem || pokeName) });
+      }
+    }catch(e){ console.warn('_builderSalvarBuild: erro lendo smeargleSelectedMoves', e); }
+
+    // Fallback: usar parsed.moves se o usuário não montou via slots
+    if(allMoves.length === 0){
+      if(!parsed || ((!parsed.moves||!parsed.moves.length)&&(!parsed.tms||!parsed.tms.length))){
+        alert('⚠️ Nenhum golpe detectado. Use ENVIAR MOVE7 e adicione golpes aos slots primeiro!'); return;
+      }
+      allMoves = (parsed.moves||[]).filter(Boolean).map(function(m){
+        return { nome: m.nome, origem: pokeName };
+      }).concat((parsed.tms||[]).filter(Boolean).map(function(t){
+        return { nome: t.nome, origem: '[TM]' };
+      }));
     }
     try{
-      var userStr = localStorage.getItem('user');
-      var user = userStr ? JSON.parse(userStr) : null;
-      var usuario = user && user.nickname ? user.nickname : 'Anônimo';
-      var pokeName = (parsed.meta && parsed.meta.nome) ? parsed.meta.nome : 'Pokémon';
-
-      // Combinar moves e TMs num array com formato compatível com o GAS:
-      // moves: { nome, origem } — TMs com origem='[TM]'
-      var movesArr = (parsed.moves||[]).filter(Boolean).map(function(m){
-        return { nome: m.nome, origem: pokeName };
-      });
-      var tmsArr = (parsed.tms||[]).filter(Boolean).map(function(t){
-        return { nome: t.nome, origem: '[TM]' };
-      });
-      var allMoves = movesArr.concat(tmsArr);
 
       var SHEETS_URL_BUILDS = window.SHEETS_BASE_URL || window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxCK2_MelvUHTVvvGfvx0M9QfflATDhr4sZjH5nAVgE4kgfvdRo1pFaVGQGZjk_PG5rdg/exec';
       var formData = new URLSearchParams({
@@ -2058,13 +2098,35 @@
       if(!moves.length && !tms.length){ alert('⚠️ Nenhum golpe válido encontrado!'); return; }
       // Pokemon nome: pegar da origem do primeiro move
       var pokeName = moves.length ? (moves[0].origem || 'Pokémon') : 'Pokémon';
-      var parsed = { moves: moves, tms: tms, meta: { nome: pokeName } };
-      window._builder_parsed = parsed;
-      if(typeof renderParsedMoves === 'function') try{ renderParsedMoves(parsed); }catch(e){}
-      if(typeof renderParsedTms === 'function')   try{ renderParsedTms(tms); }catch(e){}
-      if(window.applyAttacksToParsed)             try{ window.applyAttacksToParsed(parsed); }catch(e){}
+
+      // Preencher os slots com os ataques salvos
+      var assignedArr = new Array(9).fill(null);
+      moves.forEach(function(mv){
+        var si = (mv.slot && mv.slot >= 1 && mv.slot <= 9) ? mv.slot - 1 : -1;
+        if(si >= 0 && !assignedArr[si]) assignedArr[si] = { nome: mv.nome, tipo: '', categoria: '', origem: mv.origem || pokeName, local: 'M' + mv.slot };
+      });
+      // TMs: colocar nos slots restantes
+      var tmIdx = 0;
+      for(var si2 = 0; si2 < 9 && tmIdx < tms.length; si2++){
+        if(!assignedArr[si2]){ assignedArr[si2] = { nome: tms[tmIdx].nome, tipo: '', categoria: '', origem: 'TM', local: 'M' + (si2+1) }; tmIdx++; }
+      }
+      try{
+        if(typeof smeargleSelectedMoves !== 'undefined') smeargleSelectedMoves = assignedArr;
+        else window.smeargleSelectedMoves = assignedArr;
+      }catch(e){ window.smeargleSelectedMoves = assignedArr; }
+      try{ if(typeof scheduleSmeargleUpdate === 'function') scheduleSmeargleUpdate({card:true}); else if(typeof atualizarCardSmeargle === 'function') atualizarCardSmeargle(); }catch(e){}
+
+      // Mostrar TODOS os ataques/TMs no grid para o usuário poder modificar a build
+      var grid = safe('combinedMovesGrid');
+      if(grid){
+        grid.innerHTML = '';
+        window._builder_parsed = { moves: moves, tms: tms, meta: { nome: pokeName } };
+      }
+      // Pré-popular com todos os ataques disponíveis (como modo padrão)
+      try{ if(typeof _prePopularTodosAtaques === 'function') _prePopularTodosAtaques(); }catch(e){}
+
       document.getElementById('modalBuildsMove7').style.display = 'none';
-      alert('✅ Build "'+nomeBuild+'" aplicada! '+moves.length+' golpe(s) + '+tms.length+' TM(s).');
+      alert('✅ Build "'+nomeBuild+'" carregada! '+moves.length+' golpe(s) + '+tms.length+' TM(s). Todos os ataques estão disponíveis para edição.');
     }catch(e){ console.error('_builderAplicarBuild error', e); alert('❌ Erro ao aplicar build.'); }
   };
 
@@ -2125,7 +2187,9 @@
         const tmsContainer = safe('assignTmsGridInline');
         if(!movesContainer || !tmsContainer) return;
         const parsedMoves = (window._builder_parsed && window._builder_parsed.moves) ? window._builder_parsed.moves : [];
-        const movesCopy = parsedMoves.map(m => Object.assign({}, m));
+        // Se não há parsed (ex: build carregada sem ENVIAR MOVE7), mostrar apenas o golpe do slot
+        const displayMoves = parsedMoves.length > 0 ? parsedMoves : (moveObj && moveObj.nome ? [moveObj] : []);
+        const movesCopy = displayMoves.map(m => Object.assign({}, m));
         // find selected index if moveObj matches
         let selectedIdx = 0;
         if(moveObj && moveObj.nome){ const found = movesCopy.findIndex(x=>x && x.nome && x.nome.toLowerCase()===moveObj.nome.toLowerCase()); if(found>=0) selectedIdx = found; }

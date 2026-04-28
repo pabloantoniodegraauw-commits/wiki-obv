@@ -225,6 +225,11 @@ function initSmeargle() {
     console.log('🎨 Inicializando Smeargle Builder...');
     ensureSmeargleStyles();
 
+    // Limpar slots que possam ter sido preenchidos pela aba Move7 (builder)
+    smeargleSelectedMoves = new Array(9).fill(null);
+    try{ const mc = document.getElementById('movesCount'); if(mc) mc.textContent = '0'; }catch(e){}
+    try{ const ml = document.getElementById('movesList'); if(ml) ml.innerHTML = '<div class="no-moves-yet">Nenhum golpe selecionado</div>'; }catch(e){}
+
     // Se os golpes já foram extraídos (retorno à aba), re-renderiza instantaneamente
     if (Array.isArray(smeargleMovesData) && smeargleMovesData.length > 0) {
         console.log('⚡ Smeargle: dados em cache, renderizando sem fetch...');
@@ -794,8 +799,9 @@ window.copiarGolpeParaClipboard = function(btn){
         const card = btn && btn.closest ? btn.closest('.move-card') : null;
         const nome = card && card.dataset ? (card.dataset.moveName || '') : '';
         const origem = card && card.dataset ? (card.dataset.moveOrigem || '') : '';
+        const local = card && card.dataset ? (card.dataset.moveLocal || '') : '';
         if(!nome) { if(window.showToast) window.showToast('Erro ao copiar golpe','error'); else alert('Erro ao copiar golpe'); return; }
-        const texto = nome + (origem ? (' — ' + origem) : '');
+        const texto = nome + (origem ? (' — ' + origem) : '') + (local ? (' - ' + local.toUpperCase()) : '');
         if(navigator.clipboard && navigator.clipboard.writeText){
             navigator.clipboard.writeText(texto).then(()=>{ if(window.showToast) window.showToast('Golpe copiado','success'); else alert('Golpe copiado'); }).catch(()=>{
                 // fallback
@@ -980,11 +986,17 @@ function atualizarCardSmeargle() {
         var tipo2 = '';
         var hp = '0', ataque = '0', defesa = '0', ataqueEsp = '0', defesaEsp = '0', velocidade = '0';
         try{
+            var isSmearglePageStats = (typeof window.currentPage !== 'undefined' && window.currentPage === 'smeargle') || (typeof currentPage !== 'undefined' && currentPage === 'smeargle') || (window.location && /smeargle/i.test(window.location.pathname));
             var first = smeargleSelectedMoves.find(Boolean);
             var candidateName = null;
-            if(first && first.origem) candidateName = first.origem;
-            if(!candidateName && window.builderMeta && window.builderMeta.name) candidateName = window.builderMeta.name;
-            if(!candidateName && window.builderSelectedPokemonName) candidateName = window.builderSelectedPokemonName;
+            // Na aba Smeargle, sempre usar stats do próprio Smeargle (nunca do Pokémon origem dos golpes)
+            if(isSmearglePageStats){
+                candidateName = 'Smeargle';
+            } else {
+                if(first && first.origem) candidateName = first.origem;
+                if(!candidateName && window.builderMeta && window.builderMeta.name) candidateName = window.builderMeta.name;
+                if(!candidateName && window.builderSelectedPokemonName) candidateName = window.builderSelectedPokemonName;
+            }
             var found = null;
             if(candidateName && Array.isArray(smearglePokemonData) && smearglePokemonData.length){
                 var norm = normalizeName(candidateName || '');
