@@ -2377,6 +2377,11 @@
         #combinedMovesGrid { transition: max-height 220ms ease; }
         .move-card, .builder-card { color: #111; }
         .text-white, .move-card.text-white { color: #fff !important; }
+        /* Cor de texto por tipo — mesma regra da aba Smeargle */
+        .move-card.type-normal,.move-card.type-fire,.move-card.type-fogo,.move-card.type-water,.move-card.type-agua,.move-card.type-água,.move-card.type-grass,.move-card.type-planta,.move-card.type-grama,.move-card.type-flying,.move-card.type-voador,.move-card.type-psychic,.move-card.type-psiquico,.move-card.type-psíquico,.move-card.type-bug,.move-card.type-inseto,.move-card.type-dark,.move-card.type-sombrio,.move-card.type-ghost,.move-card.type-fantasma,.move-card.type-dragon,.move-card.type-dragao,.move-card.type-dragão,.move-card.type-steel,.move-card.type-aco,.move-card.type-aço,.move-card.type-rock,.move-card.type-pedra,.move-card.type-poison,.move-card.type-veneno,.move-card.type-ground,.move-card.type-terra,.move-card.type-fighting,.move-card.type-lutador,.move-card.type-fairy,.move-card.type-fada,.move-card.type-ice,.move-card.type-gelo { color: #fff; }
+        /* Tipos de fundo claro precisam de texto escuro */
+        .move-card.type-electric,.move-card.type-eletrico,.move-card.type-elétrico,.move-card.type-ground,.move-card.type-terra,.move-card.type-ice,.move-card.type-gelo,.move-card.type-steel,.move-card.type-aco,.move-card.type-aço { color: #333; }
+        .move-card * { color: inherit; }
         .move-slot-origem { color: inherit !important; }
         .move-stat-power .power-value { background: #ffd54d; padding: 2px 6px; border-radius: 6px; color: #111; font-weight:700; }
         .move-stat-power { display: inline-block; margin-left:6px; }
