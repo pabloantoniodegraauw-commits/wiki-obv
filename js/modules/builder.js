@@ -551,13 +551,18 @@
       inner.style.minHeight = cardH + 'px';
       inner.style.overflow = 'hidden';
 
-      var header = inner.querySelector('h4') || inner.querySelector('.moves-panel-header') || null;
-      var headerH = header ? header.offsetHeight : 28;
-      var paddingApprox = 28;
       // find moves grid inside inner or fallback to global ids
       var movesGrid = inner.querySelector('#combinedMovesGrid') || inner.querySelector('#movesGrid') || document.getElementById('movesGrid');
-      var movesH = Math.max(80, cardH - headerH - paddingApprox);
-      if(movesGrid){ movesGrid.style.maxHeight = movesH + 'px'; movesGrid.style.overflowY = 'auto'; }
+      if(movesGrid){
+        // Usar getBoundingClientRect para medir o offset real do grid dentro do painel
+        // (h4 + barra de filtros + margens — tudo contabilizado)
+        var innerRect = inner.getBoundingClientRect();
+        var gridRect  = movesGrid.getBoundingClientRect();
+        var gridOffsetInInner = Math.max(0, gridRect.top - innerRect.top);
+        var movesH = Math.max(80, cardH - gridOffsetInInner - 10);
+        movesGrid.style.maxHeight = movesH + 'px';
+        movesGrid.style.overflowY = 'auto';
+      }
     }catch(e){ console.warn('adjustCombinedPanelHeight err', e); }
   }
 
