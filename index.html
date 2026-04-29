@@ -129,8 +129,10 @@
         <!-- Barra de informações -->
         <div class="stats-bar" style="padding: 12px 24px; background: rgba(20, 25, 50, 0.5); border-radius: 8px; margin: 16px 0; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
             <span><i class="fas fa-database"></i> <span id="pokemonCount">0</span> Pokémons</span>
-            <span><i class="fas fa-clock"></i> <span id="lastUpdate">--:--</span></span>
-            <span><i class="fas fa-bolt" style="color:#ffd700"></i> Busca Instantânea</span>
+            <button class="toggle-images-btn" id="toggleFilters" onclick="toggleFiltrosPokedex()">
+                <i class="fas fa-filter"></i> Filtros
+            </button>
+            <input type="text" id="searchInput" placeholder="🔍 Buscar Pokémon (nome, tipo, localização, EV, TMs)... • Separe com vírgula para vários" style="flex:1; width:auto; max-width:none;">
             <button id="btnPasteParse" class="toggle-images-btn" title="Colar do clipboard e parsear/salvar" style="margin-left:auto;margin-right:8px;">
                 <i class="fas fa-upload"></i> ENVIAR DEX
             </button>
@@ -148,12 +150,7 @@
         </main>
         
         <footer>
-            <p>DEX OBV © 2023 - Banco de dados Pokémon</p>
-            <p class="update-info">
-                <i class="fas fa-sync-alt"></i> Dados sincronizados do Google Sheets • 
-                <i class="fas fa-images"></i> Imagens: Pokémon Database • 
-                <i class="fas fa-bolt"></i> Busca Instantânea
-            </p>
+            <p>DEX OBV © 2025 - Banco de dados Pokémon</p>
         </footer>
     </div>
     

@@ -1,15 +1,5 @@
-<div class="search-box">
-    <input type="text" id="searchInput" placeholder="🔍 Digite para buscar Pokémon (nome, tipo, localização, EV, TMs)... • Separe com vírgula para buscar vários">
-    <p class="search-hint">
-        <i class="fas fa-lightbulb"></i> EV como nome principal • Tipos em PT/EN • Imagens do Pokémon Database
-    </p>
-
-    <!-- FILTROS AVANÇADOS -->
-    <div class="pokedex-filters">
-        <button class="pokedex-filter-toggle" id="toggleFilters" onclick="toggleFiltrosPokedex()">
-            <i class="fas fa-filter"></i> Filtros Avançados
-        </button>
-        <div class="pokedex-filters-panel" id="filtersPanel" style="display:none;">
+<div class="pokedex-filters">
+    <div class="pokedex-filters-panel" id="filtersPanel" style="display:none;"><!-- FILTROS -->
             <!-- Geração -->
             <div class="filter-group">
                 <label class="filter-label"><i class="fas fa-layer-group"></i> Geração</label>
@@ -85,7 +75,6 @@
             </button>
         </div>
     </div>
-</div>
 
 <div id="pokemonContainer" class="pokemon-grid">
     <div class="loading">

@@ -187,7 +187,7 @@ document.addEventListener('click', async function(ev){
 
         // 📦 Lazy load: quantos pokémons renderizar por lote
         const POKEMON_BATCH_SIZE = 100;
-        const POKEMON_PAGE_SIZE = 710; // Quantos pokémons carregar por vez do servidor
+        const POKEMON_PAGE_SIZE = 1000; // Fase 1: primeiros pokémons exibidos rapidamente
         let _pokemonsAtuais = []; // Array filtrado/total atualmente exibido
         let _pokemonsRenderizados = 0; // Quantos já estão no DOM
 
@@ -531,21 +531,23 @@ document.addEventListener('click', async function(ev){
             const maxRetries = 5;
 
             try {
-                console.log(`⏳ Fase 2: carregando página ${pagina} (background)...`);
-                const resp = await fetch(`${URL_DADOS}&page=${pagina}&limit=${POKEMON_PAGE_SIZE}`);
+                console.log(`⏳ Fase 2: carregando restante de uma vez (background)...`);
+                const jaCarregados = todosPokemons.length;
+                const resp = await fetch(`${URL_DADOS}&page=1&limit=99999`); // busca tudo e descarta os já carregados
                 const texto = await resp.text();
                 const res = JSON.parse(texto);
 
-                if (res.data && res.data.length > 0) {
-                    todosPokemons = todosPokemons.concat(res.data);
+                if (res.data && res.data.length > jaCarregados) {
+                    const novos = res.data.slice(jaCarregados);
+                    todosPokemons = todosPokemons.concat(novos);
                     todosPokemonsCompleto = [...todosPokemons];
                     window.todosPokemons = todosPokemons;
 
                     _aplicarEdicoesLocais();
 
-                    const hasMore = res.hasMore === true;
-                    temMaisPaginas = hasMore;
-                    dadosCompletosCarregados = !hasMore;
+                    const hasMore = false; // tudo carregado de uma vez
+                    temMaisPaginas = false;
+                    dadosCompletosCarregados = true;
                     // Atualizar contador somente se o elemento existir (pode ter trocado de aba)
                     const countEl = document.getElementById('pokemonCount');
                     if (countEl) countEl.textContent = todosPokemons.length + (hasMore ? '+' : '');
@@ -563,44 +565,33 @@ document.addEventListener('click', async function(ev){
                         }
                     } else {
                         // Se o container não existir, apenas logar que os dados foram atualizados em memória
-                        console.log(`📥 Dados de página ${pagina} carregados em background (container ausente). Total em memória: ${todosPokemons.length}`);
-                        // Marcar que houve atualização enquanto a Pokédex estava fora do DOM
+                        console.log(`📥 Fase 2 carregada em background (container ausente). Total em memória: ${todosPokemons.length}`);
                         window._pokemonsUpdatedWhileAway = true;
                     }
 
-                    console.log(`📥 Fase 2 página ${pagina}: +${res.data.length} pokémon (total: ${todosPokemons.length})`);
-
-                    if (hasMore) {
-                        // Reiniciar contador de tentativas para esta página (sucesso)
-                        if (window._bgRetries && window._bgRetries[pagina]) delete window._bgRetries[pagina];
-                        await _carregarRestanteBackground(pagina + 1, _bgToken);
-                    } else {
-                        console.log('✅ Carregamento completo:', todosPokemons.length, 'pokémon');
-                        if (window._bgLoaderToken === _bgToken) delete window._bgLoaderToken;
-                    }
+                    console.log(`✅ Carregamento completo: +${novos.length} novos (total: ${todosPokemons.length} pokémon)`);
+                    if (window._bgLoaderToken === _bgToken) delete window._bgLoaderToken;
                 }
             } catch (e) {
                 console.error('❌ Erro no carregamento background (página ' + pagina + '):', e);
 
                 window._bgRetries = window._bgRetries || {};
-                window._bgRetries[pagina] = (window._bgRetries[pagina] || 0) + 1;
-                const attempts = window._bgRetries[pagina];
+                window._bgRetries['bg'] = (window._bgRetries['bg'] || 0) + 1;
+                const attempts = window._bgRetries['bg'];
 
                 if (attempts <= maxRetries) {
-                    const delay = Math.min(3000 * Math.pow(2, attempts - 1), 60000); // backoff exponencial até 60s
-                    console.log(`🔁 Tentando novamente página ${pagina} em ${delay}ms (tentativa ${attempts}/${maxRetries})`);
+                    const delay = Math.min(3000 * Math.pow(2, attempts - 1), 60000);
+                    console.log(`🔁 Tentando novamente fase 2 em ${delay}ms (tentativa ${attempts}/${maxRetries})`);
                     setTimeout(() => {
-                        // Só tentar se este loader ainda for o ativo
                         if (window._bgLoaderToken === _bgToken) _carregarRestanteBackground(pagina, _bgToken);
                     }, delay);
                 } else {
                     // Se excedeu tentativas, aguardar um tempo longo antes de tentar novamente para evitar spam infinito
                     const longDelay = 60000; // 1 minuto
-                    console.warn(`⚠️ Máximo de tentativas atingido para página ${pagina}. Aguardando ${longDelay}ms antes de nova tentativa.`);
+                    console.warn(`⚠️ Máximo de tentativas atingido para fase 2. Aguardando ${longDelay}ms antes de nova tentativa.`);
                     setTimeout(() => {
                         if (window._bgLoaderToken === _bgToken) {
-                            // resetar contador e tentar de novo
-                            window._bgRetries[pagina] = 0;
+                            window._bgRetries['bg'] = 0;
                             _carregarRestanteBackground(pagina, _bgToken);
                         }
                     }, longDelay);
