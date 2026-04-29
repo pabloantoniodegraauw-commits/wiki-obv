@@ -1040,19 +1040,21 @@ document.addEventListener('click', async function(ev){
                     // Formato com espaço — padrão mais comum ao salvar manualmente: "Mega Metagross.png"
                     candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega-${baseCapitalized}.png`);
                     candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega ${baseCapitalized}.png`);
-                    // Se for Shiny também, priorizar variantes sprite 'shiny' para Mega Shiny
+                    // Se for Shiny, adicionar variantes shiny-mega como fallback (não prioritário)
                     const isShiny = /\bshiny\b/i.test(nomePrincipal || '');
                     if (isShiny) {
-                        // variações comuns de naming para shiny mega
                         const slugMegaShiny1 = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-mega-shiny`;
                         const slugMegaShiny2 = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-shiny-mega`;
                         const capMegaShiny1 = `${baseCapitalized}-Mega-${baseCapitalized}-Shiny`;
                         const capShiny = `${baseCapitalized}-Shiny-${baseCapitalized}`;
-                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny1}.png`);
-                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny2}.png`);
-                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${capMegaShiny1}.png`);
                         candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${capShiny}.png`);
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${capMegaShiny1}.png`);
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny2}.png`);
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny1}.png`);
                     }
+                    // Prioridade máxima: forma Mega sempre vem primeiro (Mega Shiny usa imagem da forma Mega)
+                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega-${baseCapitalized}.png`);
+                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega ${baseCapitalized}.png`);
                 }
             } catch(e){}
 
