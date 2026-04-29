@@ -169,11 +169,20 @@
             }
             var actionBtn = '';
             if (isADM) {
-                actionBtn = '<button style="margin-top:6px;padding:2px 10px;border-radius:5px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:13px;" onclick="abrirModalEdicaoAbility(\'' + abilityEsc + '\')">Editar</button>';
+                actionBtn = '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="abrirModalEdicaoAbility(\'' + abilityEsc + '\')">' + '<i class="fas fa-edit"></i> Editar</button>';
             } else {
-                actionBtn = '<button style="margin-top:6px;padding:2px 10px;border-radius:5px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:13px;" onclick="abrirModalSugestaoAbility(\'' + abilityEsc + '\')">Sugerir</button>';
+                actionBtn = '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="abrirModalSugestaoAbility(\'' + abilityEsc + '\')">' + '<i class="fas fa-lightbulb"></i> Sugerir</button>';
             }
-            html += '<td style="padding:6px 4px;border-bottom:1px solid #23284a;text-align:center;min-width:180px;">' + sugestoesHtml + adminHtml + actionBtn + '</td>';
+            var _abParts = [];
+            var _sanitize = function(s) { return (s || '').toString().replace(/<[^>]*>/g, '').replace(/"/g, '"').replace(/'/g, "'").replace(/\n|\r/g, ' ').trim(); };
+            if (ability) _abParts.push('ABILITY-' + _sanitize(ability));
+            if (descricao) _abParts.push('DESCRIÇÃO-' + _sanitize(descricao));
+            if (pokemonQueAprende) _abParts.push('POKÉMON QUE APRENDE-' + _sanitize(pokemonQueAprende));
+            if (extra) _abParts.push('EXTRA-' + _sanitize(extra));
+            if (origemPokemon) _abParts.push('ORIGEM POKÉMON-' + _sanitize(origemPokemon));
+            var _abCopyText = _abParts.join('  ');
+            var copyBtnAb = '<button class="btn-copiar-loc" onclick="(function(btn){var t=\'' + _abCopyText.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\';navigator.clipboard&&navigator.clipboard.writeText(t).then(function(){var i=btn.querySelector(\'i\');i.className=\'fas fa-check\';btn.classList.add(\'copiado\');setTimeout(function(){i.className=\'fas fa-copy\';btn.classList.remove(\'copiado\');},2000)}).catch(function(){var ta=document.createElement(\'textarea\');ta.value=t;ta.style.position=\'fixed\';ta.style.opacity=\'0\';document.body.appendChild(ta);ta.select();document.execCommand(\'copy\');document.body.removeChild(ta);var i=btn.querySelector(\'i\');i.className=\'fas fa-check\';btn.classList.add(\'copiado\');setTimeout(function(){i.className=\'fas fa-copy\';btn.classList.remove(\'copiado\');},2000)})})(this)" title="Copiar"><i class="fas fa-copy"></i> Copiar</button>';
+            html += '<td style="padding:6px 4px;border-bottom:1px solid #23284a;text-align:center;min-width:180px;">' + sugestoesHtml + adminHtml + '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">' + actionBtn + copyBtnAb + '</div></td>';
 
             html += '</tr>';
         }

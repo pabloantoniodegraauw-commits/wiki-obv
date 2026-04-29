@@ -879,6 +879,40 @@ h1 {
     gap: 8px;
 }
 
+.location-total-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-copiar-loc {
+    background: rgba(0, 212, 255, 0.15);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    color: #00d4ff;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-copiar-loc:hover {
+    background: rgba(0, 212, 255, 0.3);
+    border-color: #00d4ff;
+}
+
+.btn-copiar-loc.copiado {
+    background: rgba(0, 200, 100, 0.2);
+    border-color: #00c864;
+    color: #00c864;
+}
+
 .tm-category {
     display: inline-block;
     background: rgba(255, 215, 0, 0.15);

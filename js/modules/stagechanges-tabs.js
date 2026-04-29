@@ -225,11 +225,28 @@ window.carregarAtacksParaTabela = async function() {
                     // Botão editar para ADM, botão sugestão para usuário comum
                     let actionBtn = '';
                     if (isADM) {
-                        actionBtn = `<button style=\"margin-top:6px;padding:2px 10px;border-radius:5px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:13px;\" onclick=\"abrirModalEdicaoAtack('${atk['ATACK']}')\">Editar</button>`;
+                        actionBtn = `<button class=\"btn-copiar-loc\" style=\"background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;\" onclick=\"abrirModalEdicaoAtack('${atk['ATACK']}')\"><i class=\"fas fa-edit\"></i> Editar</button>`;
                     } else {
-                        actionBtn = `<button style=\"margin-top:6px;padding:2px 10px;border-radius:5px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:13px;\" onclick=\"abrirModalSugestaoAtack('${atk['ATACK']}')\">Sugerir</button>`;
+                        actionBtn = `<button class=\"btn-copiar-loc\" style=\"background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;\" onclick=\"abrirModalSugestaoAtack('${atk['ATACK']}')\"><i class=\"fas fa-lightbulb\"></i> Sugerir</button>`;
                     }
-                    table += `<td style=\"padding:6px 4px;border-bottom:1px solid #23284a;text-align:center;min-width:180px;\">${sugestoesHtml}${adminHtml}${actionBtn}</td>`;
+                    // Botão copiar ataque
+                    const _atkNome = String(atk['ATACK'] || atk.atack || '');
+                    const _atkAcao = String(atk['AÇÃO'] || atk.acao || atk.action || '');
+                    const _atkEfeito = String(atk['EFEITO'] || atk.efeito || '');
+                    const _atkType = String(atk['TYPE'] || atk.type || '');
+                    const _atkCategoria = String(atk['CATEGORIA'] || atk.categoria || '');
+                    const _atkPP = String(atk['PP'] || atk.pp || '');
+                    const _atkPower = String(atk['POWER'] || atk.power || '');
+                    const _partes = [`ATACK-${_atkNome}`];
+                    if (_atkAcao) _partes.push(`AÇÃO-${_atkAcao}`);
+                    if (_atkEfeito) _partes.push(`EFEITO-${_atkEfeito}`);
+                    if (_atkType) _partes.push(`TYPE-${_atkType}`);
+                    if (_atkCategoria) _partes.push(`CATEGORIA-${_atkCategoria}`);
+                    if (_atkPP) _partes.push(`PP-${_atkPP}`);
+                    if (_atkPower) _partes.push(`POWER-${_atkPower}`);
+                    const _textoAttr = _partes.join('  ').replace(/"/g, '&quot;');
+                    const copyBtn = `<button class=\"btn-copiar-loc\" data-copy=\"${_textoAttr}\" onclick=\"copiarLocalizacao(this)\" title=\"Copiar ataque\"><i class=\"fas fa-copy\"></i> Copiar</button>`;
+                    table += `<td style=\"padding:6px 4px;border-bottom:1px solid #23284a;text-align:center;min-width:180px;\">${sugestoesHtml}${adminHtml}<div style=\"display:flex;flex-direction:column;align-items:center;gap:4px;\">${actionBtn}${copyBtn}</div></td>`;
                 // Modal de sugestão para ataque (usuário comum)
                 window.abrirModalSugestaoAtack = function(atackName) {
                     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -795,9 +812,21 @@ window.setupStageTabs = function() {
                     table += `<td>${atk['POWER'] || atk.power || ''}</td>`;
                     table += `<td>${atk['ACCURACY'] || atk.accuracy || ''}</td>`;
                     table += `<td>${atk['GEN'] || atk.gen || ''}</td>`;
-                    table += `<td style="text-align:center;min-width:140px;">` +
-                        `<button onclick="abrirModalSugestaoAtack('${(atackAttr||'').replace(/'/g,"\\'")}')">Sugerir</button>` +
-                        `</td>`;
+                    const _isADM = window.isAdmin && window.isAdmin();
+                    const _aN = String(atk['ATACK'] || atk.atack || '');
+                    const _aA = String(atk['AÇÃO'] || atk.acao || atk.action || '');
+                    const _aE = String(atk['EFEITO'] || atk.efeito || '');
+                    const _aT = String(atk['TYPE'] || atk.type || '');
+                    const _aC = String(atk['CATEGORIA'] || atk.categoria || '');
+                    const _aPP = String(atk['PP'] || atk.pp || '');
+                    const _aPW = String(atk['POWER'] || atk.power || '');
+                    const _ps = []; if(_aN) _ps.push('ATACK-'+_aN); if(_aA) _ps.push('AÇÃO-'+_aA); if(_aE) _ps.push('EFEITO-'+_aE); if(_aT) _ps.push('TYPE-'+_aT); if(_aC) _ps.push('CATEGORIA-'+_aC); if(_aPP) _ps.push('PP-'+_aPP); if(_aPW) _ps.push('POWER-'+_aPW);
+                    const _copyAttr = _ps.join('  ').replace(/"/g,'&quot;');
+                    const _aNEsc = (atackAttr||'').replace(/'/g,"\\'");
+                    const _actionBtnS = _isADM
+                        ? `<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="abrirModalEdicaoAtack('${_aNEsc}')"><i class="fas fa-edit"></i> Editar</button>`
+                        : `<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="abrirModalSugestaoAtack('${_aNEsc}')"><i class="fas fa-lightbulb"></i> Sugerir</button>`;
+                    table += `<td style="padding:6px 4px;border-bottom:1px solid #23284a;text-align:center;min-width:180px;"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;">${_actionBtnS}<button class="btn-copiar-loc" data-copy="${_copyAttr}" onclick="copiarLocalizacao(this)" title="Copiar"><i class="fas fa-copy"></i> Copiar</button></div></td>`;
                     table += '</tr>';
                 }
                 table += '</tbody></table></div>';

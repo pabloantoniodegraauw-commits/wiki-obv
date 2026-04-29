@@ -781,15 +781,20 @@ document.addEventListener('click', async function(ev){
             if (localizacao && localizacao !== 'Não informado') {
                 const locais = localizacao.split(' / ');
                 let total = 0;
+                const locaisTexto = [];
 
                 localizacaoHTML = '<div style="line-height: 1.8;">';
                 locais.forEach(local => {
                     const match = local.match(/(\d+)un/);
                     if (match) total += parseInt(match[1]);
                     localizacaoHTML += `• ${local}<br>`;
+                    locaisTexto.push(`• ${local}`);
                 });
                 if (total > 0) {
-                    localizacaoHTML += `<br><strong style="color: #ffd700;">Total: ${total}un</strong>`;
+                    const nomeParaCopia = evolucao || nomePokemon;
+                    const textoCopia = `${nomeParaCopia}  -->  Localização --> ${locaisTexto.join(' ')}  --> Total: ${total}un`;
+                    const textoAttr = textoCopia.replace(/"/g, '&quot;');
+                    localizacaoHTML += `<br><div class="location-total-row"><strong style="color: #ffd700;">Total: ${total}un</strong><button class="btn-copiar-loc" data-copy="${textoAttr}" onclick="copiarLocalizacao(this)" title="Copiar localização"><i class="fas fa-copy"></i> Copiar</button></div>`;
                 }
                 localizacaoHTML += '</div>';
             } else {
@@ -4640,6 +4645,36 @@ document.addEventListener('click', async function(ev){
         }
 
         // ⭐ EXPORT GLOBAL DE FUNÇÕES PARA MÓDULOS
+        window.copiarLocalizacao = function(btn) {
+            const texto = btn.getAttribute('data-copy');
+            if (!texto) return;
+            navigator.clipboard.writeText(texto).then(() => {
+                const icon = btn.querySelector('i');
+                icon.className = 'fas fa-check';
+                btn.classList.add('copiado');
+                setTimeout(() => {
+                    icon.className = 'fas fa-copy';
+                    btn.classList.remove('copiado');
+                }, 2000);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = texto;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                const icon = btn.querySelector('i');
+                icon.className = 'fas fa-check';
+                btn.classList.add('copiado');
+                setTimeout(() => {
+                    icon.className = 'fas fa-copy';
+                    btn.classList.remove('copiado');
+                }, 2000);
+            });
+        };
+
         window.renderizarPokemons = renderizarPokemons;
         window.configurarBuscaInstantanea = configurarBuscaInstantanea;
         window.todosPokemons = todosPokemons;
