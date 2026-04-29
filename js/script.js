@@ -1055,6 +1055,8 @@ document.addEventListener('click', async function(ev){
                     // Prioridade máxima: forma Mega sempre vem primeiro (Mega Shiny usa imagem da forma Mega)
                     candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega-${baseCapitalized}.png`);
                     candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega ${baseCapitalized}.png`);
+                    // Padrão usado localmente: Base-Mega-Base.png (ex: Metagross-Mega-Metagross.png)
+                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${baseCapitalized}-Mega-${baseCapitalized}.png`);
                 }
             } catch(e){}
 
