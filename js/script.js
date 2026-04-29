@@ -1037,6 +1037,9 @@ document.addEventListener('click', async function(ev){
                     // comum fallback: slug 'base-mega' (priorizar entre sprites)
                     const slugMega = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-mega`;
                     candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMega}.png`);
+                    // Formato com espaço — padrão mais comum ao salvar manualmente: "Mega Metagross.png"
+                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega-${baseCapitalized}.png`);
+                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega ${baseCapitalized}.png`);
                     // Se for Shiny também, priorizar variantes sprite 'shiny' para Mega Shiny
                     const isShiny = /\bshiny\b/i.test(nomePrincipal || '');
                     if (isShiny) {
