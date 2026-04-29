@@ -1694,7 +1694,7 @@ document.addEventListener('click', async function(ev){
                     actionBtn = `<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="event.stopPropagation();abrirModalSugestaoTMEdit('${numEsc}')"><i class="fas fa-lightbulb"></i> Sugerir</button>`;
                 }
 
-                const _tmTexto = `${numFormatado} - ${tm.nome} - ${tm.pokemon}`.replace(/'/g, "\\'");
+                const _tmTexto = `${numFormatado} - ${tm.nome} - ${tm.tipagem || ''} - ${tm.categoria || ''}`.replace(/'/g, "\\'");
                 const copyBtn = `<button class="btn-copiar-loc" onclick="event.stopPropagation();(function(btn){var t='${_tmTexto}';navigator.clipboard&&navigator.clipboard.writeText(t).then(function(){var i=btn.querySelector('i');i.className='fas fa-check';btn.classList.add('copiado');setTimeout(function(){i.className='fas fa-copy';btn.classList.remove('copiado');},2000)}).catch(function(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);var i=btn.querySelector('i');i.className='fas fa-check';btn.classList.add('copiado');setTimeout(function(){i.className='fas fa-copy';btn.classList.remove('copiado');},2000)})})(this)" title="Copiar"><i class="fas fa-copy"></i> Copiar</button>`;
 
                 card.innerHTML = `
