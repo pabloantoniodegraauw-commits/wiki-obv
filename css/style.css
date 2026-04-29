@@ -3339,3 +3339,138 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+
+/* ============================================
+   QUESTS PAGE STYLES
+   ============================================ */
+
+.quests-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.quest-card {
+    background: linear-gradient(145deg, rgba(30, 50, 100, 0.8), rgba(15, 25, 60, 0.95));
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 4px solid #ffd700;
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quest-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.2);
+}
+
+.quest-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.quest-title {
+    color: #ffd700;
+    font-size: 1.15em;
+    font-weight: 700;
+    flex: 1;
+}
+
+.quest-badge-free {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.5);
+    border-radius: 12px;
+    padding: 3px 12px;
+    font-size: 0.78em;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.quest-badge-vip {
+    background: rgba(255, 215, 0, 0.2);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    border-radius: 12px;
+    padding: 3px 12px;
+    font-size: 0.78em;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.quest-meta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 0.88em;
+    color: #a0c8ff;
+}
+
+.quest-nivel {
+    color: #a0e7ff;
+    font-weight: 600;
+}
+
+.quest-stars {
+    color: #ffd700;
+    letter-spacing: 2px;
+    font-size: 1em;
+}
+
+.quest-descricao {
+    color: #c8deff;
+    font-size: 0.92em;
+    line-height: 1.55;
+}
+
+.quest-rewards-label {
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 0.88em;
+    margin-bottom: 4px;
+}
+
+.quest-rewards-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.quest-reward-item {
+    background: rgba(255, 215, 0, 0.12);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 20px;
+    padding: 3px 12px;
+    font-size: 0.82em;
+    color: #ffec8b;
+    font-weight: 600;
+}
+
+.quest-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.quest-card.dificuldade-1 { border-left-color: #2ecc71; }
+.quest-card.dificuldade-2 { border-left-color: #3498db; }
+.quest-card.dificuldade-3 { border-left-color: #f39c12; }
+.quest-card.dificuldade-4 { border-left-color: #e74c3c; }
+.quest-card.dificuldade-5 { border-left-color: #9b59b6; }
+
+@media (max-width: 600px) {
+    .quests-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1474,6 +1474,356 @@ document.addEventListener('click', async function(ev){
             }).join('');
         }
 
+        // ====================================================================
+        // QUESTS DATA & FUNCTIONS
+        // ====================================================================
+
+        // 49 quests iniciais (usado como fallback quando a planilha não tem dados)
+        const QUESTS_INICIAIS = [
+            { nome: 'First Stone', acesso: 'Free', nivel: 25, descricao: 'Escolha uma entre as 3 principais pedras de evolução', recompensas: 'firestone/waterstone/leafstone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=gL3Fj7EUIj4' },
+            { nome: 'Second Stone', acesso: 'Free', nivel: 45, descricao: 'Escolha uma entre as 3 principais pedras de evolução e ganha um patins para melhorar sua velocidade', recompensas: 'firestone/waterstone/leafstone/patins', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=Ub6uQqOw1MQ' },
+            { nome: 'Thunder Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe as casas elétricas pelo mapa', recompensas: 'thunderstone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=QJujvuvKuQo' },
+            { nome: 'Enigma Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe as ilhas psychic pelo mapa', recompensas: 'enigmastone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=CF3n9sYPa28' },
+            { nome: 'Heart Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe os pidgeot pelo mapa', recompensas: 'heartstone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=_BwCI_NGBk4' },
+            { nome: 'Earth Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe as caverna terrestre pelo mapa', recompensas: 'earthstone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=7O-nlfhdGCU' },
+            { nome: 'Punch Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe as ilhas lutadoras pelo mapa', recompensas: 'punchstone', dificuldade: 1, link_video: '' },
+            { nome: 'Ice Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe as ilhas de gelo em kalos', recompensas: 'icestone', dificuldade: 1, link_video: '' },
+            { nome: 'Fairy Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe as ilhas de fadas em kalos', recompensas: 'fairystone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=p2Zwt6gDBwE' },
+            { nome: 'Rock Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe as cavernas pelo mapa', recompensas: 'rockstone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=a6xpnbVUUro' },
+            { nome: 'Darkness Stone', acesso: 'Free', nivel: 50, descricao: 'Vasculhe a torre de lavender', recompensas: 'darknessstone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=KjXOmgDx7Uc' },
+            { nome: 'Dragon Stone', acesso: 'Free', nivel: 100, descricao: 'Vasculhe uma ilha de dragões e consiga uma stone', recompensas: 'dragonstone', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=9oB6YrTVDfU' },
+            { nome: '100 Hds', acesso: 'Free', nivel: 100, descricao: 'Vasculhe as cavernas proximo a cerulean e encontre 100 hds', recompensas: '100hds', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=wPmGkdwnvbA' },
+            { nome: '100 Ultraball', acesso: 'Free', nivel: 100, descricao: 'Explore, encontre e então capture!', recompensas: 'ultraball', dificuldade: 1, link_video: 'https://www.youtube.com/watch?v=Qd66prG1T9o' },
+            { nome: 'Jungle', acesso: 'Free', nivel: 50, descricao: 'Capture o pokémon Bonsly e troque por um shiny vileplume', recompensas: 'shinyvileplume', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=iXMWtaXJsPg' },
+            { nome: 'Milotic', acesso: 'Free', nivel: 130, descricao: 'Passe pela piramide em Lavaridge e procure um báu onde você encontra um feebas, e em seguida evolua para uma milotic', recompensas: 'milotic', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=qI1fAeYnOW8' },
+            { nome: 'Farol', acesso: 'Free', nivel: 150, descricao: 'Farme os itens e leve até a chefe do fárol', recompensas: 'addonboxsuper', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=bBuSA5IvrAQ' },
+            { nome: 'Conquest', acesso: 'Free', nivel: 150, descricao: 'Junte 3 amigos e enfrente os poderosos Guardian Magmar', recompensas: 'addonbox', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=J0M1rQcie2o' },
+            { nome: 'Boost Ice', acesso: 'VIP', nivel: 250, descricao: 'Consiga uma boost stone no final da quest', recompensas: 'booststone', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=zwxll39GOV4' },
+            { nome: 'Boost Hell', acesso: 'Free', nivel: 250, descricao: 'Consiga uma boost stone no final da quest', recompensas: 'booststone', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=ZWF9zkucgfY' },
+            { nome: 'Boost Leaf', acesso: 'Free', nivel: 250, descricao: 'Consiga uma boost stone no final da quest', recompensas: 'booststone', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=X81s6EsEDJs' },
+            { nome: 'Metagross', acesso: 'Free', nivel: 0, descricao: 'Consiga 3 itens dos lendarios Regice, Regirock e Registeel e complete a quest Metagross', recompensas: 'metagross/absol', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=2kUq-l847MM' },
+            { nome: 'Drapion', acesso: 'VIP', nivel: 400, descricao: 'Consiga um Shiny de graça e uma boost stone', recompensas: 'shinydrapion/booststone', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=UCjqQv0GT54' },
+            { nome: 'Fire Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo fire e no final ganhe uma outfit', recompensas: 'charizardoutfit', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=DPV4GK_3YWc' },
+            { nome: 'Leaf Gale', acesso: 'VIP', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo leaf e no final ganhe uma outfit', recompensas: 'venusauroutfit', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=EShnZdGadwQ' },
+            { nome: 'Punch Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo punch e no final ganhe uma outfit', recompensas: 'punchoutfit', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=t2BI5QkN2sI' },
+            { nome: 'Water Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo water e no final ganhe uma outfit', recompensas: 'blastoiseoutfit', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=VNMZHxROxns' },
+            { nome: 'Fly Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo fly e no final ganhe uma outfit', recompensas: 'flyoutfit', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=Bvzp7l2itTI' },
+            { nome: 'Psych Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo psychic e no final ganhe uma outfit', recompensas: 'psychicoutfit', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=WToosf6vvaA' },
+            { nome: 'Electric Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo electric e no final ganhe uma outfit', recompensas: 'electricgale', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=BD-pBsWjF9I' },
+            { nome: 'Fairy Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo fairy e no final ganhe uma outfit', recompensas: 'fairyoutfit', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=p2Zwt6gDBwE' },
+            { nome: 'Dragon Gale', acesso: 'Free', nivel: 500, descricao: 'Enfrente diversos pokemon do tipo dragon e no final ganhe uma outfit', recompensas: 'dragongale', dificuldade: 2, link_video: 'https://www.youtube.com/watch?v=qi-T7TzU9wQ' },
+            { nome: 'Fossil', acesso: 'Free', nivel: 0, descricao: 'Reviva um fossil e consiga um pokemon super raro', recompensas: 'aerodactyl/omastar/armaldo/kabutops/bastiodon', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=Pkzcc49KtZQ' },
+            { nome: 'Magnetic', acesso: 'Free', nivel: 250, descricao: 'Tudo parecia normal, até elas se mexerem. Enfrente os Guardian Probopass', recompensas: 'probopass', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=GrIfCtLO4hY' },
+            { nome: 'Aegislash', acesso: 'Vip', nivel: 250, descricao: 'Consiga TMS unicos investigando um antigo palacio', recompensas: 'aegislash', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=JAwzrewN7l0' },
+            { nome: 'Mamoswine', acesso: 'Free', nivel: 250, descricao: 'Complete todas missões e enfrete o poderoso Guardian Mamoswine', recompensas: 'mamoswine', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=kEJ2IRSP0pU' },
+            { nome: 'Haunted House', acesso: 'VIP', nivel: 666, descricao: 'Complete os enigmas da Haunted House e consiga um otimo pokemon', recompensas: 'golurk', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=0bMI6ZUZ13Q' },
+            { nome: 'Crystal Quest', acesso: 'Free', nivel: 0, descricao: 'Consiga uma Crystal Tail e troque por acesso e tente capturar um crystal onix', recompensas: 'shiny onix', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=DxVLdBXr2XQ' },
+            { nome: 'Mega Ring', acesso: 'Free', nivel: 300, descricao: 'Consiga uma bateria e 10x forge material para o professor sycamore, e consiga desbloquear a mega evolução', recompensas: '', dificuldade: 4, link_video: '' },
+            { nome: 'Korrina', acesso: 'Free', nivel: 250, descricao: 'Você entende de Mega evolução? prove e enfrente a lendaria Korrina e seus Mega Lucarios', recompensas: '', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=YrOT6oZ0CPM' },
+            { nome: 'Steve Stone', acesso: 'Free', nivel: 250, descricao: 'Ajude steve stone a desvendar o misterio da Rogue Evolução', recompensas: '', dificuldade: 3, link_video: 'https://www.youtube.com/watch?v=tJs-TOY0HiM' },
+            { nome: 'Burned', acesso: 'Free', nivel: 400, descricao: 'Junte 600 itens raros, 200x scarab, 200x brooch, 200x strange e complete uma das quests mais cara do jogo', recompensas: 'lickilicky/rhyperior', dificuldade: 4, link_video: 'https://www.youtube.com/watch?v=IgnOPhZe_4o' },
+            { nome: 'Celebi', acesso: 'Free', nivel: 400, descricao: 'Viaje para Ilex Forest e devenda o misterio de Celebi, você vai precisar de ajuda', recompensas: 'tangrowth', dificuldade: 4, link_video: 'https://www.youtube.com/watch?v=2UIMqhyyTwo' },
+            { nome: 'Genesect', acesso: 'Free', nivel: 0, descricao: 'Enfrente o lendario Genesect em uma missão em unova. Ao finalizar, você ganha uma outfit exclusiva e também libera acesso exclusivo a um npc que te oferece mel para captura de Volcarona', recompensas: 'genesectoutfit/volcarona', dificuldade: 4, link_video: 'https://www.youtube.com/watch?v=U3iAG7Y43fI' },
+            { nome: 'Pesadelo', acesso: 'Free', nivel: 200, descricao: 'Você sonha? então enfrente seus pesadelo. Você vai precisar de amigos para conseguir enfrentar os darkrais', recompensas: 'lucario/togekiss/spiritomb', dificuldade: 4, link_video: 'https://www.youtube.com/shorts/LD0o2Y7olHI' },
+            { nome: 'Iris', acesso: 'Free', nivel: 300, descricao: 'Consiga todos pokémon dragão para iris, desbloqueando acesso a Iris Dungeons para conseguir o Mega Dragonite', recompensas: '', dificuldade: 4, link_video: 'https://www.youtube.com/watch?v=cDgI4upI_L0' },
+            { nome: 'Jurassic', acesso: 'Free', nivel: 300, descricao: 'Enfrente os ancient de kalos revividos e ecolha entre Amaura e Tyrunt', recompensas: 'amaura/tyrunt', dificuldade: 4, link_video: 'https://www.youtube.com/watch?v=AAqKNTG0zcI' },
+            { nome: 'Vale dos Gengar', acesso: 'Free', nivel: 600, descricao: 'Primeira aparição de um dos vilão de pokememories, Z, cuidado nessa jornada', recompensas: 'mimikyu/alolanmarowak', dificuldade: 5, link_video: 'https://www.youtube.com/watch?v=TEtoG-xVYNo' },
+            { nome: 'Memories Quest', acesso: 'Free', nivel: 600, descricao: 'Segunda aparição de Z, Aqui você precisara de ajuda de um Celebi para viajar ao passado', recompensas: 'roaringmoon/alolanvulpix', dificuldade: 5, link_video: 'https://www.youtube.com/watch?v=kBme51Qt_AA' }
+        ];
+
+        // Armazena quests carregadas (null = não inicializado ainda)
+        window.todasQuests = null;
+
+        /**
+         * Carrega quests do servidor. Se a aba não existir, usa QUESTS_INICIAIS como seed.
+         */
+        window.carregarQuests = async function() {
+            const container = document.getElementById('questsContainer');
+            if (!container) return;
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando Quests...</p></div>';
+
+            try {
+                const resp = await fetch(APPS_SCRIPT_URL + '?acao=obter_quests');
+                const json = await resp.json();
+                if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+                    window.todasQuests = json.data;
+                } else {
+                    // Planilha vazia ou não criada ainda — usar dados iniciais e fazer seed
+                    window.todasQuests = QUESTS_INICIAIS.map((q, i) => ({ ...q, id: i + 1 }));
+                    // Enviar seed para o servidor em background (não bloqueia UI)
+                    _seedQuestsParaServidor(window.todasQuests);
+                }
+            } catch (e) {
+                // Fallback offline
+                window.todasQuests = QUESTS_INICIAIS.map((q, i) => ({ ...q, id: i + 1 }));
+            }
+
+            renderizarQuests(window.todasQuests);
+        };
+
+        /**
+         * Envia quests iniciais para o servidor criar a aba e popular com os dados.
+         */
+        function _seedQuestsParaServidor(quests) {
+            try {
+                fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'seedQuests', quests: quests })
+                }).catch(function() {});
+            } catch (e) {}
+        }
+
+        /**
+         * Filtra e re-renderiza quests com base nos campos de busca/filtro.
+         */
+        window.filtrarQuests = function() {
+            if (!window.todasQuests) return;
+            const busca = (document.getElementById('questSearchInput') || {}).value || '';
+            const filtroAcesso = (document.getElementById('questFilterAcesso') || {}).value || '';
+            const filtroDif = (document.getElementById('questFilterDificuldade') || {}).value || '';
+
+            const filtradas = window.todasQuests.filter(function(q) {
+                const nomeOk = !busca || q.nome.toLowerCase().includes(busca.toLowerCase());
+                const acessoOk = !filtroAcesso || q.acesso.toLowerCase() === filtroAcesso.toLowerCase();
+                const difOk = !filtroDif || String(q.dificuldade) === filtroDif;
+                return nomeOk && acessoOk && difOk;
+            });
+
+            renderizarQuests(filtradas);
+        };
+
+        /**
+         * Renderiza os cards de quests no container.
+         */
+        function renderizarQuests(dados) {
+            const container = document.getElementById('questsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!dados || dados.length === 0) {
+                container.innerHTML = '<div class="no-results"><i class="fas fa-search"></i><p>Nenhuma quest encontrada.</p></div>';
+                return;
+            }
+
+            dados.forEach(function(q) {
+                const isAdmin = (typeof window.isAdmin === 'function') ? window.isAdmin() : false;
+                const dif = parseInt(q.dificuldade) || 1;
+                const stars = '★'.repeat(dif) + '☆'.repeat(5 - dif);
+                const isVip = q.acesso && q.acesso.toLowerCase() === 'vip';
+                const badgeClass = isVip ? 'quest-badge-vip' : 'quest-badge-free';
+                const badgeLabel = isVip ? '⭐ VIP' : '🆓 Free';
+                const nivelTxt = (q.nivel && parseInt(q.nivel) > 0) ? 'Nível ' + q.nivel + '+' : 'Sem requisito';
+
+                // Recompensas como badges
+                let recompensasHtml = '';
+                if (q.recompensas) {
+                    q.recompensas.split('/').filter(Boolean).forEach(function(r) {
+                        recompensasHtml += '<span class="quest-reward-item">' + r.trim() + '</span>';
+                    });
+                }
+
+                // Botão de vídeo
+                const videoHtml = q.link_video
+                    ? '<a href="' + q.link_video + '" target="_blank" rel="noopener noreferrer" class="btn-copiar-loc" style="text-decoration:none;"><i class="fab fa-youtube" style="color:#ff4444;"></i> Ver Guia</a>'
+                    : '';
+
+                // Botão copiar
+                const nomeSafe = (q.nome || '').replace(/'/g, "\\'");
+                const acessoSafe = (q.acesso || '').replace(/'/g, "\\'");
+                const copyText = 'QUEST-' + (q.nome || '') + '  ACESSO-' + (q.acesso || '') + '  NÍVEL-' + (q.nivel || 0) + '  DIFICULDADE-' + stars;
+
+                // Botão editar/sugerir
+                const editBtn = isAdmin
+                    ? '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.abrirModalEdicaoQuest(\'' + nomeSafe + '\')"><i class="fas fa-edit"></i> Editar</button>'
+                    : '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.sugerirEdicaoQuest(\'' + nomeSafe + '\')"><i class="fas fa-lightbulb"></i> Sugerir</button>';
+
+                const card = document.createElement('div');
+                card.className = 'quest-card dificuldade-' + dif;
+                card.innerHTML =
+                    '<div class="quest-card-header">' +
+                        '<div class="quest-title"><i class="fas fa-map-signs"></i> ' + (q.nome || '') + '</div>' +
+                        '<span class="' + badgeClass + '">' + badgeLabel + '</span>' +
+                    '</div>' +
+                    '<div class="quest-meta">' +
+                        '<span class="quest-nivel"><i class="fas fa-arrow-up"></i> ' + nivelTxt + '</span>' +
+                        '<span class="quest-stars" title="Dificuldade ' + dif + '/5">' + stars + '</span>' +
+                    '</div>' +
+                    '<div class="quest-descricao">' + (q.descricao || '') + '</div>' +
+                    (recompensasHtml ? '<div><div class="quest-rewards-label"><i class="fas fa-gift"></i> Recompensas:</div><div class="quest-rewards-list">' + recompensasHtml + '</div></div>' : '') +
+                    '<div class="quest-actions">' +
+                        videoHtml +
+                        editBtn +
+                        '<button class="btn-copiar-loc" onclick="(function(btn){var t=\'' + copyText.replace(/'/g, "\\'") + '\';if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){btn.innerHTML=\'<i class=\\"fas fa-check\\"></i> Copiado!\';btn.classList.add(\'copiado\');setTimeout(function(){btn.innerHTML=\'<i class=\\"fas fa-copy\\"></i> Copiar\';btn.classList.remove(\'copiado\');},2000);});}else{var ta=document.createElement(\'textarea\');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand(\'copy\');document.body.removeChild(ta);btn.innerHTML=\'<i class=\\"fas fa-check\\"></i> Copiado!\';btn.classList.add(\'copiado\');setTimeout(function(){btn.innerHTML=\'<i class=\\"fas fa-copy\\"></i> Copiar\';btn.classList.remove(\'copiado\');},2000);}})(this)"><i class="fas fa-copy"></i> Copiar</button>' +
+                    '</div>';
+
+                container.appendChild(card);
+            });
+        }
+
+        /**
+         * Abre modal para adicionar nova quest (ADM).
+         */
+        window.abrirModalAdicionarQuest = function() {
+            document.getElementById('modalQuestTitulo').innerHTML = '<i class="fas fa-map-signs"></i> Adicionar Quest';
+            document.getElementById('questEditNomeOriginal').value = '';
+            document.getElementById('questNome').value = '';
+            document.getElementById('questAcesso').value = 'Free';
+            document.getElementById('questNivel').value = '';
+            document.getElementById('questDescricao').value = '';
+            document.getElementById('questRecompensas').value = '';
+            document.getElementById('questDificuldade').value = '1';
+            document.getElementById('questLinkVideo').value = '';
+            document.getElementById('modalQuest').style.display = 'flex';
+        };
+
+        /**
+         * Abre modal para editar quest existente (ADM).
+         */
+        window.abrirModalEdicaoQuest = function(nome) {
+            if (!window.todasQuests) return;
+            const q = window.todasQuests.find(function(x) { return x.nome === nome; });
+            if (!q) return;
+            document.getElementById('modalQuestTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Quest';
+            document.getElementById('questEditNomeOriginal').value = q.nome;
+            document.getElementById('questNome').value = q.nome || '';
+            document.getElementById('questAcesso').value = q.acesso || 'Free';
+            document.getElementById('questNivel').value = q.nivel || 0;
+            document.getElementById('questDescricao').value = q.descricao || '';
+            document.getElementById('questRecompensas').value = q.recompensas || '';
+            document.getElementById('questDificuldade').value = q.dificuldade || 1;
+            document.getElementById('questLinkVideo').value = q.link_video || '';
+            document.getElementById('modalQuest').style.display = 'flex';
+        };
+
+        /**
+         * Sugere edição para uma quest (usuário comum).
+         */
+        window.sugerirEdicaoQuest = function(nome) {
+            alert('Para sugerir uma edição na quest "' + nome + '", entre em contato com um ADM no Discord do clã OBV.');
+        };
+
+        /**
+         * Salva quest a partir do modal (criação ou edição).
+         */
+        window.salvarQuestModal = function() {
+            const nomeOriginal = document.getElementById('questEditNomeOriginal').value;
+            const dados = {
+                nome: document.getElementById('questNome').value.trim(),
+                acesso: document.getElementById('questAcesso').value,
+                nivel: parseInt(document.getElementById('questNivel').value) || 0,
+                descricao: document.getElementById('questDescricao').value.trim(),
+                recompensas: document.getElementById('questRecompensas').value.trim(),
+                dificuldade: parseInt(document.getElementById('questDificuldade').value) || 1,
+                link_video: document.getElementById('questLinkVideo').value.trim()
+            };
+
+            if (!dados.nome) { alert('Preencha o nome da quest.'); return; }
+
+            const action = nomeOriginal ? 'editarQuest' : 'adicionarQuest';
+            if (nomeOriginal) dados.nomeOriginal = nomeOriginal;
+
+            const btn = document.getElementById('btnSalvarQuest');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: action, ...dados })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    document.getElementById('modalQuest').style.display = 'none';
+                    window.todasQuests = null; // forçar reload
+                    window.carregarQuests();
+                } else {
+                    alert('Erro ao salvar: ' + (res.message || 'Tente novamente.'));
+                }
+            })
+            .catch(function() { alert('Erro de conexão ao salvar quest.'); })
+            .finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Salvar Quest';
+            });
+        };
+
+        // ====================================================================
+        // TASK MODAL FUNCTIONS (ADM)
+        // ====================================================================
+
+        window.abrirModalAdicionarTask = function() {
+            document.getElementById('modalTaskTitulo').innerHTML = '<i class="fas fa-tasks"></i> Adicionar Task';
+            document.getElementById('taskEditId').value = '';
+            document.getElementById('taskId').value = '';
+            document.getElementById('taskMissao').value = '';
+            document.getElementById('taskPokemon').value = '';
+            document.getElementById('taskPremios').value = '';
+            document.getElementById('modalTask').style.display = 'flex';
+        };
+
+        window.abrirModalEdicaoTask = function(id) {
+            const task = todasTasks.find(function(t) { return String(t.id) === String(id); });
+            if (!task) return;
+            document.getElementById('modalTaskTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Task';
+            document.getElementById('taskEditId').value = task.id;
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('taskMissao').value = task.missao || '';
+            document.getElementById('taskPokemon').value = task.pokemon || '';
+            document.getElementById('taskPremios').value = JSON.stringify(task.premios || []);
+            document.getElementById('modalTask').style.display = 'flex';
+        };
+
+        window.salvarTaskModal = function() {
+            const idOriginal = document.getElementById('taskEditId').value;
+            const dados = {
+                id: document.getElementById('taskId').value.trim(),
+                missao: document.getElementById('taskMissao').value.trim(),
+                pokemon: document.getElementById('taskPokemon').value.trim(),
+                premiosRaw: document.getElementById('taskPremios').value.trim()
+            };
+
+            if (!dados.missao || !dados.pokemon) { alert('Preencha missão e pokémon.'); return; }
+
+            let premios = [];
+            try { premios = JSON.parse(dados.premiosRaw); } catch(e) {
+                premios = [{ item: dados.premiosRaw, qtd: '1' }];
+            }
+
+            const action = idOriginal ? 'editarTask' : 'adicionarTask';
+            const payload = { action: action, id: dados.id, missao: dados.missao, pokemon: dados.pokemon, premios: premios };
+            if (idOriginal) payload.idOriginal = idOriginal;
+
+            const btn = document.getElementById('btnSalvarTask');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+            fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                if (res.success) {
+                    document.getElementById('modalTask').style.display = 'none';
+                    carregarTasks();
+                } else {
+                    alert('Erro ao salvar: ' + (res.message || 'Tente novamente.'));
+                }
+            })
+            .catch(function() { alert('Erro de conexão ao salvar task.'); })
+            .finally(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Salvar Task';
+            });
+        };
+
+        // ====================================================================
+        // END QUESTS / TASK MODAL FUNCTIONS
+        // ====================================================================
+
         function carregarTasks() {
             todasTasks = [
                 { id: '01', missao: 'Derrotar: 20', pokemon: 'magikarp', premios: [{ item: 'pokeballs', qtd: '50' }] },
@@ -1625,6 +1975,10 @@ document.addEventListener('click', async function(ev){
                     </div>
                     <div class="task-content-right">
                         <div class="task-rewards">${premiosHtml}</div>
+                    </div>
+                    <div style="grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">
+                        ${isAdmin() ? `<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.abrirModalEdicaoTask('${task.id}')"><i class="fas fa-edit"></i> Editar</button>` : ''}
+                        <button class="btn-copiar-loc" data-copy="TASK-#${task.id}  MISSÃO-${task.missao}  POKEMON-${task.pokemon}  RECOMPENSA-${task.premios.map(p=>p.item+' x'+p.qtd).join('/')}" onclick="window.copiarLocalizacao(this)"><i class="fas fa-copy"></i> Copiar</button>
                     </div>
                 `;
                 

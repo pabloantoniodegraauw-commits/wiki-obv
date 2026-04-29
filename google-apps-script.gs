@@ -1,3 +1,129 @@
+// ============================================================
+//  QUESTS & TASKS HANDLERS
+// ============================================================
+
+/**
+ * Seed inicial de quests — chamado automaticamente pelo frontend quando
+ * a aba QUESTS existe mas está vazia. Insere todas as quests de uma vez.
+ */
+function handleSeedQuests(planilha, dados) {
+  try {
+    var aba = planilha.getSheetByName('QUESTS');
+    if (!aba) {
+      aba = planilha.insertSheet('QUESTS');
+      aba.getRange(1, 1, 1, 7).setValues([['NOME', 'ACESSO', 'NIVEL', 'DESCRICAO', 'RECOMPENSAS', 'DIFICULDADE', 'LINK_VIDEO']]);
+    }
+    var existentes = aba.getLastRow();
+    if (existentes > 1) {
+      // Já tem dados, não sobrescrever
+      return { success: true, message: 'Aba já populada, seed ignorado.' };
+    }
+    var quests = dados.quests || [];
+    if (!quests.length) return { success: false, message: 'Nenhuma quest enviada.' };
+    var rows = quests.map(function(q) {
+      return [q.nome || '', q.acesso || 'Free', q.nivel || 0, q.descricao || '', q.recompensas || '', q.dificuldade || 1, q.link_video || ''];
+    });
+    aba.getRange(2, 1, rows.length, 7).setValues(rows);
+    return { success: true, message: rows.length + ' quests inseridas.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Adiciona uma nova quest na aba QUESTS.
+ */
+function handleAdicionarQuest(planilha, dados) {
+  try {
+    var aba = planilha.getSheetByName('QUESTS');
+    if (!aba) {
+      aba = planilha.insertSheet('QUESTS');
+      aba.getRange(1, 1, 1, 7).setValues([['NOME', 'ACESSO', 'NIVEL', 'DESCRICAO', 'RECOMPENSAS', 'DIFICULDADE', 'LINK_VIDEO']]);
+    }
+    if (!dados.nome) return { success: false, message: 'Nome obrigatório.' };
+    aba.appendRow([dados.nome, dados.acesso || 'Free', dados.nivel || 0, dados.descricao || '', dados.recompensas || '', dados.dificuldade || 1, dados.link_video || '']);
+    return { success: true, message: 'Quest adicionada.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Edita uma quest existente na aba QUESTS (busca por NOME original).
+ */
+function handleEditarQuest(planilha, dados) {
+  try {
+    var aba = planilha.getSheetByName('QUESTS');
+    if (!aba) return { success: false, message: 'Aba QUESTS não encontrada.' };
+    var nomeOriginal = (dados.nomeOriginal || dados.nome || '').toString().trim().toLowerCase();
+    var rows = aba.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if ((rows[i][0] || '').toString().trim().toLowerCase() === nomeOriginal) {
+        aba.getRange(i + 1, 1, 1, 7).setValues([[
+          dados.nome || rows[i][0],
+          dados.acesso || rows[i][1],
+          dados.nivel !== undefined ? dados.nivel : rows[i][2],
+          dados.descricao !== undefined ? dados.descricao : rows[i][3],
+          dados.recompensas !== undefined ? dados.recompensas : rows[i][4],
+          dados.dificuldade !== undefined ? dados.dificuldade : rows[i][5],
+          dados.link_video !== undefined ? dados.link_video : rows[i][6]
+        ]]);
+        return { success: true, message: 'Quest atualizada.' };
+      }
+    }
+    return { success: false, message: 'Quest não encontrada: ' + nomeOriginal };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Adiciona uma task na aba TASKS (cria a aba se necessário).
+ */
+function handleAdicionarTask(planilha, dados) {
+  try {
+    var aba = planilha.getSheetByName('TASKS');
+    if (!aba) {
+      aba = planilha.insertSheet('TASKS');
+      aba.getRange(1, 1, 1, 4).setValues([['ID', 'MISSAO', 'POKEMON', 'PREMIOS']]);
+    }
+    aba.appendRow([dados.id || '', dados.missao || '', dados.pokemon || '', JSON.stringify(dados.premios || [])]);
+    return { success: true, message: 'Task adicionada.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Edita uma task existente na aba TASKS (busca por ID original).
+ */
+function handleEditarTask(planilha, dados) {
+  try {
+    var aba = planilha.getSheetByName('TASKS');
+    if (!aba) return { success: false, message: 'Aba TASKS não encontrada.' };
+    var idOriginal = (dados.idOriginal || dados.id || '').toString().trim();
+    var rows = aba.getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if ((rows[i][0] || '').toString().trim() === idOriginal) {
+        aba.getRange(i + 1, 1, 1, 4).setValues([[
+          dados.id || rows[i][0],
+          dados.missao || rows[i][1],
+          dados.pokemon || rows[i][2],
+          JSON.stringify(dados.premios || [])
+        ]]);
+        return { success: true, message: 'Task atualizada.' };
+      }
+    }
+    return { success: false, message: 'Task não encontrada: ' + idOriginal };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ============================================================
+//  END QUESTS & TASKS HANDLERS
+// ============================================================
+
 /**
  * Atualizar ataque de um Pokémon na aba STAGE
  * Similar à handleAtualizarAtack, mas atua na aba STAGE
@@ -270,6 +396,21 @@ function doPost(e) {
       case 'sugerirEdicaoTM':
         result = handleSugerirEdicaoTM(planilha, dados);
         break;
+      case 'seedQuests':
+        result = handleSeedQuests(planilha, dados);
+        break;
+      case 'adicionarQuest':
+        result = handleAdicionarQuest(planilha, dados);
+        break;
+      case 'editarQuest':
+        result = handleEditarQuest(planilha, dados);
+        break;
+      case 'adicionarTask':
+        result = handleAdicionarTask(planilha, dados);
+        break;
+      case 'editarTask':
+        result = handleEditarTask(planilha, dados);
+        break;
       default:
         // Manter código existente de Pokémon
         result = handlePokemonUpdate(planilha, dados);
@@ -526,6 +667,51 @@ function doGet(e) {
         success: true,
         data: natures,
         total: natures.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Obter Quests da aba "QUESTS" (cria a aba automaticamente se não existir)
+    if (acao === 'obter_quests') {
+      var abaQuests = planilha.getSheetByName('QUESTS');
+      if (!abaQuests) {
+        // Criar aba com cabeçalho — seed virá via POST seedQuests
+        abaQuests = planilha.insertSheet('QUESTS');
+        abaQuests.getRange(1, 1, 1, 7).setValues([['NOME', 'ACESSO', 'NIVEL', 'DESCRICAO', 'RECOMPENSAS', 'DIFICULDADE', 'LINK_VIDEO']]);
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true,
+          data: [],
+          total: 0
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      var dadosQ = abaQuests.getDataRange().getValues();
+      if (dadosQ.length <= 1) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true,
+          data: [],
+          total: 0
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      var cabQ = dadosQ[0];
+      var linhasQ = dadosQ.slice(1);
+      var quests = linhasQ.map(function(linha) {
+        var obj = {};
+        cabQ.forEach(function(col, i) { obj[col] = linha[i]; });
+        return {
+          nome: obj['NOME'] || '',
+          acesso: obj['ACESSO'] || 'Free',
+          nivel: parseInt(obj['NIVEL']) || 0,
+          descricao: obj['DESCRICAO'] || '',
+          recompensas: obj['RECOMPENSAS'] || '',
+          dificuldade: parseInt(obj['DIFICULDADE']) || 1,
+          link_video: obj['LINK_VIDEO'] || ''
+        };
+      }).filter(function(q) { return q.nome; });
+
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true,
+        data: quests,
+        total: quests.length
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
