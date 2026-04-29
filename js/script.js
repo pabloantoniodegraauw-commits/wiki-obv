@@ -1815,6 +1815,8 @@ document.addEventListener('click', async function(ev){
             let _buscaDebounce = null;
             
             novoInput.addEventListener('input', function() {
+                const clearBtn = document.getElementById('clearSearchBtn');
+                if (clearBtn) clearBtn.style.display = this.value ? 'block' : 'none';
                 clearTimeout(_buscaDebounce);
                 _buscaDebounce = setTimeout(() => {
                     const termo = this.value.toLowerCase().trim();

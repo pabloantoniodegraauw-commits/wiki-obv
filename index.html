@@ -132,7 +132,10 @@
             <button class="toggle-images-btn" id="toggleFilters" onclick="toggleFiltrosPokedex()">
                 <i class="fas fa-filter"></i> Filtros
             </button>
-            <input type="text" id="searchInput" placeholder="🔍 Buscar Pokémon (nome, tipo, localização, EV, TMs)... • Separe com vírgula para vários" style="flex:1; width:auto; max-width:none;">
+            <div style="flex:1; display:flex; align-items:center; position:relative; min-width:0;">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar Pokémon (nome, tipo, localização, EV, TMs)... • Separe com vírgula para vários" style="width:100%; padding-right:32px;">
+                <button id="clearSearchBtn" onclick="document.getElementById('searchInput').value='';document.getElementById('searchInput').dispatchEvent(new Event('input'));this.style.display='none';" title="Limpar pesquisa" style="display:none; position:absolute; right:8px; background:rgba(255,80,80,0.15); border:1px solid rgba(255,80,80,0.5); color:#ff6464; font-size:13px; padding:4px 10px; border-radius:8px; cursor:pointer; font-weight:600; transition:all 0.3s; line-height:1;" onmouseover="this.style.background='rgba(255,80,80,0.3)';this.style.borderColor='#ff6464'" onmouseout="this.style.background='rgba(255,80,80,0.15)';this.style.borderColor='rgba(255,80,80,0.5)'"><i class="fas fa-times"></i></button>
+            </div>
             <button id="btnPasteParse" class="toggle-images-btn" title="Colar do clipboard e parsear/salvar" style="margin-left:auto;margin-right:8px;">
                 <i class="fas fa-upload"></i> ENVIAR DEX
             </button>
