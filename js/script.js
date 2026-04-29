@@ -1689,10 +1689,13 @@ document.addEventListener('click', async function(ev){
                 const numEsc = String(tm.numero).replace(/'/g, "\\'");
                 let actionBtn = '';
                 if (isADM) {
-                    actionBtn = `<button class="tm-edit-btn" onclick="event.stopPropagation();abrirModalEdicaoTM('${numEsc}')" style="margin-top:8px;padding:3px 12px;border-radius:6px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:12px;border:none;">Editar</button>`;
+                    actionBtn = `<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="event.stopPropagation();abrirModalEdicaoTM('${numEsc}')"><i class="fas fa-edit"></i> Editar</button>`;
                 } else {
-                    actionBtn = `<button class="tm-edit-btn" onclick="event.stopPropagation();abrirModalSugestaoTMEdit('${numEsc}')" style="margin-top:8px;padding:3px 12px;border-radius:6px;background:#ffd700;color:#23284a;font-weight:bold;cursor:pointer;font-size:12px;border:none;">Sugerir</button>`;
+                    actionBtn = `<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="event.stopPropagation();abrirModalSugestaoTMEdit('${numEsc}')"><i class="fas fa-lightbulb"></i> Sugerir</button>`;
                 }
+
+                const _tmTexto = `${numFormatado} - ${tm.nome} - ${tm.pokemon}`.replace(/'/g, "\\'");
+                const copyBtn = `<button class="btn-copiar-loc" onclick="event.stopPropagation();(function(btn){var t='${_tmTexto}';navigator.clipboard&&navigator.clipboard.writeText(t).then(function(){var i=btn.querySelector('i');i.className='fas fa-check';btn.classList.add('copiado');setTimeout(function(){i.className='fas fa-copy';btn.classList.remove('copiado');},2000)}).catch(function(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);var i=btn.querySelector('i');i.className='fas fa-check';btn.classList.add('copiado');setTimeout(function(){i.className='fas fa-copy';btn.classList.remove('copiado');},2000)})})(this)" title="Copiar"><i class="fas fa-copy"></i> Copiar</button>`;
 
                 card.innerHTML = `
                     <img src="${discoSrc}" alt="${numFormatado}" class="tm-disk-image" onerror="this.src='IMAGENS/imagens-itens/tipagens de tm/Normal_type_tm_disk.png'">
@@ -1700,7 +1703,7 @@ document.addEventListener('click', async function(ev){
                     <div class="tm-name">${tm.nome}</div>
                     <img src="${stickerSrc}" alt="${stickerAlt}" class="tm-pokemon-image" onerror="${fallbackImg}">
                     <div class="tm-pokemon-name">${tm.pokemon}</div>
-                    ${actionBtn}
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:8px;">${actionBtn}${copyBtn}</div>
                 `;
                 container.appendChild(card);
             });
