@@ -268,59 +268,105 @@ document.addEventListener('click', async function(ev){
             'Galarian Zen Mode': 'darmanitan-galarian-zen',
             'Galarian Zigzagoon': 'zigzagoon-galarian',
             
-            // MEGAS (alguns usam /artwork/tmp/)
-            'Mega Victreebel': 'victreebel-mega',
-            'Mega Dragonite': 'dragonite-mega',
-            'Mega Abomasnow': 'abomasnow-mega',
-            'Mega Absol': 'absol-mega',
-            'Mega Aerodactyl': 'aerodactyl-mega',
-            'Mega Aggron': 'aggron-mega',
-            'Mega Alakazam': 'alakazam-mega',
-            'Mega Altaria': 'altaria-mega',
-            'Mega Ampharos': 'ampharos-mega',
-            'Mega Audino': 'audino-mega',
-            'Mega Banette': 'banette-mega',
-            'Mega Beedrill': 'beedrill-mega',
-            'Mega Blastoise': 'blastoise-mega',
-            'Mega Blaziken': 'blaziken-mega',
-            'Mega Camerupt': 'camerupt-mega',
-            'Mega Charizard X': 'charizard-mega-x',
-            'Mega Charizard Y': 'charizard-mega-y',
-            'Mega Diancie': 'diancie-mega',
-            'Mega Gallade': 'gallade-mega',
-            'Mega Garchomp': 'garchomp-mega',
-            'Mega Gardevoir': 'gardevoir-mega',
-            'Mega Gengar': 'gengar-mega',
-            'Mega Glalie': 'glalie-mega',
-            'Mega Gyarados': 'gyarados-mega',
-            'Mega Heracross': 'heracross-mega',
-            'Mega Houndoom': 'houndoom-mega',
-            'Mega Kangaskhan': 'kangaskhan-mega',
-            'Mega Latias': 'latias-mega',
-            'Mega Latios': 'latios-mega',
-            'Mega Lopunny': 'lopunny-mega',
-            'Mega Lucario': 'lucario-mega',
-            'Mega Manectric': 'manectric-mega',
+            // MEGAS
+            'Mega Abomasnow': 'Abomasnow-Mega',
+            'Mega Absol': 'Absol-Mega',
+            'Mega Absol Z': 'Absol-Mega_Z',
+            'Mega Aerodactyl': 'Aerodactyl-Mega',
+            'Mega Aggron': 'Aggron-Mega',
+            'Mega Alakazam': 'Alakazam-Mega',
+            'Mega Altaria': 'Altaria-Mega',
+            'Mega Ampharos': 'Ampharos-Mega',
+            'Mega Audino': 'Audino-Mega',
+            'Mega Banette': 'Banette-Mega',
+            'Mega Barbaracle': 'Barbaracle-Mega',
+            'Mega Baxcalibur': 'Baxcalibur-Mega',
+            'Mega Beedrill': 'Beedrill-Mega',
+            'Mega Blastoise': 'Blastoise-Mega',
+            'Mega Blaziken': 'Blaziken-Mega',
+            'Mega Camerupt': 'Camerupt-Mega',
+            'Mega Chandelure': 'Chandelure-Mega',
+            'Mega Charizard X': 'Charizard-Mega_X',
+            'Mega Charizard Y': 'Charizard-Mega_Y',
+            'Mega Chesnaught': 'Chesnaught-Mega',
+            'Mega Chimecho': 'Chimecho-Mega',
+            'Mega Clefable': 'Clefable-Mega',
+            'Mega Crabominable': 'Crabominable-Mega',
+            'Mega Darkrai': 'Darkrai-Mega',
+            'Mega Delphox': 'Delphox-Mega',
+            'Mega Diancie': 'Diancie-Mega',
+            'Mega Dragalge': 'Dragalge-Mega',
+            'Mega Dragonite': 'Dragonite-Mega',
+            'Mega Drampa': 'Drampa-Mega',
+            'Mega Eelektross': 'Eelektross-Mega',
+            'Mega Emboar': 'Emboar-Mega',
+            'Mega Excadrill': 'Excadrill-Mega',
+            'Mega Falinks': 'Falinks-Mega',
+            'Mega Feraligatr': 'Feraligatr-Mega',
+            'Mega Floette': 'Floette-Mega',
+            'Mega Froslass': 'Froslass-Mega',
+            'Mega Gallade': 'Gallade-Mega',
+            'Mega Garchomp': 'Garchomp-Mega',
+            'Mega Garchomp Z': 'Garchomp-Mega_Z',
+            'Mega Gardevoir': 'Gardevoir-Mega',
+            'Mega Gengar': 'Gengar-Mega',
+            'Mega Glalie': 'Glalie-Mega',
+            'Mega Glimmora': 'Glimmora-Mega',
+            'Mega Golisopod': 'Golisopod-Mega',
+            'Mega Golurk': 'Golurk-Mega',
+            'Mega Greninja': 'Greninja-Mega',
+            'Mega Gyarados': 'Gyarados-Mega',
+            'Mega Hawlucha': 'Hawlucha-Mega',
+            'Mega Heatran': 'Heatran-Mega',
+            'Mega Heracross': 'Heracross-Mega',
+            'Mega Houndoom': 'Houndoom-Mega',
+            'Mega Kangaskhan': 'Kangaskhan-Mega',
+            'Mega Latias': 'Latias-Mega',
+            'Mega Latios': 'Latios-Mega',
+            'Mega Lopunny': 'Lopunny-Mega',
+            'Mega Lucario': 'Lucario-Mega',
+            'Mega Lucario Z': 'Lucario-Mega_Z',
+            'Mega Magearna': 'Magearna-Mega',
+            'Mega Magearna Original': 'Magearna-Original_Mega',
+            'Mega Malamar': 'Malamar-Mega',
+            'Mega Manectric': 'Manectric-Mega',
             // ESPECIAIS
             'Phione/Manaphy': 'manaphy',
-            'Mega Mawile': 'mawile-mega',
-            'Mega Medicham': 'medicham-mega',
-            'Mega Metagross': 'metagross-mega',
-            'Mega Mewtwo X': 'mewtwo-mega-x',
-            'Mega Mewtwo Y': 'mewtwo-mega-y',
-            'Mega Pidgeot': 'pidgeot-mega',
-            'Mega Pinsir': 'pinsir-mega',
-            'Mega Rayquaza': 'rayquaza-mega',
-            'Mega Sableye': 'sableye-mega',
-            'Mega Salamence': 'salamence-mega',
-            'Mega Sceptile': 'sceptile-mega',
-            'Mega Scizor': 'scizor-mega',
-            'Mega Sharpedo': 'sharpedo-mega',
-            'Mega Slowbro': 'slowbro-mega',
-            'Mega Steelix': 'steelix-mega',
-            'Mega Swampert': 'swampert-mega',
-            'Mega Tyranitar': 'tyranitar-mega',
-            'Mega Venusaur': 'venusaur-mega',
+            'Mega Mawile': 'Mawile-Mega',
+            'Mega Medicham': 'Medicham-Mega',
+            'Mega Meganium': 'Meganium-Mega',
+            'Mega Meowstic': 'Meowstic-Mega',
+            'Mega Metagross': 'Metagross-Mega',
+            'Mega Mewtwo X': 'Mewtwo-Mega_X',
+            'Mega Mewtwo Y': 'Mewtwo-Mega_Y',
+            'Mega Pidgeot': 'Pidgeot-Mega',
+            'Mega Pinsir': 'Pinsir-Mega',
+            'Mega Pyroar': 'Pyroar-Mega',
+            'Mega Raichu X': 'Raichu-Mega_X',
+            'Mega Raichu Y': 'Raichu-Mega_Y',
+            'Mega Rayquaza': 'Rayquaza-Mega',
+            'Mega Sableye': 'Sableye-Mega',
+            'Mega Salamence': 'Salamence-Mega',
+            'Mega Sceptile': 'Sceptile-Mega',
+            'Mega Scizor': 'Scizor-Mega',
+            'Mega Scolipede': 'Scolipede-Mega',
+            'Mega Scovillain': 'Scovillain-Mega',
+            'Mega Scrafty': 'Scrafty-Mega',
+            'Mega Sharpedo': 'Sharpedo-Mega',
+            'Mega Skarmory': 'Skarmory-Mega',
+            'Mega Slowbro': 'Slowbro-Mega',
+            'Mega Staraptor': 'Staraptor-Mega',
+            'Mega Starmie': 'Starmie-Mega',
+            'Mega Steelix': 'Steelix-Mega',
+            'Mega Swampert': 'Swampert-Mega',
+            'Mega Tatsugiri Curly': 'Tatsugiri-Curly_Mega',
+            'Mega Tatsugiri Droopy': 'Tatsugiri-Droopy_Mega',
+            'Mega Tatsugiri Stretchy': 'Tatsugiri-Stretchy_Mega',
+            'Mega Tyranitar': 'Tyranitar-Mega',
+            'Mega Venusaur': 'Venusaur-Mega',
+            'Mega Victreebel': 'Victreebel-Mega',
+            'Mega Zeraora': 'Zeraora-Mega',
+            'Mega Zygarde': 'Zygarde-Mega',
             
             // FORMAS COM GÊNERO
             'Indeedee Female': 'indeedee-female',
@@ -1000,11 +1046,17 @@ document.addEventListener('click', async function(ev){
             // Vamos construir uma lista de candidatos e priorizar imagens "Mega" já existentes.
             let nomeArquivo;
             if (nomeBase && nomeBase !== '' && nomeBase !== nomePrincipal) {
-                // Tem EV: formato é POKEMON-EV (espaços viram hífens)
-                nomeArquivo = `${nomeBase}-${nomePrincipal.replace(/ /g, '-')}`;
+                // Novo formato: EV já contém o nome base ("Aegislash Blade Forme" com nomeBase="Aegislash")
+                // → não duplicar, usar nomePrincipal diretamente
+                if (nomePrincipal.toLowerCase().startsWith(nomeBase.toLowerCase() + ' ')) {
+                    nomeArquivo = nomePrincipal.replace(/ /g, '-');
+                } else {
+                    // Formato legado: EV era só a forma ("Blade Forme" com nomeBase="Aegislash")
+                    nomeArquivo = `${nomeBase}-${nomePrincipal.replace(/ /g, '-')}`;
+                }
             } else {
                 // Sem EV: apenas o nome principal
-                nomeArquivo = nomePrincipal;
+                nomeArquivo = nomePrincipal.replace(/ /g, '-');
             }
             nomeArquivo = nomeArquivo.trim();
 
@@ -1013,52 +1065,72 @@ document.addEventListener('click', async function(ev){
             // 1) candidato óbvio baseado no padrão atual
             candidates.push(`IMAGENS/imagens-pokemon/sprite-pokemon/${nomeArquivo}.png`);
 
-            // 2) se é uma forma (nomeBase presente), tentar usar imagem da forma Mega/forma base via mapeamentoImagens
+            // 2) se é uma forma Mega, resolver imagem com alta prioridade
             try {
                 const baseCap = (nomeBase || '').toString().trim();
                 const baseWords = baseCap.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1));
                 const baseCapitalized = baseWords.join(' ');
-                // detectar se nomePrincipal contém 'mega' (Mega Shiny etc.) ou começa com 'Mega'
-                const isMegaForm = /\bmega\b/i.test(nomePrincipal || '');
-                if (isMegaForm && baseCapitalized) {
-                    const mappingKey = `Mega ${baseCapitalized}`;
-                    if (typeof mapeamentoImagens !== 'undefined' && mapeamentoImagens[mappingKey]) {
-                        const mapped = mapeamentoImagens[mappingKey];
-                        if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
-                        else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+
+                // Limpar nomeBase caso ele contenha "Mega " (ex: nomeBase = "Mega Charizard X")
+                const cleanBase = baseCapitalized.replace(/^Mega\s+/i, '').trim();
+
+                // Detectar forma Mega a partir do nomePrincipal OU do cleanBase
+                const isMegaForm = /\bmega\b/i.test(nomePrincipal || '') || /\bmega\b/i.test(cleanBase);
+
+                if (isMegaForm) {
+                    // Quando cleanBase está vazio (ex: POKEMON="Mega Shiny Meganium" sem EV),
+                    // extrair a base do nomePrincipal removendo "Mega" e "Shiny"
+                    const effectiveBase = cleanBase || (nomePrincipal || '')
+                        .replace(/^Mega\s+/i, '')
+                        .replace(/\bShiny\s+/i, '')
+                        .trim();
+
+                    if (effectiveBase) {
+                        // Extrair variante (X, Y, Z) do nomePrincipal ou effectiveBase
+                        const variantMatch = /\b([XYZ])\b/i.exec(nomePrincipal || '') || /\b([XYZ])\b/i.exec(effectiveBase);
+                        const variantSuffix = variantMatch ? variantMatch[1].toUpperCase() : null;
+
+                        // Nome puro da base sem variante (ex: "Charizard X" → "Charizard")
+                        const pureBase = effectiveBase.replace(/\s*\b[XYZ]\b\s*/i, '').trim();
+
+                        // --- Candidatos com variante (prioridade máxima quando existe variante) ---
+                        if (variantSuffix) {
+                            // 1) Mapeamento direto com variante: ex "Mega Charizard X"
+                            const keyVariant = `Mega ${pureBase} ${variantSuffix}`;
+                            if (typeof mapeamentoImagens !== 'undefined' && mapeamentoImagens[keyVariant]) {
+                                const mapped = mapeamentoImagens[keyVariant];
+                                if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
+                                else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                            }
+                            // 2) Arquivo direto padrão com variante: Base-Mega_X.png
+                            candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${pureBase}-Mega_${variantSuffix}.png`);
+                        }
+
+                        // --- Candidatos padrão sem variante ---
+                        // 3) Mapeamento direto base: ex "Mega Abomasnow"
+                        const keyBase = `Mega ${pureBase}`;
+                        if (typeof mapeamentoImagens !== 'undefined' && mapeamentoImagens[keyBase]) {
+                            const mapped = mapeamentoImagens[keyBase];
+                            if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
+                            else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                        }
+
+                        // 4) Arquivo direto padrão: Base-Mega.png (padrão novo)
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${pureBase}-Mega.png`);
+
+                        // 5) Formato legado: Base-Mega-Base.png
+                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${pureBase}-Mega-${pureBase}.png`);
+
+                        // Prioridade absoluta: variante tem prioridade sobre padrão genérico
+                        if (variantSuffix) {
+                            candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${pureBase}-Mega_${variantSuffix}.png`);
+                        } else {
+                            candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${pureBase}-Mega.png`);
+                        }
                     }
-                    // também tentar key sem capitalização estrita
-                    const mappingKeyLower = `mega ${baseCapitalized}`;
-                    if (typeof mapeamentoImagens !== 'undefined' && mapeamentoImagens[mappingKeyLower]) {
-                        const mapped = mapeamentoImagens[mappingKeyLower];
-                        if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
-                        else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
-                    }
-                    // comum fallback: slug 'base-mega' (priorizar entre sprites)
-                    const slugMega = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-mega`;
-                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMega}.png`);
-                    // Formato com espaço — padrão mais comum ao salvar manualmente: "Mega Metagross.png"
-                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega-${baseCapitalized}.png`);
-                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega ${baseCapitalized}.png`);
-                    // Se for Shiny, adicionar variantes shiny-mega como fallback (não prioritário)
-                    const isShiny = /\bshiny\b/i.test(nomePrincipal || '');
-                    if (isShiny) {
-                        const slugMegaShiny1 = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-mega-shiny`;
-                        const slugMegaShiny2 = `${baseCapitalized.toLowerCase().replace(/\s+/g,'')}-shiny-mega`;
-                        const capMegaShiny1 = `${baseCapitalized}-Mega-${baseCapitalized}-Shiny`;
-                        const capShiny = `${baseCapitalized}-Shiny-${baseCapitalized}`;
-                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${capShiny}.png`);
-                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${capMegaShiny1}.png`);
-                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny2}.png`);
-                        candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${slugMegaShiny1}.png`);
-                    }
-                    // Prioridade máxima: forma Mega sempre vem primeiro (Mega Shiny usa imagem da forma Mega)
-                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega-${baseCapitalized}.png`);
-                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/Mega ${baseCapitalized}.png`);
-                    // Padrão usado localmente: Base-Mega-Base.png (ex: Metagross-Mega-Metagross.png)
-                    candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${baseCapitalized}-Mega-${baseCapitalized}.png`);
                 }
             } catch(e){}
+
 
             // 3) tentar mapeamento direto pelo nomePrincipal ou nomeBase
             try {
@@ -1072,6 +1144,18 @@ document.addEventListener('click', async function(ev){
                         const mapped = mapeamentoImagens[nomeBase];
                         if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
                         else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                    }
+                    // Para Mega Shiny: tentar nomePrincipal sem "Shiny" como chave
+                    // Cobre casos onde nomeBase está vazio ou não inclui o sub-form
+                    // Ex: "Mega Shiny Tatsugiri Curly" → "Mega Tatsugiri Curly" → 'Tatsugiri-Curly_Mega'
+                    //     "Mega Shiny Floette"         → "Mega Floette"          → 'Floette-Mega'
+                    if (/\bshiny\b/i.test(nomePrincipal || '')) {
+                        const nomeSemShiny = (nomePrincipal || '').replace(/\bShiny\s+/i, '').trim();
+                        if (mapeamentoImagens[nomeSemShiny]) {
+                            const mapped = mapeamentoImagens[nomeSemShiny];
+                            if (/^https?:\/\//i.test(mapped)) candidates.unshift(mapped);
+                            else candidates.unshift(`IMAGENS/imagens-pokemon/sprite-pokemon/${mapped}.png`);
+                        }
                     }
                 }
             } catch(e){}
