@@ -87,16 +87,25 @@ function handleSeedTasks(planilha, dados) {
       aba = planilha.insertSheet('TASKS');
       aba.getRange(1, 1, 1, 5).setValues([['ID', 'MISSAO', 'POKEMON', 'LOCAL', 'PREMIOS']]);
     }
-    var existentes = aba.getLastRow();
-    if (existentes > 1) {
-      return { success: true, message: 'Aba TASKS já populada, seed ignorado.' };
-    }
     var tasks = dados.tasks || [];
     if (!tasks.length) return { success: false, message: 'Nenhuma task enviada.' };
-    var rows = tasks.map(function(t) {
+
+    // Coletar IDs já existentes na aba para evitar duplicatas
+    var idsExistentes = new Set();
+    var lastRow = aba.getLastRow();
+    if (lastRow > 1) {
+      var colIds = aba.getRange(2, 1, lastRow - 1, 1).getValues();
+      colIds.forEach(function(r) { if (r[0] !== undefined && r[0] !== null && r[0] !== '') idsExistentes.add(Number(r[0])); });
+    }
+
+    // Filtrar apenas tasks com IDs novos (comparar numericamente)
+    var novas = tasks.filter(function(t) { return t.id && !idsExistentes.has(Number(t.id)); });
+    if (!novas.length) return { success: true, message: 'Nenhuma task nova para inserir.' };
+
+    var rows = novas.map(function(t) {
       return [t.id || '', t.missao || '', t.pokemon || '', t.local || '', JSON.stringify(t.premios || [])];
     });
-    aba.getRange(2, 1, rows.length, 5).setValues(rows);
+    aba.getRange(lastRow + 1, 1, rows.length, 5).setValues(rows);
     return { success: true, message: rows.length + ' tasks inseridas.' };
   } catch (e) {
     return { success: false, message: e.toString() };
@@ -122,11 +131,15 @@ function handleAdicionarTask(planilha, dados) {
 
 /**
  * Edita uma task existente na aba TASKS (busca por ID original).
+ * Se não encontrar, faz upsert (insere como nova linha).
  */
 function handleEditarTask(planilha, dados) {
   try {
     var aba = planilha.getSheetByName('TASKS');
-    if (!aba) return { success: false, message: 'Aba TASKS não encontrada.' };
+    if (!aba) {
+      aba = planilha.insertSheet('TASKS');
+      aba.getRange(1, 1, 1, 5).setValues([['ID', 'MISSAO', 'POKEMON', 'LOCAL', 'PREMIOS']]);
+    }
     var idOriginal = (dados.idOriginal || dados.id || '').toString().trim();
     var rows = aba.getDataRange().getValues();
     for (var i = 1; i < rows.length; i++) {
@@ -141,7 +154,9 @@ function handleEditarTask(planilha, dados) {
         return { success: true, message: 'Task atualizada.' };
       }
     }
-    return { success: false, message: 'Task não encontrada: ' + idOriginal };
+    // Não encontrada — inserir como nova linha (upsert)
+    aba.appendRow([dados.id || '', dados.missao || '', dados.pokemon || '', dados.local || '', JSON.stringify(dados.premios || [])]);
+    return { success: true, message: 'Task inserida (não existia).' };
   } catch (e) {
     return { success: false, message: e.toString() };
   }

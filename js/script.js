@@ -1646,6 +1646,38 @@ document.addEventListener('click', async function(ev){
             return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
+        // Helper: tenta várias pastas de imagens em sequência para recompensas de quest
+        window._questRewardFallback = function(img) {
+            var nome = img.getAttribute('data-nome') || '';
+            var nomeL = nome.toLowerCase();
+            var nomeCap = nome.charAt(0).toUpperCase() + nome.slice(1);
+            var tried = parseInt(img.getAttribute('data-tried') || '0');
+            var paths = [
+                // procurar direto na raiz IMAGENS primeiro (várias pastas podem existir)
+                'IMAGENS/' + nomeCap + '.png',
+                'IMAGENS/' + nomeL + '.png',
+                'IMAGENS/' + nomeCap + '.webp',
+                'IMAGENS/imagens-itens/itens-task/' + nomeL + '.png',
+                'IMAGENS/imagens-pokemon/stickers-pokemon/' + nomeCap + '.png',
+                // adicionar pasta 'conta' onde ficam outfits/contas
+                'IMAGENS/imagens-itens/conta/' + nomeL + '.png',
+                'IMAGENS/imagens-itens/stones/' + nomeL + '.png',
+                'IMAGENS/imagens-itens/helditem/' + nomeL + '.png',
+                'IMAGENS/imagens-itens/addonbox/' + nomeL + '.png',
+                'IMAGENS/imagens-itens/megastones/' + nomeL + '.png',
+                'IMAGENS/imagens-itens/pokebolas/' + nomeL + '.png',
+                'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'
+            ];
+            tried++;
+            img.setAttribute('data-tried', tried);
+            if (tried < paths.length) {
+                img.src = paths[tried];
+            } else {
+                img.onerror = null;
+                img.src = 'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png';
+            }
+        };
+
         function renderizarQuests(dados) {
             const container = document.getElementById('questsContainer');
             if (!container) return;
@@ -1665,11 +1697,17 @@ document.addEventListener('click', async function(ev){
                 const badgeLabel = isVip ? '⭐ VIP' : '🆓 Free';
                 const nivelTxt = (q.nivel && parseInt(q.nivel) > 0) ? 'Nível ' + q.nivel + '+' : 'Sem requisito';
 
-                // Recompensas como badges
+                // Recompensas com imagens (fallback multi-pasta)
                 let recompensasHtml = '';
                 if (q.recompensas) {
                     q.recompensas.split('/').filter(Boolean).forEach(function(r) {
-                        recompensasHtml += '<span class="quest-reward-item">' + r.trim() + '</span>';
+                        var rNome = r.trim();
+                        var rNomeL = rNome.toLowerCase();
+                        recompensasHtml += '<div class="quest-reward-item">' +
+                            '<img src="IMAGENS/imagens-itens/itens-task/' + rNomeL + '.png" alt="' + rNome + '" ' +
+                            'data-nome="' + rNome + '" data-tried="0" onerror="window._questRewardFallback(this)">' +
+                            '<span>' + rNome + '</span>' +
+                        '</div>';
                     });
                 }
 
@@ -1821,7 +1859,7 @@ document.addEventListener('click', async function(ev){
         };
 
         window.abrirModalEdicaoTask = function(id) {
-            const task = todasTasks.find(function(t) { return String(t.id) === String(id); });
+                    const task = todasTasks.find(function(t) { return Number(t.id) === Number(id); });
             if (!task) return;
             document.getElementById('modalTaskTitulo').innerHTML = '<i class="fas fa-edit"></i> Editar Task';
             document.getElementById('taskEditId').value = task.id;
@@ -1883,6 +1921,20 @@ document.addEventListener('click', async function(ev){
 
             fetch(APPS_SCRIPT_URL, { method: 'POST', body: params })
             .then(function(r) { return r.json(); })
+            .then(function(res) {
+                // Se editarTask falhou por task não existir no servidor, tenta adicionarTask
+                if (!res.success && action === 'editarTask' && res.message && res.message.toLowerCase().includes('não encontrada')) {
+                    var params2 = new URLSearchParams();
+                    params2.append('action', 'adicionarTask');
+                    params2.append('id', dados.id);
+                    params2.append('missao', dados.missao);
+                    params2.append('pokemon', dados.pokemon);
+                    params2.append('local', dados.local);
+                    params2.append('premios', JSON.stringify(premios));
+                    return fetch(APPS_SCRIPT_URL, { method: 'POST', body: params2 }).then(function(r2) { return r2.json(); });
+                }
+                return res;
+            })
             .then(function(res) {
                 if (res.success) {
                     document.getElementById('modalTask').style.display = 'none';
@@ -2007,6 +2059,10 @@ document.addEventListener('click', async function(ev){
             ];
             todasTasks = TASKS_BASE.slice();
             renderizarTasks(todasTasks);
+            // Se a pokédex completa não estiver carregada, carregar em background e re-renderizar para mostrar localização
+            if (!todosPokemonsCompleto || !todosPokemonsCompleto.length) {
+                window._ensureTodosPokemons().then(function(){ renderizarTasks(todasTasks); }).catch(function(){});
+            }
 
             // Sincroniza com servidor: merge base + server overrides/adições do admin
             fetch(APPS_SCRIPT_URL + '?acao=obter_tasks&t=' + Date.now())
@@ -2015,12 +2071,25 @@ document.addEventListener('click', async function(ev){
                     if (j.success && j.data && j.data.length > 0) {
                         // Merge: hardcoded base + server overrides por ID
                         var mapa = {};
-                        TASKS_BASE.forEach(function(t) { mapa[String(t.id)] = Object.assign({}, t); });
-                        j.data.forEach(function(t) { mapa[String(t.id)] = t; });
+                        // usar chave numérica para evitar diferenças entre '01' e 1
+                        TASKS_BASE.forEach(function(t) { mapa[Number(t.id)] = Object.assign({}, t); });
+                        j.data.forEach(function(t) { mapa[Number(t.id)] = t; });
                         todasTasks = Object.keys(mapa)
-                            .sort(function(a, b) { return parseInt(a) - parseInt(b); })
-                            .map(function(k) { return mapa[k]; });
+                            .map(function(k){ return Number(k); })
+                            .sort(function(a, b) { return a - b; })
+                            .map(function(k) {
+                                var entry = mapa[k];
+                                // normalizar id para exibição: pad 2 dígitos quando < 100
+                                entry.id = (k < 100) ? String(k).padStart(2, '0') : String(k);
+                                return entry;
+                            });
                         renderizarTasks(todasTasks);
+                        // Seed tasks da base que ainda não estão no servidor (comparar numericamente)
+                        var serverIds = new Set(j.data.map(function(t){ return Number(t.id); }));
+                        var tasksFaltando = TASKS_BASE.filter(function(t){ return !serverIds.has(Number(t.id)); });
+                        if (tasksFaltando.length > 0) {
+                            _seedTasksParaServidor(tasksFaltando);
+                        }
                     } else if (j.success && (!j.data || j.data.length === 0)) {
                         // Planilha vazia: seed todas as 100 tasks
                         _seedTasksParaServidor(TASKS_BASE);
@@ -2048,12 +2117,35 @@ document.addEventListener('click', async function(ev){
                 const imagemPokemon = obterImagemTarefa(task.pokemon);
 
                 // Localização do pokémon (do campo task.local ou lookup na pokédex)
-                let localizacao = task.local || '';
-                if (!localizacao && todosPokemonsCompleto && todosPokemonsCompleto.length) {
+                let localizacao = (task.local || '').toString().trim();
+                if (!localizacao) {
+                    if (!Array.isArray(todosPokemonsCompleto) || !todosPokemonsCompleto.length) {
+                        console.debug('renderizarTasks: pokedex vazia ao procurar localização para', task.id, task.pokemon);
+                    } else {
+                        console.debug('renderizarTasks: procurando localização para task', task.id, task.pokemon);
+                    }
+                }
+                if (!localizacao && Array.isArray(todosPokemonsCompleto) && todosPokemonsCompleto.length) {
+                    const normalize = s => (s || '').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+                    const target = normalize(task.pokemon || '');
+                    const targetNum = (task.pokemon || '').toString().replace(/^0+/, '');
                     const pokEntry = todosPokemonsCompleto.find(function(p) {
-                        return (p['PS'] || '').toLowerCase() === (task.pokemon || '').toLowerCase();
+                        const ps = normalize(p['PS'] || p['ps'] || p.PS || p['Número'] || p['#'] || p.numero || p.id || '');
+                        const nome = normalize(p['Nome'] || p['nome'] || p.Nome || p.name || p.Name || '');
+                        const num = (p['#'] || p['Nº'] || p['Número'] || p.numero || p.id || '').toString().replace(/^0+/, '');
+                        return ps === target || nome === target || (num && num === targetNum);
                     });
-                    if (pokEntry) localizacao = pokEntry['LOCALIZAÇÃO'] || '';
+                    if (pokEntry) {
+                        let loc = pokEntry['LOCALIZAÇÃO'] || pokEntry['LOCAL'] || pokEntry.Local || pokEntry.local || pokEntry.SUGESTAO_LOC || '';
+                        if (Array.isArray(loc)) loc = loc.join(' / ');
+                        localizacao = (loc || '').toString().trim();
+                    } else {
+                        console.debug('renderizarTasks: nenhum entry encontrado para', task.pokemon, 'targetNorm=', target, 'targetNum=', targetNum);
+                        try {
+                            const sample = todosPokemonsCompleto.slice(0,5).map(p => ({ PS: (p['PS']||p['ps']||p.PS||'').toString(), Nome: (p['Nome']||p['nome']||p.Nome||'').toString() }));
+                            console.debug('renderizarTasks: sample pokedex entries', sample);
+                        } catch(e) {}
+                    }
                 }
                 const localHtml = localizacao
                     ? '<div class="task-location" style="color:#a0e7ff;font-size:0.82em;margin-top:4px;"><i class="fas fa-map-marker-alt" style="color:#ffd700;"></i> ' + localizacao + '</div>'
@@ -2082,7 +2174,7 @@ document.addEventListener('click', async function(ev){
                 const copyText = 'TASK-#' + task.id + '  MISSÃO-' + task.missao + '  POKEMON-' + task.pokemon + (localizacao ? '  LOCAL-' + localizacao : '') + '  RECOMPENSA-' + premiosTxt;
 
                 const editBtn = isAdmin()
-                    ? '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.abrirModalEdicaoTask(\'' + task.id + '\')"><i class="fas fa-edit"></i> Editar</button>'
+                    ? '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.abrirModalEdicaoTask(\'' + String(task.id) + '\')"><i class="fas fa-edit"></i> Editar</button>'
                     : '';
 
                 card.innerHTML =
@@ -5487,3 +5579,72 @@ document.addEventListener('click', async function(ev){
                 try { img.onerror = null; img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='; } catch(_){}
             }
         }
+        
+        // Garantir que todosPokemonsCompleto esteja carregado (retorna Promise)
+        window._ensureTodosPokemons = async function() {
+            try {
+                if (Array.isArray(todosPokemonsCompleto) && todosPokemonsCompleto.length) return;
+                const resp = await fetch(URL_DADOS + '&page=1&limit=9999&t=' + Date.now());
+                const txt = await resp.text();
+                const j = JSON.parse(txt);
+                todosPokemons = j.data || [];
+                todosPokemonsCompleto = [...todosPokemons];
+                try { window._buildPokedexLookup && window._buildPokedexLookup(); } catch(e) {}
+                window.todosPokemons = todosPokemons;
+            } catch (e) {
+                console.warn('Falha ao carregar pokedex completa:', e);
+            }
+        };
+
+        // Constrói índice de busca da pokedex para matching tolerante
+        window._buildPokedexLookup = function() {
+            try {
+                if (!Array.isArray(todosPokemonsCompleto)) return;
+                window._pokedexLookup = { byNorm: new Map(), entries: todosPokemonsCompleto };
+                const normalize = s => (s || '').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+                todosPokemonsCompleto.forEach(function(p) {
+                    const names = [];
+                    const rawNome = (p['Nome'] || p['nome'] || p.Name || p.name || p.Nome || '').toString();
+                    const rawPS = (p['PS'] || p['ps'] || p.PS || '').toString();
+                    const rawNum = (p['#'] || p['Número'] || p.numero || p.id || '').toString();
+                    const nNome = normalize(rawNome);
+                    const nPS = normalize(rawPS);
+                    const nNum = rawNum.replace(/^0+/, '');
+                    if (nNome) names.push(nNome);
+                    if (nPS) names.push(nPS);
+                    if (nNum) names.push(nNum);
+                    // token variants
+                    nNome.split(/[^a-z0-9]+/).filter(Boolean).forEach(tok => names.push(tok));
+                    // add mapping
+                    names.forEach(function(k) {
+                        if (!k) return;
+                        if (!window._pokedexLookup.byNorm.has(k)) window._pokedexLookup.byNorm.set(k, p);
+                    });
+                });
+            } catch (e) { console.warn('Erro ao construir lookup pokedex', e); }
+        };
+
+        // Encontrar entrada na pokedex com matching tolerante
+        window._findPokedexEntry = function(taskPokemonName) {
+            try {
+                if (!taskPokemonName) return null;
+                const normalize = s => (s || '').toString().toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+                const raw = taskPokemonName.toString();
+                let t = normalize(raw);
+                // strip common prefixes/suffixes
+                t = t.replace(/^shiny|^alolan|^alola|^galarian|^galar|^mega|^horde|^hordeleader|outfit|woman|man|female|male/g, '');
+                if (window._pokedexLookup && window._pokedexLookup.byNorm.has(t)) return window._pokedexLookup.byNorm.get(t);
+                // try direct scan with includes (entry name inside target or vice-versa)
+                if (Array.isArray(todosPokemonsCompleto)) {
+                    for (const p of todosPokemonsCompleto) {
+                        const pn = normalize(p['Nome'] || p['nome'] || p.Name || p.name || '');
+                        const ps = normalize(p['PS'] || p['ps'] || p.PS || '');
+                        const num = (p['#'] || p['Número'] || p.numero || p.id || '').toString().replace(/^0+/, '');
+                        if (!pn && !ps && !num) continue;
+                        if (pn === t || ps === t || (num && num === t)) return p;
+                        if (t.includes(pn) || pn.includes(t) || t.includes(ps) || ps.includes(t)) return p;
+                    }
+                }
+                return null;
+            } catch (e) { console.warn('Erro _findPokedexEntry', e); return null; }
+        };

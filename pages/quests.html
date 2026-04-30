@@ -23,17 +23,15 @@
                 </h2>
                 <p style="color:#a0e7ff; margin-bottom:15px;">Missoes especiais com recompensas exclusivas</p>
 
-                <!-- Botao ADM adicionar quest (amarelo dourado) -->
-                <div id="btnAdicionarQuestWrap" style="display:none; margin-bottom:15px;">
-                    <button class="btn-copiar-loc"
-                        style="background:rgba(255,215,0,0.2);border-color:rgba(255,215,0,0.5);color:#ffd700;font-weight:700;"
-                        onclick="window.abrirModalAdicionarQuest()">
-                        <i class="fas fa-plus"></i> Adicionar Quest
-                    </button>
-                </div>
-
-                <!-- Barra de busca e filtros -->
+                <!-- Barra de busca e filtros (botão ADM incluso) -->
                 <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center; margin-bottom:10px;">
+                    <div id="btnAdicionarQuestWrap" style="display:none;">
+                        <button class="btn-copiar-loc"
+                            style="background:rgba(255,215,0,0.2);border-color:rgba(255,215,0,0.5);color:#ffd700;font-weight:700;"
+                            onclick="window.abrirModalAdicionarQuest()">
+                            <i class="fas fa-plus"></i> Adicionar Quest
+                        </button>
+                    </div>
                     <input type="text" id="questSearchInput" placeholder="Buscar quest por nome..."
                         style="padding:8px 14px; border-radius:10px; border:1px solid rgba(0,212,255,0.3); background:rgba(15,20,40,0.8); color:#e0e8ff; min-width:220px;"
                         oninput="window.filtrarQuests()">
