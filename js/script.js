@@ -1543,7 +1543,7 @@ document.addEventListener('click', async function(ev){
             container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Carregando Quests...</p></div>';
 
             try {
-                const resp = await fetch(APPS_SCRIPT_URL + '?acao=obter_quests');
+                const resp = await fetch(APPS_SCRIPT_URL + '?acao=obter_quests&t=' + Date.now());
                 const json = await resp.json();
                 if (json.success && Array.isArray(json.data) && json.data.length > 0) {
                     window.todasQuests = json.data;
@@ -1558,7 +1558,7 @@ document.addEventListener('click', async function(ev){
                 window.todasQuests = QUESTS_INICIAIS.map((q, i) => ({ ...q, id: i + 1 }));
             }
 
-            renderizarQuests(window.todasQuests);
+            window.filtrarQuests();
         };
 
         /**
@@ -1574,6 +1574,17 @@ document.addEventListener('click', async function(ev){
             } catch (e) {}
         }
 
+        function _seedTasksParaServidor(tasks) {
+            try {
+                var params = new URLSearchParams();
+                params.append('action', 'seedTasks');
+                params.append('tasks', JSON.stringify(tasks.map(function(t) {
+                    return { id: t.id, missao: t.missao, pokemon: t.pokemon, local: t.local || '', premios: t.premios };
+                })));
+                fetch(APPS_SCRIPT_URL, { method: 'POST', body: params }).catch(function() {});
+            } catch (e) {}
+        }
+
         /**
          * Filtra e re-renderiza quests com base nos campos de busca/filtro.
          */
@@ -1584,8 +1595,8 @@ document.addEventListener('click', async function(ev){
             const filtroDif = (document.getElementById('questFilterDificuldade') || {}).value || '';
 
             const filtradas = window.todasQuests.filter(function(q) {
-                const nomeOk = !busca || q.nome.toLowerCase().includes(busca.toLowerCase());
-                const acessoOk = !filtroAcesso || q.acesso.toLowerCase() === filtroAcesso.toLowerCase();
+                const nomeOk = !busca || String(q.nome || '').toLowerCase().includes(busca.toLowerCase());
+                const acessoOk = !filtroAcesso || String(q.acesso || '').toLowerCase() === filtroAcesso.toLowerCase();
                 const difOk = !filtroDif || String(q.dificuldade) === filtroDif;
                 return nomeOk && acessoOk && difOk;
             });
@@ -1594,8 +1605,47 @@ document.addEventListener('click', async function(ev){
         };
 
         /**
+         * Filtra tasks pela barra de busca.
+         */
+        window.filtrarTasks = function() {
+            if (!todasTasks || !todasTasks.length) return;
+            const busca = ((document.getElementById('taskSearchInput') || {}).value || '').toLowerCase().trim();
+            if (!busca) {
+                renderizarTasks(todasTasks);
+                return;
+            }
+            const filtradas = todasTasks.filter(function(t) {
+                return String(t.id || '').includes(busca)
+                    || String(t.missao || '').toLowerCase().includes(busca)
+                    || String(t.pokemon || '').toLowerCase().includes(busca);
+            });
+            renderizarTasks(filtradas);
+        };
+
+        window.limparFiltrosQuests = function() {
+            var inp = document.getElementById('questSearchInput');
+            var sel1 = document.getElementById('questFilterAcesso');
+            var sel2 = document.getElementById('questFilterDificuldade');
+            if (inp) inp.value = '';
+            if (sel1) sel1.value = '';
+            if (sel2) sel2.value = '';
+            window.filtrarQuests();
+        };
+
+        window.limparFiltroTasks = function() {
+            var inp = document.getElementById('taskSearchInput');
+            if (inp) inp.value = '';
+            window.filtrarTasks();
+        };
+
+        /**
          * Renderiza os cards de quests no container.
          */
+        // Helper: escape text for use in HTML attribute values (data-copy etc.)
+        function _escapeHtmlAttr(s) {
+            return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
         function renderizarQuests(dados) {
             const container = document.getElementById('questsContainer');
             if (!container) return;
@@ -1607,7 +1657,7 @@ document.addEventListener('click', async function(ev){
             }
 
             dados.forEach(function(q) {
-                const isAdmin = (typeof window.isAdmin === 'function') ? window.isAdmin() : false;
+                const isAdm = (typeof window.isAdmin === 'function') ? window.isAdmin() : false;
                 const dif = parseInt(q.dificuldade) || 1;
                 const stars = '★'.repeat(dif) + '☆'.repeat(5 - dif);
                 const isVip = q.acesso && q.acesso.toLowerCase() === 'vip';
@@ -1628,13 +1678,12 @@ document.addEventListener('click', async function(ev){
                     ? '<a href="' + q.link_video + '" target="_blank" rel="noopener noreferrer" class="btn-copiar-loc" style="text-decoration:none;"><i class="fab fa-youtube" style="color:#ff4444;"></i> Ver Guia</a>'
                     : '';
 
-                // Botão copiar
-                const nomeSafe = (q.nome || '').replace(/'/g, "\\'");
-                const acessoSafe = (q.acesso || '').replace(/'/g, "\\'");
-                const copyText = 'QUEST-' + (q.nome || '') + '  ACESSO-' + (q.acesso || '') + '  NÍVEL-' + (q.nivel || 0) + '  DIFICULDADE-' + stars;
+                // Copy text (safe for data attribute)
+                const copyText = 'QUEST-' + (q.nome || '') + '  ACESSO-' + (q.acesso || '') + '  NÍVEL-' + (q.nivel || 0) + '  DIFICULDADE-' + stars + (q.recompensas ? '  RECOMPENSA-' + q.recompensas : '') + (q.descricao ? '  DESCRIÇÃO-' + q.descricao : '');
+                const nomeSafe = String(q.nome || '').replace(/'/g, "\\'");
 
                 // Botão editar/sugerir
-                const editBtn = isAdmin
+                const editBtn = isAdm
                     ? '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.abrirModalEdicaoQuest(\'' + nomeSafe + '\')"><i class="fas fa-edit"></i> Editar</button>'
                     : '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.sugerirEdicaoQuest(\'' + nomeSafe + '\')"><i class="fas fa-lightbulb"></i> Sugerir</button>';
 
@@ -1654,7 +1703,7 @@ document.addEventListener('click', async function(ev){
                     '<div class="quest-actions">' +
                         videoHtml +
                         editBtn +
-                        '<button class="btn-copiar-loc" onclick="(function(btn){var t=\'' + copyText.replace(/'/g, "\\'") + '\';if(navigator.clipboard){navigator.clipboard.writeText(t).then(function(){btn.innerHTML=\'<i class=\\"fas fa-check\\"></i> Copiado!\';btn.classList.add(\'copiado\');setTimeout(function(){btn.innerHTML=\'<i class=\\"fas fa-copy\\"></i> Copiar\';btn.classList.remove(\'copiado\');},2000);});}else{var ta=document.createElement(\'textarea\');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand(\'copy\');document.body.removeChild(ta);btn.innerHTML=\'<i class=\\"fas fa-check\\"></i> Copiado!\';btn.classList.add(\'copiado\');setTimeout(function(){btn.innerHTML=\'<i class=\\"fas fa-copy\\"></i> Copiar\';btn.classList.remove(\'copiado\');},2000);}})(this)"><i class="fas fa-copy"></i> Copiar</button>' +
+                        '<button class="btn-copiar-loc" data-copy="' + _escapeHtmlAttr(copyText) + '" onclick="window.copiarLocalizacao(this)"><i class="fas fa-copy"></i> Copiar</button>' +
                     '</div>';
 
                 container.appendChild(card);
@@ -1727,22 +1776,29 @@ document.addEventListener('click', async function(ev){
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
 
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: action, ...dados })
-            })
+            const params = new URLSearchParams();
+            params.append('action', action);
+            params.append('nome', dados.nome);
+            params.append('acesso', dados.acesso);
+            params.append('nivel', dados.nivel);
+            params.append('descricao', dados.descricao);
+            params.append('recompensas', dados.recompensas);
+            params.append('dificuldade', dados.dificuldade);
+            params.append('link_video', dados.link_video);
+            if (nomeOriginal) params.append('nomeOriginal', nomeOriginal);
+
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: params })
             .then(function(r) { return r.json(); })
             .then(function(res) {
                 if (res.success) {
                     document.getElementById('modalQuest').style.display = 'none';
-                    window.todasQuests = null; // forçar reload
+                    window.todasQuests = null;
                     window.carregarQuests();
                 } else {
                     alert('Erro ao salvar: ' + (res.message || 'Tente novamente.'));
                 }
             })
-            .catch(function() { alert('Erro de conexão ao salvar quest.'); })
+            .catch(function(err) { alert('Erro de conexão ao salvar quest.'); })
             .finally(function() {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save"></i> Salvar Quest';
@@ -1759,6 +1815,7 @@ document.addEventListener('click', async function(ev){
             document.getElementById('taskId').value = '';
             document.getElementById('taskMissao').value = '';
             document.getElementById('taskPokemon').value = '';
+            document.getElementById('taskLocal').value = '';
             document.getElementById('taskPremios').value = '';
             document.getElementById('modalTask').style.display = 'flex';
         };
@@ -1771,7 +1828,11 @@ document.addEventListener('click', async function(ev){
             document.getElementById('taskId').value = task.id;
             document.getElementById('taskMissao').value = task.missao || '';
             document.getElementById('taskPokemon').value = task.pokemon || '';
-            document.getElementById('taskPremios').value = JSON.stringify(task.premios || []);
+            document.getElementById('taskLocal').value = task.local || '';
+            var _pl = Array.isArray(task.premios) ? task.premios : (typeof task.premios === 'string' && task.premios.trim() ? (function(){ try{ return JSON.parse(task.premios); }catch(e){ return []; } })() : []);
+            document.getElementById('taskPremios').value = _pl.map(function(p) {
+                return p.item + ' x' + p.qtd;
+            }).join(' / ');
             document.getElementById('modalTask').style.display = 'flex';
         };
 
@@ -1781,29 +1842,46 @@ document.addEventListener('click', async function(ev){
                 id: document.getElementById('taskId').value.trim(),
                 missao: document.getElementById('taskMissao').value.trim(),
                 pokemon: document.getElementById('taskPokemon').value.trim(),
+                local: document.getElementById('taskLocal').value.trim(),
                 premiosRaw: document.getElementById('taskPremios').value.trim()
             };
 
             if (!dados.missao || !dados.pokemon) { alert('Preencha missão e pokémon.'); return; }
 
-            let premios = [];
-            try { premios = JSON.parse(dados.premiosRaw); } catch(e) {
-                premios = [{ item: dados.premiosRaw, qtd: '1' }];
+            var premios = [];
+            var premiosRaw = (dados.premiosRaw || '').trim();
+            if (premiosRaw.startsWith('[')) {
+                try { premios = JSON.parse(premiosRaw); } catch(e2) { premios = []; }
+            } else if (premiosRaw) {
+                // Formato legível: "item x1 / item2 x2"
+                premios = premiosRaw.split('/').filter(Boolean).map(function(part) {
+                    part = part.trim();
+                    var lastX = part.lastIndexOf(' x');
+                    if (lastX !== -1) {
+                        return { item: part.substring(0, lastX).trim(), qtd: part.substring(lastX + 2).trim() };
+                    }
+                    return { item: part, qtd: '1' };
+                });
             }
 
             const action = idOriginal ? 'editarTask' : 'adicionarTask';
-            const payload = { action: action, id: dados.id, missao: dados.missao, pokemon: dados.pokemon, premios: premios };
+            const payload = { action: action, id: dados.id, missao: dados.missao, pokemon: dados.pokemon, local: dados.local, premios: premios };
             if (idOriginal) payload.idOriginal = idOriginal;
 
             const btn = document.getElementById('btnSalvarTask');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
 
-            fetch(APPS_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            })
+            const params = new URLSearchParams();
+            params.append('action', action);
+            params.append('id', dados.id);
+            params.append('missao', dados.missao);
+            params.append('pokemon', dados.pokemon);
+            params.append('local', dados.local);
+            params.append('premios', JSON.stringify(premios));
+            if (idOriginal) params.append('idOriginal', idOriginal);
+
+            fetch(APPS_SCRIPT_URL, { method: 'POST', body: params })
             .then(function(r) { return r.json(); })
             .then(function(res) {
                 if (res.success) {
@@ -1813,7 +1891,7 @@ document.addEventListener('click', async function(ev){
                     alert('Erro ao salvar: ' + (res.message || 'Tente novamente.'));
                 }
             })
-            .catch(function() { alert('Erro de conexão ao salvar task.'); })
+            .catch(function(err) { alert('Erro de conexão ao salvar task.'); })
             .finally(function() {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save"></i> Salvar Task';
@@ -1825,7 +1903,7 @@ document.addEventListener('click', async function(ev){
         // ====================================================================
 
         function carregarTasks() {
-            todasTasks = [
+            var TASKS_BASE = [
                 { id: '01', missao: 'Derrotar: 20', pokemon: 'magikarp', premios: [{ item: 'pokeballs', qtd: '50' }] },
                 { id: '02', missao: 'Derrotar: 30', pokemon: 'rattata', premios: [{ item: 'hds', qtd: '5' }] },
                 { id: '03', missao: 'Capturar: 10', pokemon: 'caterpie', premios: [{ item: 'superpotion', qtd: '40' }] },
@@ -1927,60 +2005,110 @@ document.addEventListener('click', async function(ev){
                 { id: '99', missao: 'Derrotar: 5000', pokemon: 'ursaring', premios: [{ item: 'pikachuwomanoutfit', qtd: '1' }, { item: 'tds', qtd: '100' }, { item: 'xp', qtd: '50000000', isxp: true }, { item: 'vip', qtd: '30' }] },
                 { id: '100', missao: 'Capturar: 1', pokemon: 'gible', premios: [{ item: 'incubator', qtd: '1' }] }
             ];
+            todasTasks = TASKS_BASE.slice();
             renderizarTasks(todasTasks);
+
+            // Sincroniza com servidor: merge base + server overrides/adições do admin
+            fetch(APPS_SCRIPT_URL + '?acao=obter_tasks&t=' + Date.now())
+                .then(function(r) { return r.json(); })
+                .then(function(j) {
+                    if (j.success && j.data && j.data.length > 0) {
+                        // Merge: hardcoded base + server overrides por ID
+                        var mapa = {};
+                        TASKS_BASE.forEach(function(t) { mapa[String(t.id)] = Object.assign({}, t); });
+                        j.data.forEach(function(t) { mapa[String(t.id)] = t; });
+                        todasTasks = Object.keys(mapa)
+                            .sort(function(a, b) { return parseInt(a) - parseInt(b); })
+                            .map(function(k) { return mapa[k]; });
+                        renderizarTasks(todasTasks);
+                    } else if (j.success && (!j.data || j.data.length === 0)) {
+                        // Planilha vazia: seed todas as 100 tasks
+                        _seedTasksParaServidor(TASKS_BASE);
+                    }
+                })
+                .catch(function() {});
         }
 
         function renderizarTasks(dados) {
             const container = document.getElementById('tasksContainer');
-            if (!container) return; // Sair se o elemento não existir
+            if (!container) return;
             
             container.innerHTML = '';
+
+            if (!dados || dados.length === 0) {
+                container.innerHTML = '<div class="no-results"><i class="fas fa-search"></i><p>Nenhuma task encontrada.</p></div>';
+                return;
+            }
             
-            dados.forEach((task) => {
+            dados.forEach(function(task) {
                 const card = document.createElement('div');
                 card.className = 'task-card';
                 
                 // Obter imagem usando a função que detecta itens
                 const imagemPokemon = obterImagemTarefa(task.pokemon);
+
+                // Localização do pokémon (do campo task.local ou lookup na pokédex)
+                let localizacao = task.local || '';
+                if (!localizacao && todosPokemonsCompleto && todosPokemonsCompleto.length) {
+                    const pokEntry = todosPokemonsCompleto.find(function(p) {
+                        return (p['PS'] || '').toLowerCase() === (task.pokemon || '').toLowerCase();
+                    });
+                    if (pokEntry) localizacao = pokEntry['LOCALIZAÇÃO'] || '';
+                }
+                const localHtml = localizacao
+                    ? '<div class="task-location" style="color:#a0e7ff;font-size:0.82em;margin-top:4px;"><i class="fas fa-map-marker-alt" style="color:#ffd700;"></i> ' + localizacao + '</div>'
+                    : '';
                 
+                // Normalizar premios: aceita array ou string JSON
+                var premiosList = Array.isArray(task.premios) ? task.premios : [];
+                if (!premiosList.length && typeof task.premios === 'string' && task.premios.trim()) {
+                    try { premiosList = JSON.parse(task.premios); } catch(e) { premiosList = []; }
+                }
+
                 // Gerar recompensas HTML
                 let premiosHtml = '';
-                task.premios.forEach(premio => {
+                premiosList.forEach(function(premio) {
                     const isXP = premio.isxp;
                     const src = isXP ? 'IMAGENS/imagens-itens/itens-task/xp.webp' : obterImagemItemTask(premio.item);
-                    premiosHtml += `
-                        <div class="task-reward-item">
-                            <img src="${src}" alt="${premio.item}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'">
-                            <div class="task-reward-name">${premio.item}</div>
-                            <div class="task-reward-quantity">x${premio.qtd}</div>
-                        </div>
-                    `;
+                    premiosHtml += '<div class="task-reward-item">' +
+                        '<img src="' + src + '" alt="' + premio.item + '" onerror="this.onerror=null;this.src=\'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png\'">' +
+                        '<div class="task-reward-name">' + premio.item + '</div>' +
+                        '<div class="task-reward-quantity">x' + premio.qtd + '</div>' +
+                    '</div>';
                 });
-                
-                card.innerHTML = `
-                    <div class="task-header">
-                        <div class="task-header-left">
-                            <div class="task-id">Task #${task.id}</div>
-                        </div>
-                        <div class="task-header-right">
-                            <div style="color: #ffd700; font-weight: bold; font-size: 1.1em;">RECOMPENSAS:</div>
-                        </div>
-                    </div>
-                    <div class="task-content-left">
-                        <div class="task-mission">${task.missao}</div>
-                        <div class="task-pokemon-large">
-                            <img src="${imagemPokemon}" alt="${task.pokemon}" onerror="this.onerror=null;this.src='IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png'">
-                        </div>
-                        <div class="task-pokemon-large-name">${task.pokemon.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/-/g, ' ').toUpperCase()}</div>
-                    </div>
-                    <div class="task-content-right">
-                        <div class="task-rewards">${premiosHtml}</div>
-                    </div>
-                    <div style="grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;">
-                        ${isAdmin() ? `<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.abrirModalEdicaoTask('${task.id}')"><i class="fas fa-edit"></i> Editar</button>` : ''}
-                        <button class="btn-copiar-loc" data-copy="TASK-#${task.id}  MISSÃO-${task.missao}  POKEMON-${task.pokemon}  RECOMPENSA-${task.premios.map(p=>p.item+' x'+p.qtd).join('/')}" onclick="window.copiarLocalizacao(this)"><i class="fas fa-copy"></i> Copiar</button>
-                    </div>
-                `;
+
+                // Texto para copiar
+                const premiosTxt = premiosList.map(function(p){ return p.item + ' x' + p.qtd; }).join('/');
+                const copyText = 'TASK-#' + task.id + '  MISSÃO-' + task.missao + '  POKEMON-' + task.pokemon + (localizacao ? '  LOCAL-' + localizacao : '') + '  RECOMPENSA-' + premiosTxt;
+
+                const editBtn = isAdmin()
+                    ? '<button class="btn-copiar-loc" style="background:rgba(255,215,0,0.15);border-color:rgba(255,215,0,0.4);color:#ffd700;" onclick="window.abrirModalEdicaoTask(\'' + task.id + '\')"><i class="fas fa-edit"></i> Editar</button>'
+                    : '';
+
+                card.innerHTML =
+                    '<div class="task-header">' +
+                        '<div class="task-header-left">' +
+                            '<div class="task-id">Task #' + task.id + '</div>' +
+                        '</div>' +
+                        '<div class="task-header-right">' +
+                            '<div style="color:#ffd700;font-weight:bold;font-size:1.1em;">RECOMPENSAS:</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="task-content-left">' +
+                        '<div class="task-mission">' + task.missao + '</div>' +
+                        '<div class="task-pokemon-large">' +
+                            '<img src="' + imagemPokemon + '" alt="' + task.pokemon + '" onerror="this.onerror=null;this.src=\'IMAGENS/imagens-pokemon/stickers-pokemon/pokebola.png\'">' +
+                        '</div>' +
+                        '<div class="task-pokemon-large-name">' + String(task.pokemon || '').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/-/g,' ').toUpperCase() + '</div>' +
+                        localHtml +
+                    '</div>' +
+                    '<div class="task-content-right">' +
+                        '<div class="task-rewards">' + premiosHtml + '</div>' +
+                    '</div>' +
+                    '<div style="grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">' +
+                        editBtn +
+                        '<button class="btn-copiar-loc" data-copy="' + _escapeHtmlAttr(copyText) + '" onclick="window.copiarLocalizacao(this)"><i class="fas fa-copy"></i> Copiar</button>' +
+                    '</div>';
                 
                 container.appendChild(card);
             });

@@ -1,9 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <title>Quests</title>
-    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
     <div class="container">
@@ -20,13 +19,14 @@
         <div id="questsListPage" style="display:block;">
             <div class="tasks-header" style="text-align:center; margin-bottom:20px; padding:20px 0;">
                 <h2 style="color:#ffd700; margin-bottom:10px;">
-                    <i class="fas fa-map-signs"></i> Quests do PokéMemories
+                    <i class="fas fa-map-signs"></i> Quests do PokeMemorias
                 </h2>
-                <p style="color:#a0e7ff; margin-bottom:15px;">Missões especiais com recompensas exclusivas</p>
+                <p style="color:#a0e7ff; margin-bottom:15px;">Missoes especiais com recompensas exclusivas</p>
 
-                <!-- Botão ADM adicionar quest -->
+                <!-- Botao ADM adicionar quest (amarelo dourado) -->
                 <div id="btnAdicionarQuestWrap" style="display:none; margin-bottom:15px;">
-                    <button class="btn-copiar-loc" style="background:rgba(46,204,113,0.2);border-color:rgba(46,204,113,0.5);color:#2ecc71;"
+                    <button class="btn-copiar-loc"
+                        style="background:rgba(255,215,0,0.2);border-color:rgba(255,215,0,0.5);color:#ffd700;font-weight:700;"
                         onclick="window.abrirModalAdicionarQuest()">
                         <i class="fas fa-plus"></i> Adicionar Quest
                     </button>
@@ -34,7 +34,7 @@
 
                 <!-- Barra de busca e filtros -->
                 <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center; margin-bottom:10px;">
-                    <input type="text" id="questSearchInput" placeholder="🔍 Buscar quest por nome..."
+                    <input type="text" id="questSearchInput" placeholder="Buscar quest por nome..."
                         style="padding:8px 14px; border-radius:10px; border:1px solid rgba(0,212,255,0.3); background:rgba(15,20,40,0.8); color:#e0e8ff; min-width:220px;"
                         oninput="window.filtrarQuests()">
                     <select id="questFilterAcesso" onchange="window.filtrarQuests()"
@@ -42,17 +42,20 @@
                         <option value="">Todos (Free/VIP)</option>
                         <option value="Free">Free</option>
                         <option value="VIP">VIP</option>
-                        <option value="Vip">VIP</option>
                     </select>
                     <select id="questFilterDificuldade" onchange="window.filtrarQuests()"
                         style="padding:8px 12px; border-radius:10px; border:1px solid rgba(0,212,255,0.3); background:rgba(15,20,40,0.8); color:#e0e8ff;">
                         <option value="">Todas Dificuldades</option>
-                        <option value="1">⭐ Fácil</option>
-                        <option value="2">⭐⭐ Médio</option>
-                        <option value="3">⭐⭐⭐ Difícil</option>
-                        <option value="4">⭐⭐⭐⭐ Muito Difícil</option>
-                        <option value="5">⭐⭐⭐⭐⭐ Extremo</option>
+                        <option value="1">Facil</option>
+                        <option value="2">Medio</option>
+                        <option value="3">Dificil</option>
+                        <option value="4">Muito Dificil</option>
+                        <option value="5">Extremo</option>
                     </select>
+                    <button onclick="window.limparFiltrosQuests()" title="Limpar filtros"
+                        style="padding:8px 12px; border-radius:10px; border:1px solid rgba(255,100,100,0.4); background:rgba(255,100,100,0.1); color:#ff8080; cursor:pointer;">
+                        <i class="fas fa-times"></i> Limpar
+                    </button>
                 </div>
             </div>
 
@@ -66,20 +69,33 @@
 
         <!-- ===== TASKS PAGE ===== -->
         <div id="tasksListPage" style="display:none;">
-            <div class="tasks-header" style="text-align:center; margin-bottom:30px;">
+            <div class="tasks-header" style="text-align:center; margin-bottom:20px; padding:20px 0;">
                 <h2 style="color:#ffd700; margin-bottom:10px;">
                     <i class="fas fa-scroll"></i> Tasks do NPC Lem
                 </h2>
-                <p style="color:#a0e7ff; margin-bottom:15px;">O NPC Lem oferece recompensas exclusivas a cada tarefa concluída no PVP</p>
+                <p style="color:#a0e7ff; margin-bottom:15px;">O NPC Lem oferece recompensas exclusivas a cada tarefa concluida no PVP</p>
 
-                <!-- Botão ADM adicionar task -->
+                <!-- Botao ADM adicionar task (amarelo dourado) -->
                 <div id="btnAdicionarTaskWrap" style="display:none; margin-bottom:15px;">
-                    <button class="btn-copiar-loc" style="background:rgba(46,204,113,0.2);border-color:rgba(46,204,113,0.5);color:#2ecc71;"
+                    <button class="btn-copiar-loc"
+                        style="background:rgba(255,215,0,0.2);border-color:rgba(255,215,0,0.5);color:#ffd700;font-weight:700;"
                         onclick="window.abrirModalAdicionarTask()">
                         <i class="fas fa-plus"></i> Adicionar Task
                     </button>
                 </div>
+
+                <!-- Barra de busca de tasks -->
+                <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center; margin-bottom:10px;">
+                    <input type="text" id="taskSearchInput" placeholder="Buscar task (pokemon, missao, ID)..."
+                        style="padding:8px 14px; border-radius:10px; border:1px solid rgba(0,212,255,0.3); background:rgba(15,20,40,0.8); color:#e0e8ff; min-width:260px;"
+                        oninput="window.filtrarTasks()">
+                    <button onclick="window.limparFiltroTasks()" title="Limpar busca"
+                        style="padding:8px 12px; border-radius:10px; border:1px solid rgba(255,100,100,0.4); background:rgba(255,100,100,0.1); color:#ff8080; cursor:pointer;">
+                        <i class="fas fa-times"></i> Limpar
+                    </button>
+                </div>
             </div>
+
             <div id="tasksContainer" class="tasks-grid">
                 <div class="loading">
                     <i class="fas fa-spinner fa-spin"></i>
@@ -89,67 +105,5 @@
         </div>
 
     </div>
-
-    <!-- ===== MODAL ADICIONAR/EDITAR QUEST ===== -->
-    <div id="modalQuest" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center;">
-        <div style="background:linear-gradient(135deg,#0f1428,#1a1f3e); border:1px solid rgba(0,212,255,0.3); border-radius:16px; padding:30px; max-width:540px; width:90%; max-height:90vh; overflow-y:auto; position:relative;">
-            <button onclick="document.getElementById('modalQuest').style.display='none'" style="position:absolute;top:12px;right:16px;background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.4);color:#ff6464;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:1.1em;">✕</button>
-            <h3 id="modalQuestTitulo" style="color:#ffd700;margin-bottom:20px;"><i class="fas fa-map-signs"></i> Adicionar Quest</h3>
-            <div style="display:flex;flex-direction:column;gap:14px;">
-                <input type="hidden" id="questEditNomeOriginal">
-                <label style="color:#a0e7ff;font-size:0.9em;">Nome da Quest</label>
-                <input id="questNome" type="text" placeholder="Ex: First Stone" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                <label style="color:#a0e7ff;font-size:0.9em;">Acesso</label>
-                <select id="questAcesso" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                    <option value="Free">Free</option>
-                    <option value="VIP">VIP</option>
-                </select>
-                <label style="color:#a0e7ff;font-size:0.9em;">Nível mínimo</label>
-                <input id="questNivel" type="number" min="0" placeholder="Ex: 50" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                <label style="color:#a0e7ff;font-size:0.9em;">Descrição</label>
-                <textarea id="questDescricao" rows="3" placeholder="Descreva a quest..." style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;resize:vertical;"></textarea>
-                <label style="color:#a0e7ff;font-size:0.9em;">Recompensas (separadas por /)</label>
-                <input id="questRecompensas" type="text" placeholder="Ex: firestone/waterstone" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                <label style="color:#a0e7ff;font-size:0.9em;">Dificuldade (1-5)</label>
-                <select id="questDificuldade" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                    <option value="1">1 - Fácil</option>
-                    <option value="2">2 - Médio</option>
-                    <option value="3">3 - Difícil</option>
-                    <option value="4">4 - Muito Difícil</option>
-                    <option value="5">5 - Extremo</option>
-                </select>
-                <label style="color:#a0e7ff;font-size:0.9em;">Link do Vídeo (YouTube)</label>
-                <input id="questLinkVideo" type="url" placeholder="https://www.youtube.com/watch?v=..." style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                <button id="btnSalvarQuest" onclick="window.salvarQuestModal()"
-                    style="padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(100,180,255,0.2));border:1px solid rgba(0,212,255,0.5);color:#00d4ff;font-weight:700;cursor:pointer;font-size:1em;margin-top:6px;">
-                    <i class="fas fa-save"></i> Salvar Quest
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== MODAL ADICIONAR/EDITAR TASK ===== -->
-    <div id="modalTask" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center;">
-        <div style="background:linear-gradient(135deg,#0f1428,#1a1f3e); border:1px solid rgba(0,212,255,0.3); border-radius:16px; padding:30px; max-width:540px; width:90%; max-height:90vh; overflow-y:auto; position:relative;">
-            <button onclick="document.getElementById('modalTask').style.display='none'" style="position:absolute;top:12px;right:16px;background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.4);color:#ff6464;border-radius:8px;padding:4px 12px;cursor:pointer;font-size:1.1em;">✕</button>
-            <h3 id="modalTaskTitulo" style="color:#ffd700;margin-bottom:20px;"><i class="fas fa-tasks"></i> Adicionar Task</h3>
-            <div style="display:flex;flex-direction:column;gap:14px;">
-                <input type="hidden" id="taskEditId">
-                <label style="color:#a0e7ff;font-size:0.9em;">ID da Task</label>
-                <input id="taskId" type="text" placeholder="Ex: 101" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                <label style="color:#a0e7ff;font-size:0.9em;">Missão</label>
-                <input id="taskMissao" type="text" placeholder="Ex: Derrotar: 50" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                <label style="color:#a0e7ff;font-size:0.9em;">Pokémon / Item alvo</label>
-                <input id="taskPokemon" type="text" placeholder="Ex: charizard" style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;">
-                <label style="color:#a0e7ff;font-size:0.9em;">Prêmios (formato JSON ou texto livre)</label>
-                <textarea id="taskPremios" rows="3" placeholder='Ex: [{"item":"ultraballs","qtd":"100"}]' style="padding:8px 12px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:rgba(15,20,40,0.8);color:#e0e8ff;resize:vertical;"></textarea>
-                <button id="btnSalvarTask" onclick="window.salvarTaskModal()"
-                    style="padding:10px 20px;border-radius:10px;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(100,180,255,0.2));border:1px solid rgba(0,212,255,0.5);color:#00d4ff;font-weight:700;cursor:pointer;font-size:1em;margin-top:6px;">
-                    <i class="fas fa-save"></i> Salvar Task
-                </button>
-            </div>
-        </div>
-    </div>
-
 </body>
 </html>

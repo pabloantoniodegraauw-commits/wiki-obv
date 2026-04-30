@@ -78,6 +78,32 @@ function handleEditarQuest(planilha, dados) {
 }
 
 /**
+ * Seed inicial de tasks — insere as 100 tasks base na aba TASKS quando está vazia.
+ */
+function handleSeedTasks(planilha, dados) {
+  try {
+    var aba = planilha.getSheetByName('TASKS');
+    if (!aba) {
+      aba = planilha.insertSheet('TASKS');
+      aba.getRange(1, 1, 1, 5).setValues([['ID', 'MISSAO', 'POKEMON', 'LOCAL', 'PREMIOS']]);
+    }
+    var existentes = aba.getLastRow();
+    if (existentes > 1) {
+      return { success: true, message: 'Aba TASKS já populada, seed ignorado.' };
+    }
+    var tasks = dados.tasks || [];
+    if (!tasks.length) return { success: false, message: 'Nenhuma task enviada.' };
+    var rows = tasks.map(function(t) {
+      return [t.id || '', t.missao || '', t.pokemon || '', t.local || '', JSON.stringify(t.premios || [])];
+    });
+    aba.getRange(2, 1, rows.length, 5).setValues(rows);
+    return { success: true, message: rows.length + ' tasks inseridas.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
  * Adiciona uma task na aba TASKS (cria a aba se necessário).
  */
 function handleAdicionarTask(planilha, dados) {
@@ -85,9 +111,9 @@ function handleAdicionarTask(planilha, dados) {
     var aba = planilha.getSheetByName('TASKS');
     if (!aba) {
       aba = planilha.insertSheet('TASKS');
-      aba.getRange(1, 1, 1, 4).setValues([['ID', 'MISSAO', 'POKEMON', 'PREMIOS']]);
+      aba.getRange(1, 1, 1, 5).setValues([['ID', 'MISSAO', 'POKEMON', 'LOCAL', 'PREMIOS']]);
     }
-    aba.appendRow([dados.id || '', dados.missao || '', dados.pokemon || '', JSON.stringify(dados.premios || [])]);
+    aba.appendRow([dados.id || '', dados.missao || '', dados.pokemon || '', dados.local || '', JSON.stringify(dados.premios || [])]);
     return { success: true, message: 'Task adicionada.' };
   } catch (e) {
     return { success: false, message: e.toString() };
@@ -105,10 +131,11 @@ function handleEditarTask(planilha, dados) {
     var rows = aba.getDataRange().getValues();
     for (var i = 1; i < rows.length; i++) {
       if ((rows[i][0] || '').toString().trim() === idOriginal) {
-        aba.getRange(i + 1, 1, 1, 4).setValues([[
+        aba.getRange(i + 1, 1, 1, 5).setValues([[
           dados.id || rows[i][0],
           dados.missao || rows[i][1],
           dados.pokemon || rows[i][2],
+          dados.local !== undefined ? dados.local : (rows[i][3] || ''),
           JSON.stringify(dados.premios || [])
         ]]);
         return { success: true, message: 'Task atualizada.' };
@@ -278,6 +305,18 @@ function doPost(e) {
             if (typeof DEBUG !== 'undefined' && DEBUG) Logger.log('Erro ao parsear moves: ' + e.toString());
           }
         }
+        // Se premios veio como string JSON (enviado via URLSearchParams), fazer parse
+        if (dados.premios && typeof dados.premios === 'string') {
+          try { dados.premios = JSON.parse(dados.premios); } catch (e) { dados.premios = []; }
+        }
+        // Se quests veio como string JSON, fazer parse
+        if (dados.quests && typeof dados.quests === 'string') {
+          try { dados.quests = JSON.parse(dados.quests); } catch (e) { dados.quests = []; }
+        }
+        // Se tasks veio como string JSON, fazer parse
+        if (dados.tasks && typeof dados.tasks === 'string') {
+          try { dados.tasks = JSON.parse(dados.tasks); } catch (e) { dados.tasks = []; }
+        }
       }
     }
     
@@ -398,6 +437,9 @@ function doPost(e) {
         break;
       case 'seedQuests':
         result = handleSeedQuests(planilha, dados);
+        break;
+      case 'seedTasks':
+        result = handleSeedTasks(planilha, dados);
         break;
       case 'adicionarQuest':
         result = handleAdicionarQuest(planilha, dados);
@@ -673,25 +715,76 @@ function doGet(e) {
     // Obter Quests da aba "QUESTS" (cria a aba automaticamente se não existir)
     if (acao === 'obter_quests') {
       var abaQuests = planilha.getSheetByName('QUESTS');
+      var cabecalhoQuests = [['NOME', 'ACESSO', 'NIVEL', 'DESCRICAO', 'RECOMPENSAS', 'DIFICULDADE', 'LINK_VIDEO']];
       if (!abaQuests) {
-        // Criar aba com cabeçalho — seed virá via POST seedQuests
         abaQuests = planilha.insertSheet('QUESTS');
-        abaQuests.getRange(1, 1, 1, 7).setValues([['NOME', 'ACESSO', 'NIVEL', 'DESCRICAO', 'RECOMPENSAS', 'DIFICULDADE', 'LINK_VIDEO']]);
-        return ContentService.createTextOutput(JSON.stringify({
-          success: true,
-          data: [],
-          total: 0
-        })).setMimeType(ContentService.MimeType.JSON);
+        abaQuests.getRange(1, 1, 1, 7).setValues(cabecalhoQuests);
       }
 
       var dadosQ = abaQuests.getDataRange().getValues();
+      // Se aba vazia (só cabeçalho), seed com quests iniciais
       if (dadosQ.length <= 1) {
+        var questsSeed = [
+          ['First Stone','Free',25,'Escolha uma entre as 3 principais pedras de evolução','firestone/waterstone/leafstone',1,'https://www.youtube.com/watch?v=gL3Fj7EUIj4'],
+          ['Second Stone','Free',45,'Escolha uma entre as 3 principais pedras de evolução e ganha um patins para melhorar sua velocidade','firestone/waterstone/leafstone/patins',1,'https://www.youtube.com/watch?v=Ub6uQqOw1MQ'],
+          ['Thunder Stone','Free',50,'Vasculhe as casas elétricas pelo mapa','thunderstone',1,'https://www.youtube.com/watch?v=QJujvuvKuQo'],
+          ['Enigma Stone','Free',50,'Vasculhe as ilhas psychic pelo mapa','enigmastone',1,'https://www.youtube.com/watch?v=CF3n9sYPa28'],
+          ['Heart Stone','Free',50,'Vasculhe os pidgeot pelo mapa','heartstone',1,'https://www.youtube.com/watch?v=_BwCI_NGBk4'],
+          ['Earth Stone','Free',50,'Vasculhe as caverna terrestre pelo mapa','earthstone',1,'https://www.youtube.com/watch?v=7O-nlfhdGCU'],
+          ['Punch Stone','Free',50,'Vasculhe as ilhas lutadoras pelo mapa','punchstone',1,''],
+          ['Ice Stone','Free',50,'Vasculhe as ilhas de gelo em kalos','icestone',1,''],
+          ['Fairy Stone','Free',50,'Vasculhe as ilhas de fadas em kalos','fairystone',1,'https://www.youtube.com/watch?v=p2Zwt6gDBwE'],
+          ['Rock Stone','Free',50,'Vasculhe as cavernas pelo mapa','rockstone',1,'https://www.youtube.com/watch?v=a6xpnbVUUro'],
+          ['Darkness Stone','Free',50,'Vasculhe a torre de lavender','darknessstone',1,'https://www.youtube.com/watch?v=KjXOmgDx7Uc'],
+          ['Dragon Stone','Free',100,'Vasculhe uma ilha de dragões e consiga uma stone','dragonstone',1,'https://www.youtube.com/watch?v=9oB6YrTVDfU'],
+          ['100 Hds','Free',100,'Vasculhe as cavernas proximo a cerulean e encontre 100 hds','100hds',1,'https://www.youtube.com/watch?v=wPmGkdwnvbA'],
+          ['100 Ultraball','Free',100,'Explore, encontre e então capture!','ultraball',1,'https://www.youtube.com/watch?v=Qd66prG1T9o'],
+          ['Jungle','Free',50,'Capture o pokémon Bonsly e troque por um shiny vileplume','shinyvileplume',2,'https://www.youtube.com/watch?v=iXMWtaXJsPg'],
+          ['Milotic','Free',130,'Passe pela piramide em Lavaridge e procure um báu onde você encontra um feebas, e em seguida evolua para uma milotic','milotic',2,'https://www.youtube.com/watch?v=qI1fAeYnOW8'],
+          ['Farol','Free',150,'Farme os itens e leve até a chefe do fárol','addonboxsuper',2,'https://www.youtube.com/watch?v=bBuSA5IvrAQ'],
+          ['Conquest','Free',150,'Junte 3 amigos e enfrente os poderosos Guardian Magmar','addonbox',2,'https://www.youtube.com/watch?v=J0M1rQcie2o'],
+          ['Boost Ice','VIP',250,'Consiga uma boost stone no final da quest','booststone',2,'https://www.youtube.com/watch?v=zwxll39GOV4'],
+          ['Boost Hell','Free',250,'Consiga uma boost stone no final da quest','booststone',2,'https://www.youtube.com/watch?v=ZWF9zkucgfY'],
+          ['Boost Leaf','Free',250,'Consiga uma boost stone no final da quest','booststone',2,'https://www.youtube.com/watch?v=X81s6EsEDJs'],
+          ['Metagross','Free',0,'Consiga 3 itens dos lendarios Regice, Regirock e Registeel e complete a quest Metagross','metagross/absol',2,'https://www.youtube.com/watch?v=2kUq-l847MM'],
+          ['Drapion','VIP',400,'Consiga um Shiny de graça e uma boost stone','shinydrapion/booststone',2,'https://www.youtube.com/watch?v=UCjqQv0GT54'],
+          ['Fire Gale','Free',500,'Enfrente diversos pokemon do tipo fire e no final ganhe uma outfit','charizardoutfit',2,'https://www.youtube.com/watch?v=DPV4GK_3YWc'],
+          ['Leaf Gale','VIP',500,'Enfrente diversos pokemon do tipo leaf e no final ganhe uma outfit','venusauroutfit',2,'https://www.youtube.com/watch?v=EShnZdGadwQ'],
+          ['Punch Gale','Free',500,'Enfrente diversos pokemon do tipo punch e no final ganhe uma outfit','punchoutfit',2,'https://www.youtube.com/watch?v=t2BI5QkN2sI'],
+          ['Water Gale','Free',500,'Enfrente diversos pokemon do tipo water e no final ganhe uma outfit','blastoiseoutfit',2,'https://www.youtube.com/watch?v=VNMZHxROxns'],
+          ['Fly Gale','Free',500,'Enfrente diversos pokemon do tipo fly e no final ganhe uma outfit','flyoutfit',2,'https://www.youtube.com/watch?v=Bvzp7l2itTI'],
+          ['Psych Gale','Free',500,'Enfrente diversos pokemon do tipo psychic e no final ganhe uma outfit','psychicoutfit',2,'https://www.youtube.com/watch?v=WToosf6vvaA'],
+          ['Electric Gale','Free',500,'Enfrente diversos pokemon do tipo electric e no final ganhe uma outfit','electricgale',2,'https://www.youtube.com/watch?v=BD-pBsWjF9I'],
+          ['Fairy Gale','Free',500,'Enfrente diversos pokemon do tipo fairy e no final ganhe uma outfit','fairyoutfit',2,'https://www.youtube.com/watch?v=p2Zwt6gDBwE'],
+          ['Dragon Gale','Free',500,'Enfrente diversos pokemon do tipo dragon e no final ganhe uma outfit','dragongale',2,'https://www.youtube.com/watch?v=qi-T7TzU9wQ'],
+          ['Fossil','Free',0,'Reviva um fossil e consiga um pokemon super raro','aerodactyl/omastar/armaldo/kabutops/bastiodon',3,'https://www.youtube.com/watch?v=Pkzcc49KtZQ'],
+          ['Magnetic','Free',250,'Tudo parecia normal, até elas se mexerem. Enfrente os Guardian Probopass','probopass',3,'https://www.youtube.com/watch?v=GrIfCtLO4hY'],
+          ['Aegislash','VIP',250,'Consiga TMS unicos investigando um antigo palacio','aegislash',3,'https://www.youtube.com/watch?v=JAwzrewN7l0'],
+          ['Mamoswine','Free',250,'Complete todas missões e enfrete o poderoso Guardian Mamoswine','mamoswine',3,'https://www.youtube.com/watch?v=kEJ2IRSP0pU'],
+          ['Haunted House','VIP',666,'Complete os enigmas da Haunted House e consiga um otimo pokemon','golurk',3,'https://www.youtube.com/watch?v=0bMI6ZUZ13Q'],
+          ['Crystal Quest','Free',0,'Consiga uma Crystal Tail e troque por acesso e tente capturar um crystal onix','shiny onix',3,'https://www.youtube.com/watch?v=DxVLdBXr2XQ'],
+          ['Mega Ring','Free',300,'Consiga uma bateria e 10x forge material para o professor sycamore, e consiga desbloquear a mega evolução','',4,''],
+          ['Korrina','Free',250,'Você entende de Mega evolução? prove e enfrente a lendaria Korrina e seus Mega Lucarios','',3,'https://www.youtube.com/watch?v=YrOT6oZ0CPM'],
+          ['Steve Stone','Free',250,'Ajude steve stone a desvendar o misterio da Rogue Evolução','',3,'https://www.youtube.com/watch?v=tJs-TOY0HiM'],
+          ['Burned','Free',400,'Junte 600 itens raros, 200x scarab, 200x brooch, 200x strange e complete uma das quests mais cara do jogo','lickilicky/rhyperior',4,'https://www.youtube.com/watch?v=IgnOPhZe_4o'],
+          ['Celebi','Free',400,'Viaje para Ilex Forest e devenda o misterio de Celebi, você vai precisar de ajuda','tangrowth',4,'https://www.youtube.com/watch?v=2UIMqhyyTwo'],
+          ['Genesect','Free',0,'Enfrente o lendario Genesect em uma missão em unova. Ao finalizar, você ganha uma outfit exclusiva e também libera acesso exclusivo a um npc que te oferece mel para captura de Volcarona','genesectoutfit/volcarona',4,'https://www.youtube.com/watch?v=U3iAG7Y43fI'],
+          ['Pesadelo','Free',200,'Você sonha? então enfrente seus pesadelo. Você vai precisar de amigos para conseguir enfrentar os darkrais','lucario/togekiss/spiritomb',4,'https://www.youtube.com/shorts/LD0o2Y7olHI'],
+          ['Iris','Free',300,'Consiga todos pokémon dragão para iris, desbloqueando acesso a Iris Dungeons para conseguir o Mega Dragonite','',4,'https://www.youtube.com/watch?v=cDgI4upI_L0'],
+          ['Jurassic','Free',300,'Enfrente os ancient de kalos revividos e ecolha entre Amaura e Tyrunt','amaura/tyrunt',4,'https://www.youtube.com/watch?v=AAqKNTG0zcI'],
+          ['Vale dos Gengar','Free',600,'Primeira aparição de um dos vilão de pokememories, Z, cuidado nessa jornada','mimikyu/alolanmarowak',5,'https://www.youtube.com/watch?v=TEtoG-xVYNo'],
+          ['Memories Quest','Free',600,'Segunda aparição de Z, Aqui você precisara de ajuda de um Celebi para viajar ao passado','roaringmoon/alolanvulpix',5,'https://www.youtube.com/watch?v=kBme51Qt_AA']
+        ];
+        abaQuests.getRange(2, 1, questsSeed.length, 7).setValues(questsSeed);
+
+        var questsRetorno = questsSeed.map(function(row) {
+          return { nome: row[0], acesso: row[1], nivel: row[2], descricao: row[3], recompensas: row[4], dificuldade: row[5], link_video: row[6] };
+        });
         return ContentService.createTextOutput(JSON.stringify({
-          success: true,
-          data: [],
-          total: 0
+          success: true, data: questsRetorno, total: questsRetorno.length
         })).setMimeType(ContentService.MimeType.JSON);
       }
+
       var cabQ = dadosQ[0];
       var linhasQ = dadosQ.slice(1);
       var quests = linhasQ.map(function(linha) {
@@ -712,6 +805,36 @@ function doGet(e) {
         success: true,
         data: quests,
         total: quests.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Criar/obter aba TASKS (dados vêm do frontend hardcoded, aba só para POSTs)
+    if (acao === 'obter_tasks') {
+      var abaTasks = planilha.getSheetByName('TASKS');
+      if (!abaTasks) {
+        abaTasks = planilha.insertSheet('TASKS');
+        abaTasks.getRange(1, 1, 1, 5).setValues([['ID', 'MISSAO', 'POKEMON', 'LOCAL', 'PREMIOS']]);
+      }
+      var dadosTasks = abaTasks.getDataRange().getValues();
+      if (dadosTasks.length <= 1) {
+        return ContentService.createTextOutput(JSON.stringify({
+          success: true, data: [], total: 0
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      var cabTasks = dadosTasks[0];
+      var taskRows = dadosTasks.slice(1).map(function(linha) {
+        var obj = {};
+        cabTasks.forEach(function(col, i) { obj[col] = linha[i]; });
+        return {
+          id: obj['ID'] || '',
+          missao: obj['MISSAO'] || '',
+          pokemon: obj['POKEMON'] || '',
+          local: obj['LOCAL'] || '',
+          premios: obj['PREMIOS'] ? JSON.parse(obj['PREMIOS']) : []
+        };
+      }).filter(function(t) { return t.id; });
+      return ContentService.createTextOutput(JSON.stringify({
+        success: true, data: taskRows, total: taskRows.length
       })).setMimeType(ContentService.MimeType.JSON);
     }
 
